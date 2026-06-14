@@ -1,0 +1,11 @@
+name: auris_conformance
+description: Dart peer of the Auris cross-binding conformance harness.
+publish_to: none
+
+environment:
+  sdk: ^3.0.0
+
+dependencies:
+  auris_platform_interface:
+    path: ../../../packages/auris_platform_interface
+  ffi: ^2.1.4

@@ -1,0 +1,65 @@
+# ───────────────────────────── OS / editors ─────────────────────────────
+.DS_Store
+*.swp
+*~
+
+# JetBrains (CLion / IntelliJ / Android Studio)
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# ───────────────────────────── C / C++ / CMake ──────────────────────────
+# Every build tree (root CMake, sanitizer builds, CLion, stray third_party builds)
+build/
+build-*/
+cmake-build-*/
+*.o
+*.obj
+*.lo
+
+# ───────────────────────────── Dart / Flutter ───────────────────────────
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+.last_build_id
+**/doc/api/
+pubspec.lock
+
+# Flutter tooling ephemeral
+**/Flutter/ephemeral/
+**/Flutter/Generated.xcconfig
+**/Flutter/flutter_export_environment.sh
+**/ephemeral/
+
+# ──────────────────────── iOS / macOS (Xcode + CocoaPods) ────────────────
+**/Pods/
+**/.symlinks/
+**/xcuserdata/
+*.xcuserstate
+**/DerivedData/
+**/*.moved-aside
+
+# Plugin C/C++ source mirrors recreated by the podspec prepare_command
+/packages/auris_ios/ios/Sources/
+/packages/auris_macos/macos/Sources/
+
+# ───────────────────────────── Android / Gradle ─────────────────────────
+**/.gradle/
+**/.cxx/
+**/android/local.properties
+**/android/key.properties
+**/captures/
+*.keystore
+*.jks
+
+# ───────────────────────────── Go ───────────────────────────────────────
+/examples/conformance/go/conformance
+**/*.test
+
+# ───────────────────────────── misc ─────────────────────────────────────
+*.log

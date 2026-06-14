@@ -1,0 +1,19 @@
+name: auris_platform_interface
+description: A common platform interface for the auris plugin.
+version: 0.1.0+1
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  ffi: ^2.1.4
+  flutter:
+    sdk: flutter
+  plugin_platform_interface: ^2.1.8
+
+dev_dependencies:
+  ffigen: ^17.0.0
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^10.2.0

@@ -1,0 +1,44 @@
+name: auris
+description: Native audio capture with VAD and anomaly detection.
+version: 0.1.0+1
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        default_package: auris_android
+      ios:
+        default_package: auris_ios
+      macos:
+        default_package: auris_macos
+  # ONNX models bundled with the plugin so the demo (or any consumer)
+  # gets Neural VAD + YAMNet sound classification with no extra setup.
+  assets:
+    - assets/silero_vad.onnx
+    - assets/yamnet_3s.onnx
+    - assets/yamnet_class_map.txt
+
+dependencies:
+  ffi: ^2.1.4
+  flutter:
+    sdk: flutter
+  path_provider: ^2.1.5
+  auris_android:
+    path: ../auris_android
+  auris_ios:
+    path: ../auris_ios
+  auris_macos:
+    path: ../auris_macos
+  auris_platform_interface:
+    path: ../auris_platform_interface
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.5
+  plugin_platform_interface: ^2.1.8
+  very_good_analysis: ^10.2.0

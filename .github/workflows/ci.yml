@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Core C++ library + full doctest suite.
+  #
+  # Runs on macOS (the verified dev platform) with the dependency-light config:
+  # RNNoise + Opus are vendored and compile with no external deps; ONNX Runtime
+  # is OFF, so the Silero/YAMNet cases skip gracefully. Everything else — fuzz,
+  # stress, fault-injection, backend-fault, lifecycle, encoders — runs.
+  # ---------------------------------------------------------------------------
+  cpp:
+    name: build + test (C++)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DAURIS_ENABLE_TESTS=ON
+      - name: Build
+        run: cmake --build build -j
+      - name: Test
+        run: ./build/test_auris --no-intro
+
+  # ---------------------------------------------------------------------------
+  # Sanitizers — lock in the hardening so it cannot regress.
+  # ---------------------------------------------------------------------------
+  sanitizers:
+    name: ${{ matrix.name }}
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: asan+ubsan
+            flags: "-fsanitize=address,undefined -fno-omit-frame-pointer -g"
+          - name: tsan
+            flags: "-fsanitize=thread -fno-omit-frame-pointer -g"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure (${{ matrix.name }})
+        run: >
+          cmake -S . -B build-san -DAURIS_ENABLE_TESTS=ON
+          -DCMAKE_CXX_FLAGS="${{ matrix.flags }}"
+          -DCMAKE_C_FLAGS="${{ matrix.flags }}"
+      - name: Build
+        run: cmake --build build-san -j
+      - name: Test (${{ matrix.name }})
+        run: ./build-san/test_auris --no-intro
+
+  # ---------------------------------------------------------------------------
+  # Go binding: build libauris (shared, dependency-light), then test the cgo
+  # wrapper functionally and under the race detector.
+  # ---------------------------------------------------------------------------
+  go:
+    name: build + test (Go)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Build libauris (shared)
+        run: |
+          cmake -S . -B build -DAURIS_BUILD_SHARED=ON
+          cmake --build build -j
+      - name: Test
+        working-directory: bindings/go
+        run: go test ./...
+      - name: Test (race)
+        working-directory: bindings/go
+        run: go test -race ./...
+
+  # ---------------------------------------------------------------------------
+  # Dart package: static analysis + unit tests (pure-Dart logic; no native build
+  # needed for these — they cover the category mapping + config dial).
+  # ---------------------------------------------------------------------------
+  dart:
+    name: analyze + test (Dart)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: pub get
+        working-directory: packages/auris
+        run: flutter pub get
+      - name: analyze
+        working-directory: packages/auris
+        run: flutter analyze --no-fatal-infos
+      - name: test
+        working-directory: packages/auris
+        run: flutter test

@@ -1,0 +1,27 @@
+name: auris_macos
+description: MacOS implementation of the auris plugin
+version: 0.1.0+1
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+
+flutter:
+  plugin:
+    implements: auris
+    platforms:
+      macos:
+        pluginClass: AurisPlugin
+        dartPluginClass: AurisMacOS
+
+dependencies:
+  flutter:
+    sdk: flutter
+  auris_platform_interface:
+    path: ../auris_platform_interface
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.5
+  very_good_analysis: ^10.2.0

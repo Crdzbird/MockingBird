@@ -1,0 +1,2 @@
+COMMIT bad0a75 (classic, baked model)
+https://github.com/xiph/rnnoise.git @ bad0a75dcedeebf312cca2384b69d802e0ce191b
