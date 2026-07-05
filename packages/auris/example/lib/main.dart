@@ -40,9 +40,13 @@ class _HomePageState extends State<_HomePage> {
   AurisEngine? _engine;
   StreamSubscription<AurisStatsSnapshot>? _statsSub;
   StreamSubscription<AurisEventRecord>? _eventsSub;
+  StreamSubscription<AurisPacket>? _packetsSub;
   List<String> _yamnetLabels = const [];
 
   AurisStatsSnapshot? _stats;
+  // Encoded audio actually delivered to the host via the packets stream.
+  int _packetCount = 0;
+  int _packetBytes = 0;
   final Queue<String> _log = ListQueue<String>();
   String? _error;
 
@@ -68,12 +72,17 @@ class _HomePageState extends State<_HomePage> {
   void dispose() {
     _statsSub?.cancel();
     _eventsSub?.cancel();
+    _packetsSub?.cancel();
     _engine?.dispose();
     super.dispose();
   }
 
   Future<void> _start() async {
-    setState(() => _error = null);
+    setState(() {
+      _error = null;
+      _packetCount = 0;
+      _packetBytes = 0;
+    });
 
     // Mic permission. On iOS/Android permission_handler unifies the request
     // flow (Info.plist / AndroidManifest carry the usage strings). On macOS
@@ -150,6 +159,14 @@ class _HomePageState extends State<_HomePage> {
       });
       _statsSub =
           engine.stats.listen((s) => setState(() => _stats = s));
+      // Encoded audio actually shipped to the host (the send path). In a real
+      // app you'd forward p.data; here we just tally what arrived.
+      _packetsSub = engine.packets.listen((p) {
+        setState(() {
+          _packetCount++;
+          _packetBytes += p.data.length;
+        });
+      });
 
       engine.start();
       setState(() => _engine = engine);
@@ -211,8 +228,10 @@ class _HomePageState extends State<_HomePage> {
     if (eng == null) return;
     await _statsSub?.cancel();
     await _eventsSub?.cancel();
+    await _packetsSub?.cancel();
     _statsSub = null;
     _eventsSub = null;
+    _packetsSub = null;
     eng.stop();
     await eng.dispose();
     setState(() {
@@ -325,7 +344,12 @@ class _HomePageState extends State<_HomePage> {
                 running: _isRunning,
               ),
               const SizedBox(height: 12),
-              _StatsCard(stats: _stats, running: _isRunning),
+              _StatsCard(
+                stats: _stats,
+                running: _isRunning,
+                packetsReceived: _packetCount,
+                bytesReceived: _packetBytes,
+              ),
               const SizedBox(height: 16),
               Text(
                 'Events',
@@ -454,9 +478,16 @@ class _LastSoundCard extends StatelessWidget {
 }
 
 class _StatsCard extends StatelessWidget {
-  const _StatsCard({required this.stats, required this.running});
+  const _StatsCard({
+    required this.stats,
+    required this.running,
+    required this.packetsReceived,
+    required this.bytesReceived,
+  });
   final AurisStatsSnapshot? stats;
   final bool running;
+  final int packetsReceived;
+  final int bytesReceived;
 
   @override
   Widget build(BuildContext context) {
@@ -489,6 +520,8 @@ class _StatsCard extends StatelessWidget {
               _statRow('frames_dropped_capture', s.framesDroppedCapture),
               _statRow('packets_emitted', s.packetsEmitted),
               _statRow('packets_dropped', s.packetsDropped),
+              _statRow('packets_received (host)', packetsReceived),
+              _statRow('bytes_received (host)', bytesReceived),
               _statRow('segments_opened', s.segmentsOpened),
               _statRow('segments_closed', s.segmentsClosed),
               _statRow('pcm_ring_fill_frames', s.pcmRingFillFrames),

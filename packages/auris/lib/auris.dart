@@ -121,7 +121,8 @@ class AurisConfig {
     this.vadHangoverMs = 300,
     this.neuralVadModelPath,
     // --- Anomaly gate ("weird sound" detection) ---
-    this.enableAnomaly = false,
+    // Defaults on, matching auris_config_defaults and the Go binding.
+    this.enableAnomaly = true,
     this.anomalyRmsZ = 3.0,
     this.anomalyFluxZ = 3.0,
     this.anomalyBackgroundMs = 2000,
