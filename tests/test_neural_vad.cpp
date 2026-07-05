@@ -199,6 +199,73 @@ TEST_CASE("Neural VAD: detects speech in hello.wav, balanced events") {
     CHECK(neural.frames_dropped == 0);
 }
 
+TEST_CASE("Neural VAD: 8 kHz uses the 256-sample Silero window (detects speech)") {
+    setenv("AURIS_NEURAL_VAD_MODEL",
+           (std::string(AURIS_TEST_FIXTURE_DIR) + "/silero_vad.onnx").c_str(),
+           1);
+    const auto wav16 = read_wav_int16(
+        std::string(AURIS_TEST_FIXTURE_DIR) + "/hello.wav");
+    REQUIRE(wav16.samples.size() > 0);
+    REQUIRE(wav16.sample_rate_hz == 16000);
+
+    // Downsample 16 k -> 8 k by averaging sample pairs (a mild low-pass that
+    // keeps the speech envelope). Frames are 160 samples at 8 kHz / 20 ms.
+    std::vector<int16_t> s8;
+    s8.reserve(wav16.samples.size() / 2);
+    for (size_t i = 0; i + 1 < wav16.samples.size(); i += 2) {
+        s8.push_back(static_cast<int16_t>(
+            (static_cast<int32_t>(wav16.samples[i]) + wav16.samples[i + 1]) / 2));
+    }
+
+    auris_config_t cfg{};
+    auris_config_defaults(&cfg);
+    cfg.backend              = AURIS_BACKEND_HOST_PCM;
+    cfg.codec                = AURIS_CODEC_PCM_S16LE;
+    cfg.sample_rate_hz       = 8000;
+    cfg.frame_ms             = 20;      // 160 samples/frame
+    cfg.enable_vad           = 1;
+    cfg.enable_anomaly       = 0;
+    cfg.vad_tier             = AURIS_VAD_NEURAL;
+    cfg.vad_neural_threshold = 0.5f;
+    cfg.pcm_ring_frames      = 1u << 16;
+
+    auris_engine_t* e = nullptr;
+    REQUIRE(auris_create(&cfg, &e) == AURIS_OK);
+    REQUIRE(auris_start(e) == AURIS_OK);
+
+    constexpr uint32_t kFrame = 160;
+    uint32_t speech_begin = 0;
+    auto drain = [&]() {
+        auris_event_t evt{};
+        while (auris_poll_event(e, &evt) == AURIS_OK) {
+            if (evt.type == AURIS_EVT_SPEECH_BEGIN) ++speech_begin;
+        }
+        auris_packet_t pkt{};
+        while (auris_drain(e, &pkt) == AURIS_OK) auris_release(e, &pkt);
+    };
+
+    const size_t frames = s8.size() / kFrame;
+    for (size_t i = 0; i < frames; ++i) {
+        REQUIRE(auris_push_pcm(e, s8.data() + i * kFrame, kFrame,
+                               static_cast<uint64_t>(i) * 20'000ull) == AURIS_OK);
+        if ((i & 0x1Fu) == 0x1F) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            drain();
+        }
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    drain();
+    REQUIRE(auris_stop(e) == AURIS_OK);
+    drain();
+    auris_destroy(e);
+
+    // With a hard-coded 512-sample window, 8 kHz fed Silero the wrong shape;
+    // every inference threw (caught -> VAD stuck inactive -> 0). The per-rate
+    // 256-sample window makes 8 kHz work again.
+    INFO("8 kHz NEURAL speech_begin=" << speech_begin);
+    CHECK(speech_begin >= 1);
+}
+
 TEST_CASE("Neural VAD vs FAST VAD: differential on hello.wav, both detect speech") {
     setenv("AURIS_NEURAL_VAD_MODEL",
            (std::string(AURIS_TEST_FIXTURE_DIR) + "/silero_vad.onnx").c_str(),

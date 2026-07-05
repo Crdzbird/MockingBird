@@ -8,6 +8,8 @@
 
 #include <atomic>
 #include <cstdint>
+#include <thread>
+#include <vector>
 
 namespace {
 
@@ -52,6 +54,35 @@ TEST_CASE("auris_destroy auto-stops a running engine") {
     // No explicit stop: destroy must join cleanly.
     auris_destroy(e);
     CHECK(true);                    // surviving here is the assertion
+}
+
+TEST_CASE("Concurrent auris_stop is safe: exactly one succeeds, no double-join") {
+    // Regression for the lifecycle mutex: without it, two threads could both
+    // pass the joinable() check and join the same worker thread -> UB /
+    // std::terminate. Run under TSan to also prove there's no data race.
+    auris_engine_t* e = create_host_pcm();
+    REQUIRE(auris_start(e) == AURIS_OK);
+
+    constexpr int kThreads = 8;
+    std::atomic<int> ok{0};
+    std::atomic<int> not_running{0};
+    std::vector<std::thread> threads;
+    threads.reserve(kThreads);
+    for (int i = 0; i < kThreads; ++i) {
+        threads.emplace_back([&]() {
+            const auris_status_t s = auris_stop(e);
+            if (s == AURIS_OK) {
+                ok.fetch_add(1, std::memory_order_relaxed);
+            } else if (s == AURIS_ERR_NOT_RUNNING) {
+                not_running.fetch_add(1, std::memory_order_relaxed);
+            }
+        });
+    }
+    for (auto& t : threads) t.join();
+
+    CHECK(ok.load() == 1);
+    CHECK(not_running.load() == kThreads - 1);
+    auris_destroy(e);
 }
 
 namespace {
