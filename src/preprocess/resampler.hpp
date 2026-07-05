@@ -68,31 +68,36 @@ public:
         proto_ = detail::design_lowpass(taps, 0.5 / static_cast<double>(l_),
                                         static_cast<double>(l_));
         hist_.assign(taps_per_phase_, 0.0f);
+        pos_ = 0;
     }
 
     // Appends L*n samples to `out`. `out` is cleared-append (caller owns it).
     void process(const float* in, size_t n, std::vector<float>& out) {
         if (l_ == 1) { out.insert(out.end(), in, in + n); return; }
+        const size_t taps = hist_.size();   // == taps_per_phase_
         for (size_t i = 0; i < n; ++i) {
-            // Push newest sample at hist_[0].
-            for (size_t k = hist_.size(); k-- > 1;) hist_[k] = hist_[k - 1];
-            hist_[0] = in[i];
+            // Circular history: newest sample lands at pos_, no O(taps) shift.
+            hist_[pos_] = in[i];
             for (size_t p = 0; p < static_cast<size_t>(l_); ++p) {
                 double acc = 0.0;
                 for (size_t k = 0; k < taps_per_phase_; ++k) {
+                    // hist index of the k-th most recent sample.
+                    const size_t idx = (pos_ + taps - k) % taps;
                     acc += static_cast<double>(proto_[p + static_cast<size_t>(l_) * k]) *
-                           static_cast<double>(hist_[k]);
+                           static_cast<double>(hist_[idx]);
                 }
                 out.push_back(static_cast<float>(acc));
             }
+            pos_ = (pos_ + 1 == taps) ? 0 : pos_ + 1;
         }
     }
 
-    void reset() { std::fill(hist_.begin(), hist_.end(), 0.0f); }
+    void reset() { std::fill(hist_.begin(), hist_.end(), 0.0f); pos_ = 0; }
 
 private:
     int                l_              = 1;
     size_t             taps_per_phase_ = 0;
+    size_t             pos_            = 0;   // circular head into hist_
     std::vector<float> proto_;
     std::vector<float> hist_;
 };
@@ -109,30 +114,36 @@ public:
         proto_ = detail::design_lowpass(taps, 0.5 / static_cast<double>(m_), 1.0);
         hist_.assign(taps, 0.0f);
         phase_ = 0;
+        pos_   = 0;
     }
 
     void process(const float* in, size_t n, std::vector<float>& out) {
         if (m_ == 1) { out.insert(out.end(), in, in + n); return; }
+        const size_t taps = hist_.size();
         for (size_t i = 0; i < n; ++i) {
-            for (size_t k = hist_.size(); k-- > 1;) hist_[k] = hist_[k - 1];
-            hist_[0] = in[i];
+            // Circular history: newest sample lands at pos_, no O(taps) shift.
+            const size_t cur = pos_;
+            hist_[pos_] = in[i];
+            pos_ = (pos_ + 1 == taps) ? 0 : pos_ + 1;
             if (++phase_ == m_) {
                 phase_ = 0;
                 double acc = 0.0;
                 for (size_t k = 0; k < proto_.size(); ++k) {
+                    const size_t idx = (cur + taps - k) % taps;
                     acc += static_cast<double>(proto_[k]) *
-                           static_cast<double>(hist_[k]);
+                           static_cast<double>(hist_[idx]);
                 }
                 out.push_back(static_cast<float>(acc));
             }
         }
     }
 
-    void reset() { std::fill(hist_.begin(), hist_.end(), 0.0f); phase_ = 0; }
+    void reset() { std::fill(hist_.begin(), hist_.end(), 0.0f); phase_ = 0; pos_ = 0; }
 
 private:
     int                m_     = 1;
     int                phase_ = 0;
+    size_t             pos_   = 0;   // circular head into hist_
     std::vector<float> proto_;
     std::vector<float> hist_;
 };
