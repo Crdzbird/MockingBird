@@ -101,3 +101,22 @@ jobs:
       - name: test
         working-directory: packages/auris
         run: flutter test
+
+  # ---------------------------------------------------------------------------
+  # Cross-binding conformance: the Go and Dart peers exchange deterministic
+  # audio and must produce byte-identical packets/events/stats. Enforces that
+  # the two language surfaces stay in sync over the shared engine.
+  # ---------------------------------------------------------------------------
+  conformance:
+    name: conformance (Go <-> Dart)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Run conformance harness
+        run: examples/conformance/run.sh
