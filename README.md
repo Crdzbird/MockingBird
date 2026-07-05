@@ -26,23 +26,73 @@ hears, and streams only the relevant audio out as encoded packets.
 Detection is one OR'd trigger: VAD or anomaly opens a *segment*; packets flow only
 while a segment is open, so the host receives speech/events, not the silence between.
 
-## Architecture
+## Highlights
 
-```
- T1  RT capture thread        alloc-free, never blocks
-        │  SPSC PCM ring       lock-free, fixed size, drop-newest on full
-        ▼
- T2  Worker thread            preprocess → VAD + anomaly + classify → encode
-        │  bounded packet pool drop-oldest on full, raises AURIS_EVT_OVERRUN
-        ▼
- T3  Host drain thread        auris_drain / auris_release at any pace
+- **Multilingual voice** — two VAD tiers: `libfvad` (fast, zero-dependency) and Silero v5
+  (neural). Both are language-agnostic; the neural tier catches faint/borderline speech.
+- **One dial tunes everything** — `Sensitive(0..1)` maps a single value onto every
+  detector's thresholds, or set each knob individually.
+- **Knows what it hears** — YAMNet's 521 AudioSet classes, plus helpers that fold them into
+  broad categories (speech / human / animal / music / nature) and a language-agnostic
+  "is this a human voice?" check.
+- **Mix and match** — enable any combination of RNNoise denoise, fast/neural VAD, anomaly
+  gate, and sound classification, at any of 8/16/32/48 kHz, encoding to Opus or PCM.
+- **Deterministic** — packet/event timestamps depend only on frame position, not timing;
+  a cross-binding conformance harness proves the Go and Flutter surfaces produce
+  **byte-identical** output over the shared engine.
+- **Hardened** — bounded lock-free queues, generation-guarded zero-copy packets, no
+  exception crosses the ABI, and the worker can't crash the host; fuzzed, stress- and
+  fault-injection-tested, clean under ASan / UBSan / TSan.
+- **Live or offline** — capture from the mic (Android / iOS / macOS) or push your own PCM
+  (`HOST_PCM`) to run files, network audio, or test vectors through the same pipeline.
+
+## How it works
+
+Three threads, two lock-free queues. Audio flows one way; the two queues are the
+**only** coupling between real-time work and the host.
+
+```mermaid
+flowchart TB
+    MIC["🎙 Microphone<br/>miniaudio · Oboe · CoreAudio"] --> RING
+    HOST["📥 Host PCM<br/>auris_push_pcm / pushPcm"] --> RING
+    RING(["SPSC PCM ring<br/>lock-free · drop-newest on full"])
+
+    subgraph WORKER["T2 · worker thread"]
+        direction TB
+        RING --> RN["RNNoise denoise<br/>optional · 48 kHz bridge"]
+        RN --> VAD["Voice · libfvad / Silero<br/>multilingual"]
+        RN --> ANO["Anomaly · RMS / flux / centroid z-score"]
+        RN --> YAM["YAMNet · 521 AudioSet classes"]
+        VAD --> SEG["Segmenter<br/>pre/post-roll · hangover"]
+        ANO --> SEG
+        SEG --> ENC["Encode · Opus / PCM"]
+    end
+
+    ENC --> POOL(["Packet pool<br/>bounded · drop-oldest → OVERRUN"])
+    SEG --> EVQ(["Event queue"])
+    YAM --> EVQ
+
+    POOL --> DRAIN["auris_drain"]
+    EVQ --> POLL["auris_poll_event"]
+
+    subgraph HOSTAPP["T3 · host — Go channels · Dart streams · …"]
+        DRAIN --> PKT["📦 packets<br/>zero-copy → copied on release"]
+        POLL --> EV["🔔 events<br/>speech · anomaly · sound-class · segment"]
+        STATS["auris_get_stats"] --> ST["📊 stats"]
+    end
 ```
 
-The two queues are the **only** coupling between real-time work and the host. A slow
-host just drains slower; T1/T2 never feel backpressure. The C ABI surface
-(`include/auris/auris.h`) is the contract: opaque handle, POD structs, status codes,
-no C++/exceptions/STL across the boundary, zero-copy borrowed packets with an explicit
-release.
+- **T1** (RT capture) is alloc-free and never blocks — it only pushes samples into the ring.
+- **T2** (worker) preprocesses, runs all three detectors per frame, segments, and encodes.
+  A segment opens on a VAD *or* anomaly trigger, so packets flow only while something is
+  happening. Packet/event **timestamps are a deterministic function of frame position**,
+  not wall-clock, so identical input yields identical output.
+- **T3** (host) drains at any pace. A slow host just drains slower; T1/T2 never feel
+  backpressure (the pool drops oldest and raises `AURIS_EVT_OVERRUN`).
+
+The C ABI (`include/auris/auris.h`) is the contract: opaque handle, POD structs, status
+codes, **no C++/exceptions/STL across the boundary**, zero-copy borrowed packets with an
+explicit release (guarded by a generation cookie against stale double-release).
 
 ## Repo layout
 
@@ -50,8 +100,10 @@ release.
 include/auris/auris.h     the C ABI (the contract — bindings generate from this)
 src/                      engine, detectors, encoders, capture backends, preprocess
 third_party/              vendored, permissive-only deps (see Licensing)
-tests/                    79 doctest cases incl. fuzz / stress / fault-injection
-packages/                 Flutter federated plugin (auris + per-platform + example)
+tests/                    86 doctest cases incl. fuzz / stress / fault-injection
+packages/                 Flutter federated plugin (auris + per-platform + example app)
+bindings/go/              cgo binding (idiomatic Go API + example + tests)
+examples/conformance/     Go ⇄ Dart byte-parity harness (run.sh)
 ```
 
 ---
@@ -122,8 +174,10 @@ exception ever crosses the ABI; invalid input returns a status, never crashes.
 
 The `packages/` directory is a federated plugin (flat VGV-style layout). The Dart side
 reaches the C ABI directly via `dart:ffi`; there are no platform channels on the hot
-path. See `packages/auris/example` for a working demo (sensitivity dial, multilingual
-voice indicator, RNNoise toggle, live event log).
+path. Detections, encoded **packets**, and stats arrive as Dart streams; `pushPcm` feeds
+a `HOST_PCM` engine. See [`packages/auris/README.md`](packages/auris/README.md) and the
+[example app](packages/auris/example) — a live demo with **feature presets** (voice-only,
+everything, anomaly-watch, denoised-voice…), a sensitivity dial, and encoded-bytes meter.
 
 ```dart
 final engine = AurisEngine.create(AurisConfig.sensitive(
@@ -138,8 +192,8 @@ final engine = AurisEngine.create(AurisConfig.sensitive(
 ## Go
 
 `bindings/go` is a cgo binding over the same C ABI, with an idiomatic API:
-detections arrive on Go channels. Build `libauris` (CMake) once, then `go test`.
-See [`bindings/go/README.md`](bindings/go/README.md).
+detections and packets arrive on Go channels. Build `libauris` (CMake) once, then
+`go test`. See [`bindings/go/README.md`](bindings/go/README.md).
 
 ```go
 e, _ := auris.New(auris.Sensitive(0.6,
@@ -150,6 +204,11 @@ for ev := range e.Events() {
     if ev.Type == auris.EventSpeechBegin { /* voice, any language */ }
 }
 ```
+
+The [example](bindings/go/example) is a flag-driven CLI that runs any combination of
+backend (mic / file via `HOST_PCM`), VAD tier, detectors, RNNoise, and codec — plus
+named `-preset`s (`voice`, `everything`, `anomaly`, `denoised-voice`, `music`) that show
+common recipes.
 
 ## Cross-binding conformance
 
