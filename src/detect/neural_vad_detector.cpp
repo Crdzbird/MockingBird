@@ -38,6 +38,7 @@
 #else
   #error "ONNX Runtime header not found; check pod / find_package wiring"
 #endif
+#include "ort_env.hpp"
 #include <cstdio>
 
 #include <algorithm>
@@ -80,8 +81,6 @@ public:
         }
         try {
             const std::string path = resolve_model_path(cfg);
-            env_     = std::make_unique<Ort::Env>(ORT_LOGGING_LEVEL_WARNING,
-                                                  "auris.neural_vad");
             Ort::SessionOptions opts;
             opts.SetIntraOpNumThreads(1);
             opts.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
@@ -92,12 +91,11 @@ public:
             //   output[0] "output" shape [-1,1] float32
             //   output[1] "stateN" shape [-1,-1,-1] float32 (runtime [2,1,128])
             AURIS_VLOG("neural-vad loading model: '%s'", path.c_str());
-            session_ = std::make_unique<Ort::Session>(*env_, path.c_str(), opts);
+            session_ = std::make_unique<Ort::Session>(shared_ort_env(), path.c_str(), opts);
             AURIS_VLOG("neural-vad model loaded OK");
         } catch (const Ort::Exception& ex) {
             AURIS_VLOG("neural-vad ORT exception: %s", ex.what());
             session_.reset();
-            env_.reset();
             return AURIS_ERR_UNSUPPORTED;
         } catch (const std::exception& ex) {
             AURIS_VLOG("neural-vad std exception: %s", ex.what());
@@ -253,7 +251,6 @@ private:
         }
     }
 
-    std::unique_ptr<Ort::Env>     env_;
     std::unique_ptr<Ort::Session> session_;
     std::vector<float>            buf_;
     std::vector<float>            state_;

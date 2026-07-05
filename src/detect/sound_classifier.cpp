@@ -17,6 +17,7 @@
 #else
   #error "ONNX Runtime header not found for sound_classifier"
 #endif
+#include "ort_env.hpp"
 
 #include <algorithm>
 #include <array>
@@ -59,12 +60,10 @@ public:
         try {
             const std::string path = resolve_model_path(cfg);
             AURIS_VLOG("yamnet loading model: '%s'", path.c_str());
-            env_     = std::make_unique<Ort::Env>(ORT_LOGGING_LEVEL_WARNING,
-                                                  "auris.sound_class");
             Ort::SessionOptions opts;
             opts.SetIntraOpNumThreads(1);
             opts.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
-            session_ = std::make_unique<Ort::Session>(*env_, path.c_str(), opts);
+            session_ = std::make_unique<Ort::Session>(shared_ort_env(), path.c_str(), opts);
             AURIS_VLOG("yamnet model loaded OK");
 
             Ort::AllocatorWithDefaultOptions alloc;
@@ -97,7 +96,6 @@ public:
         } catch (const Ort::Exception& ex) {
             AURIS_VLOG("yamnet ORT exception: %s", ex.what());
             session_.reset();
-            env_.reset();
             return AURIS_ERR_UNSUPPORTED;
         } catch (const std::exception& ex) {
             AURIS_VLOG("yamnet std exception: %s", ex.what());
@@ -247,7 +245,6 @@ private:
         }
     }
 
-    std::unique_ptr<Ort::Env>     env_;
     std::unique_ptr<Ort::Session> session_;
     std::string                   input_name_;
     std::string                   output_name_;
