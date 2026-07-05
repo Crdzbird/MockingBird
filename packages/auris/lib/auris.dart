@@ -581,6 +581,27 @@ class AurisEngine {
     _poll();
   }
 
+  /// Feed 16-bit mono PCM into a `AURIS_BACKEND_HOST_PCM` engine. [captureTsUs]
+  /// is the monotonic timestamp of the first sample. Only valid when the engine
+  /// was created with [auris_backend.AURIS_BACKEND_HOST_PCM] and after [start];
+  /// throws [AurisException] otherwise. Empty input is a no-op.
+  void pushPcm(Int16List samples, {int captureTsUs = 0}) {
+    _ensureLive();
+    if (samples.isEmpty) return;
+    // auris_push_pcm copies the samples into the ring before returning, so the
+    // native buffer only has to outlive this call.
+    final buf = calloc<ffi.Int16>(samples.length);
+    try {
+      buf.asTypedList(samples.length).setAll(0, samples);
+      _checkOk(
+        _bindings.auris_push_pcm(_engine, buf, samples.length, captureTsUs),
+        'auris_push_pcm',
+      );
+    } finally {
+      calloc.free(buf);
+    }
+  }
+
   /// Destroy the native handle. Idempotent. After this call the engine is
   /// unusable; create a new one if needed.
   Future<void> dispose() async {
