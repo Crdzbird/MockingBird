@@ -23,6 +23,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -209,12 +210,15 @@ private:
             const size_t classes = (total >= kYamnetClassCount)
                 ? kYamnetClassCount
                 : total;
-            std::vector<float> max_per_class(classes, 0.0f);
+            // Reused scratch (no per-inference heap alloc). Seed with the lowest
+            // float, not 0, so a true max-pool works even if the model head emits
+            // negative logits — a 0 floor would clamp all-negative classes to 0.
+            max_per_class_.assign(classes, std::numeric_limits<float>::lowest());
             const size_t frames = total / classes;
             for (size_t t = 0; t < frames; ++t) {
                 for (size_t c = 0; c < classes; ++c) {
                     const float v = scores[t * classes + c];
-                    if (v > max_per_class[c]) max_per_class[c] = v;
+                    if (v > max_per_class_[c]) max_per_class_[c] = v;
                 }
             }
 
@@ -225,7 +229,7 @@ private:
             int   best_idx = -1;
             float best_p   = 0.0f;
             for (size_t c = 0; c < ema_n; ++c) {
-                ema_[c] = ema_alpha_ * max_per_class[c] +
+                ema_[c] = ema_alpha_ * max_per_class_[c] +
                           (1.0f - ema_alpha_) * ema_[c];
                 if (ema_[c] > best_p) {
                     best_p   = ema_[c];
@@ -250,6 +254,7 @@ private:
     std::vector<float>            buf_;
     std::vector<float>            contiguous_;
     std::vector<float>            ema_;
+    std::vector<float>            max_per_class_;   // reused per-inference scratch
     float                         ema_alpha_              = 0.6f;
     size_t                        min_fill_               = kYamnetSampleCount;
     size_t                        write_pos_              = 0;
