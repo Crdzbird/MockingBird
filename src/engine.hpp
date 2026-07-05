@@ -52,6 +52,17 @@ struct auris_engine {
     std::thread        worker_thread;
     std::atomic<bool>  running{false};
     std::atomic<bool>  stop_requested{false};
+    // Set if the worker thread died to an uncaught exception (e.g. bad_alloc).
+    // The worker catches it, emits AURIS_EVT_BACKEND_ERROR, and exits rather than
+    // letting the exception escape the thread and call std::terminate. A fatal
+    // engine rejects further auris_push_pcm.
+    std::atomic<bool>  worker_fatal{false};
+    // Serializes the start/stop/destroy teardown transition so two concurrent
+    // stops (or a stop racing a start rollback) cannot both pass the joinable()
+    // check and double-join the worker (UB). Does NOT make auris_destroy safe to
+    // call concurrently with other entry points — destroy frees the engine, so
+    // the host must still ensure no other call is in flight (see auris.h).
+    std::mutex         lifecycle_mu;
 
     // Lock-free wake signal. Producer (T1 or host's push thread) increments
     // and notify_one(); worker waits on a stale value.

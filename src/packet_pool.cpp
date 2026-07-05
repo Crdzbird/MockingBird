@@ -68,14 +68,20 @@ bool PacketPool::drain(auris_packet_t* out) {
     out->codec         = s->codec;
     out->data          = s->buf.get();
     out->size          = s->size;
-    out->_reserved     = s->index;
+    // Cookie = generation:index (16 bits each). The generation is bumped on
+    // every checkout, so a stale packet copy released after the slot was reused
+    // is rejected even though its index and data pointer still match (ABA guard).
+    ++s->generation;
+    out->_reserved     = ((s->generation & 0xFFFFu) << 16) | (s->index & 0xFFFFu);
     s->in_flight       = true;   // checked out to the host until released
     return true;
 }
 
 auris_status_t PacketPool::release(const auris_packet_t* pkt) {
     if (pkt == nullptr) return AURIS_ERR_INVALID_ARG;
-    const uint32_t idx = pkt->_reserved;
+    const uint32_t cookie = pkt->_reserved;
+    const uint32_t idx    = cookie & 0xFFFFu;
+    const uint32_t gen    = (cookie >> 16) & 0xFFFFu;
     std::lock_guard lk(mu_);
     if (idx >= slots_.size()) return AURIS_ERR_INVALID_ARG;
     Slot* s = slots_[idx].get();
@@ -85,6 +91,11 @@ auris_status_t PacketPool::release(const auris_packet_t* pkt) {
     // list twice and acquire() would later hand the same buffer to two
     // packets — a use-after-free / aliasing corruption from host misuse.
     if (!s->in_flight) return AURIS_ERR_INVALID_ARG;
+    // Reject a stale/forged cookie: a copy of a previously-drained packet whose
+    // slot has since been re-checked-out has a matching index+pointer+in_flight
+    // but a mismatched generation. Without this the stale release would free a
+    // slot the CURRENT holder still borrows → use-after-free of its bytes.
+    if ((s->generation & 0xFFFFu) != gen) return AURIS_ERR_INVALID_ARG;
     s->in_flight = false;
     s->size = 0;
     free_list_.push_back(s);

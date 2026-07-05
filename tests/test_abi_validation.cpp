@@ -6,8 +6,61 @@
 #include "doctest.h"
 #include "auris/auris.h"
 
+#include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <vector>
+
+// --- Tier-1 hardening regressions (config bounds + push bounds) -------------
+
+TEST_CASE("auris_create rejects absurd duration fields (would OOM the worker)") {
+    auris_config_t base{};
+    auris_config_defaults(&base);
+    base.backend = AURIS_BACKEND_HOST_PCM;
+    auris_engine_t* e = nullptr;
+
+    SUBCASE("pre_roll_ms")           { base.pre_roll_ms = 0xFFFFFFFFu; }
+    SUBCASE("post_roll_ms")          { base.post_roll_ms = 0xFFFFFFFFu; }
+    SUBCASE("anomaly_background_ms") { base.anomaly_background_ms = 0xFFFFFFFFu; }
+    SUBCASE("segment_max_ms")        { base.segment_max_ms = 0xFFFFFFFFu; }
+    SUBCASE("vad_hangover_ms")       { base.vad_hangover_ms = 0xFFFFFFFFu; }
+
+    CHECK(auris_create(&base, &e) == AURIS_ERR_INVALID_ARG);
+    CHECK(e == nullptr);
+}
+
+TEST_CASE("auris_create rejects non-finite / out-of-range float config") {
+    auris_config_t base{};
+    auris_config_defaults(&base);
+    base.backend = AURIS_BACKEND_HOST_PCM; // anomaly on by default
+    auris_engine_t* e = nullptr;
+
+    SUBCASE("NaN z-score")      { base.anomaly_rms_z  = std::nanf(""); }
+    SUBCASE("infinite z-score") { base.anomaly_flux_z = INFINITY; }
+    SUBCASE("negative z-score") { base.anomaly_rms_z  = -1.0f; }
+
+    CHECK(auris_create(&base, &e) == AURIS_ERR_INVALID_ARG);
+    CHECK(e == nullptr);
+}
+
+TEST_CASE("auris_push_pcm rejects frame_count beyond ring capacity (no OOB read)") {
+    auris_config_t cfg{};
+    auris_config_defaults(&cfg);
+    cfg.backend         = AURIS_BACKEND_HOST_PCM;
+    cfg.enable_vad      = 0;
+    cfg.enable_anomaly  = 0;
+    cfg.pcm_ring_frames = 1u << 14; // 16384 samples
+    auris_engine_t* e = nullptr;
+    REQUIRE(auris_create(&cfg, &e) == AURIS_OK);
+    REQUIRE(auris_start(e) == AURIS_OK);
+
+    std::vector<int16_t> buf(320, 0);
+    CHECK(auris_push_pcm(e, buf.data(), 1u << 20, 0) == AURIS_ERR_INVALID_ARG);
+    CHECK(auris_push_pcm(e, buf.data(), 320, 0) == AURIS_OK);
+
+    auris_stop(e);
+    auris_destroy(e);
+}
 
 TEST_CASE("auris_config_defaults(NULL) returns INVALID_ARG") {
     CHECK(auris_config_defaults(nullptr) == AURIS_ERR_INVALID_ARG);

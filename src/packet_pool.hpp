@@ -42,6 +42,7 @@ public:
         uint32_t                   flags         = 0;
         auris_codec_t              codec         = AURIS_CODEC_PCM_S16LE;
         uint32_t                   index         = 0;  // self-index, set at init
+        uint32_t                   generation    = 0;  // bumped each drain (ABA guard)
         bool                       in_flight     = false; // drained, awaiting release
     };
 

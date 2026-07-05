@@ -14,6 +14,7 @@
 #include "auris_log.hpp"
 
 #include <chrono>
+#include <cmath>
 #include <cstring>
 #include <memory>
 #include <new>
@@ -94,6 +95,44 @@ auris_status_t validate_config(const auris_config_t& c) {
         c.pcm_ring_frames > kMaxPcmRingFrames)   return AURIS_ERR_INVALID_ARG;
     if (c.packet_queue_capacity == 0 ||
         c.packet_queue_capacity > kMaxPacketQueueCapacity) return AURIS_ERR_INVALID_ARG;
+
+    // Duration fields (ms) become frame counts and, for pre-roll and the anomaly
+    // background window, buffer allocations on the worker thread. Without a bound
+    // a value like UINT32_MAX allocates gigabytes and throws bad_alloc on the
+    // worker (which cannot surface it through a status code). Cap generously:
+    // 300 s bounds every derived allocation to tens of MB.
+    constexpr uint32_t kMaxDurationMs = 300000u;   // 5 minutes
+    if (c.pre_roll_ms             > kMaxDurationMs ||
+        c.post_roll_ms            > kMaxDurationMs ||
+        c.vad_hangover_ms         > kMaxDurationMs ||
+        c.anomaly_background_ms   > kMaxDurationMs ||
+        c.segment_max_ms          > kMaxDurationMs ||
+        c.sound_class_interval_ms > kMaxDurationMs) {
+        return AURIS_ERR_INVALID_ARG;
+    }
+
+    // Float fields must be finite; a NaN makes every threshold comparison in a
+    // detector false, and -inf makes an anomaly fire on every frame — a silent
+    // detection-integrity failure. Range-check only the fields whose detector is
+    // active so a garbage-but-unused field never rejects a valid config.
+    if (c.enable_vad && vad_tier == AURIS_VAD_NEURAL) {
+        if (!std::isfinite(c.vad_neural_threshold) ||
+            c.vad_neural_threshold < 0.0f || c.vad_neural_threshold > 1.0f) {
+            return AURIS_ERR_INVALID_ARG;
+        }
+    }
+    if (c.enable_anomaly) {
+        if (!std::isfinite(c.anomaly_rms_z)  || c.anomaly_rms_z  < 0.0f ||
+            !std::isfinite(c.anomaly_flux_z) || c.anomaly_flux_z < 0.0f) {
+            return AURIS_ERR_INVALID_ARG;
+        }
+    }
+    if (c.enable_sound_class) {
+        if (!std::isfinite(c.sound_class_threshold) ||
+            c.sound_class_threshold < 0.0f || c.sound_class_threshold > 1.0f) {
+            return AURIS_ERR_INVALID_ARG;
+        }
+    }
 
     if (vad_tier == AURIS_VAD_FAST) {
         if (c.vad_aggressiveness < 0 || c.vad_aggressiveness > 3) {
@@ -228,7 +267,7 @@ void emit_event(auris_engine* e, const auris_event_t& evt) {
 // ANOMALY event type.
 // ----------------------------------------------------------------------------
 
-void worker_loop(auris_engine* e) {
+void worker_run(auris_engine* e) {
     const uint32_t           frame_samples = samples_per_frame(e->cfg);
     std::vector<int16_t>     scratch(frame_samples);
     uint64_t                 last_seen_wake     = 0;
@@ -604,6 +643,29 @@ void worker_loop(auris_engine* e) {
     }
 }
 
+// Thread entry. The ABI promises no C++ exception ever escapes the library, but
+// worker_run allocates (scratch/pre-roll buffers, event deque, detector/encoder
+// init) on a library-spawned thread — an escaping exception here would call
+// std::terminate and kill the HOST process. Catch everything, flag the engine
+// fatal, and surface it as a backend error the host can react to.
+void worker_loop(auris_engine* e) noexcept {
+    try {
+        worker_run(e);
+    } catch (...) {
+        e->worker_fatal.store(true, std::memory_order_release);
+        try {
+            auris_event_t evt{};
+            evt.type         = AURIS_EVT_BACKEND_ERROR;
+            evt.reason_mask  = static_cast<uint32_t>(AURIS_ERR_INTERNAL);
+            evt.timestamp_us = e->last_capture_ts_us.load(std::memory_order_relaxed);
+            emit_event(e, evt);
+        } catch (...) {
+            // The error reporter itself may throw (deque alloc); never let that
+            // escape the catch handler.
+        }
+    }
+}
+
 } // namespace
 
 // ============================================================================
@@ -736,6 +798,7 @@ AURIS_API auris_status_t auris_create(const auris_config_t* cfg,
 AURIS_API void auris_destroy(auris_engine_t* engine) {
     if (engine == nullptr) return;
     try {
+        std::lock_guard lk(engine->lifecycle_mu);
         if (engine->running.load(std::memory_order_acquire)) {
             if (engine->capture_backend) {
                 engine->capture_backend->stop();
@@ -756,6 +819,7 @@ AURIS_API void auris_destroy(auris_engine_t* engine) {
 
 AURIS_API auris_status_t auris_start(auris_engine_t* e) {
     if (e == nullptr) return AURIS_ERR_INVALID_ARG;
+    std::lock_guard lk(e->lifecycle_mu);
     if (e->running.load(std::memory_order_acquire)) return AURIS_ERR_ALREADY_RUNNING;
     try {
         e->stop_requested.store(false, std::memory_order_release);
@@ -798,6 +862,7 @@ AURIS_API auris_status_t auris_start(auris_engine_t* e) {
 
 AURIS_API auris_status_t auris_stop(auris_engine_t* e) {
     if (e == nullptr) return AURIS_ERR_INVALID_ARG;
+    std::lock_guard lk(e->lifecycle_mu);
     if (!e->running.load(std::memory_order_acquire)) return AURIS_ERR_NOT_RUNNING;
     try {
         // 1. Stop capture first. backend->stop() blocks until the data
@@ -900,8 +965,15 @@ AURIS_API auris_status_t auris_push_pcm(auris_engine_t* e,
                                         uint64_t        capture_ts_us) {
     if (e == nullptr || samples == nullptr) return AURIS_ERR_INVALID_ARG;
     if (e->cfg.backend != AURIS_BACKEND_HOST_PCM) return AURIS_ERR_INVALID_STATE;
+    if (e->worker_fatal.load(std::memory_order_acquire)) return AURIS_ERR_INTERNAL;
     if (!e->running.load(std::memory_order_acquire)) return AURIS_ERR_NOT_RUNNING;
     if (frame_count == 0) return AURIS_OK;
+    // Bound the sample count to the ring capacity. The ABI can't see the real
+    // length of `samples`, so a caller that lies (frame_count far larger than
+    // the buffer) would make the ring memcpy read out of bounds. Rejecting an
+    // impossible count turns that into a clean error and also stops a single
+    // oversized push from silently dropping most of itself while returning OK.
+    if (frame_count > e->pcm_ring.capacity()) return AURIS_ERR_INVALID_ARG;
 
     engine_ingest_pcm(e, samples, frame_count, capture_ts_us);
     return AURIS_OK;

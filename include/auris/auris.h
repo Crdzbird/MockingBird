@@ -46,6 +46,15 @@
  *    multiple host threads at once on the same engine. The host is responsible
  *    for serializing these calls if it wishes to fan out.
  *
+ *    // CONTRACT  Lifecycle calls must be externally serialized.
+ *    auris_create / auris_start / auris_stop / auris_push_pcm / auris_get_stats
+ *    and especially auris_destroy must not overlap in time on the same engine.
+ *    auris_destroy FREES the engine: calling it while any other call is still in
+ *    flight (a push in progress, a drain on another thread) is a use-after-free
+ *    the library cannot defend against — the guard protecting it lives inside the
+ *    object being freed. start/stop are internally serialized against each other
+ *    (no double-join), but the host still owns the destroy ordering.
+ *
  * 5. // CONTRACT  Event callback discipline.
  *    The callback registered via auris_set_event_callback fires on T2
  *    (the worker thread). It MUST be non-blocking and MUST NOT re-enter the
@@ -312,9 +321,13 @@ typedef struct auris_event {
     auris_event_type_t  type;
     uint64_t            segment_id;           /* 0 if not segment-bound */
     uint64_t            timestamp_us;         /* capture clock */
-    uint32_t            reason_mask;          /* AURIS_ANOMALY_* for ANOMALY;
-                                               * (auris_status_t cast) for
-                                               * BACKEND_ERROR */
+    uint32_t            reason_mask;          /* ANOMALY: AURIS_ANOMALY_* bits.
+                                               * SOUND_CLASS: YAMNet class index.
+                                               * BACKEND_ERROR: an auris_status_t
+                                               *   stored as-is; REINTERPRET the
+                                               *   bits as int32_t to recover the
+                                               *   negative code (e.g. 0xFFFFFFFC
+                                               *   == AURIS_ERR_BACKEND -4). */
     float               confidence;           /* 0..1 where meaningful */
     uint32_t            _reserved;
 } auris_event_t;

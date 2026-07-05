@@ -109,7 +109,11 @@ public:
 
         sample_rate_   = cfg.sample_rate_hz;
         frame_samples_ = (cfg.sample_rate_hz / 1000u) * cfg.frame_ms;
-        buf_.reserve(kSileroWindow + frame_samples_);
+        // Silero v5 fixes the analysis window per rate: 512 samples at 16 kHz,
+        // 256 at 8 kHz. Feeding 512 samples at 8 kHz mis-shapes the graph input
+        // and the model throws or returns garbage.
+        window_        = (cfg.sample_rate_hz == 16000) ? size_t{512} : size_t{256};
+        buf_.reserve(window_ + frame_samples_);
         state_.assign(kStateDim, 0.0f);
         threshold_     = (cfg.vad_neural_threshold > 0.0f &&
                          cfg.vad_neural_threshold < 1.0f)
@@ -143,12 +147,12 @@ public:
         }
 
         // Drain windows until we cannot form another.
-        while (buf_.size() >= kSileroWindow) {
+        while (buf_.size() >= window_) {
             cached_active_ = run_inference_(buf_.data());
             // Slide the buffer forward by one window. v1 keeps no overlap;
             // a refinement can use 50% overlap for tighter decisions.
             buf_.erase(buf_.begin(),
-                       buf_.begin() + static_cast<std::ptrdiff_t>(kSileroWindow));
+                       buf_.begin() + static_cast<std::ptrdiff_t>(window_));
         }
 
         r.active = cached_active_;
@@ -164,12 +168,12 @@ private:
             Ort::MemoryInfo mem =
                 Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
 
-            // input: [1, 512]
-            const std::array<int64_t, 2> input_shape{1, static_cast<int64_t>(kSileroWindow)};
+            // input: [1, window_] (512 @ 16 kHz, 256 @ 8 kHz)
+            const std::array<int64_t, 2> input_shape{1, static_cast<int64_t>(window_)};
             Ort::Value input_tensor = Ort::Value::CreateTensor<float>(
                 mem,
                 const_cast<float*>(samples_512),
-                kSileroWindow,
+                window_,
                 input_shape.data(),
                 input_shape.size());
 
@@ -255,6 +259,7 @@ private:
     std::vector<float>            state_;
     uint32_t                      sample_rate_   = 0;
     uint32_t                      frame_samples_ = 0;
+    size_t                        window_        = kSileroWindow;  // per-rate (512@16k, 256@8k)
     float                         threshold_     = 0.5f;
     float                         neg_threshold_ = 0.35f;
     float                         last_p_        = 0.0f;

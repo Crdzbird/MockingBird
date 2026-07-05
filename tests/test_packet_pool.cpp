@@ -62,6 +62,36 @@ TEST_CASE("PacketPool acquire / commit / drain / release round trip") {
     CHECK(s2 != nullptr);
 }
 
+TEST_CASE("PacketPool rejects stale-copy release after slot reuse (ABA guard)") {
+    // Single slot forces reuse: the second checkout lands on the same index and
+    // buffer as the first, so only the generation distinguishes them.
+    PacketPool p(/*pool_capacity=*/1, /*queue_capacity=*/1, /*max_payload_bytes=*/32);
+
+    // Checkout #1, then keep a STALE copy of the packet and release the original.
+    auto* s1 = p.acquire();
+    fill_slot(s1, 0xAA, /*seg*/ 1, 0, 16);
+    CHECK_FALSE(p.commit(s1));
+    auris_packet_t pkt1{};
+    REQUIRE(p.drain(&pkt1));
+    const auris_packet_t stale = pkt1;      // host stashes a copy
+    CHECK(p.release(&pkt1) == AURIS_OK);
+
+    // Checkout #2 reuses the slot (same buffer pointer, bumped generation).
+    auto* s2 = p.acquire();
+    fill_slot(s2, 0xBB, /*seg*/ 2, 0, 16);
+    CHECK_FALSE(p.commit(s2));
+    auris_packet_t pkt2{};
+    REQUIRE(p.drain(&pkt2));
+
+    // Aliasing precondition: the stale copy still points at the current buffer.
+    CHECK(stale.data == pkt2.data);
+    // Releasing the stale copy would free a slot the current holder still
+    // borrows — the generation mismatch must reject it.
+    CHECK(p.release(&stale) == AURIS_ERR_INVALID_ARG);
+    // The genuine current packet still releases cleanly.
+    CHECK(p.release(&pkt2) == AURIS_OK);
+}
+
 TEST_CASE("PacketPool commit drops OLDEST when ready queue is at capacity") {
     // pool_capacity > queue_capacity so the worker can still acquire a slot
     // after the ready queue is full. The extra slot is the "borrow budget"
