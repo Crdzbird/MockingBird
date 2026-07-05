@@ -14,6 +14,7 @@
 import 'dart:async';
 import 'dart:ffi' as ffi;
 import 'dart:io' show File;
+import 'dart:typed_data';
 
 import 'package:auris_platform_interface/auris_platform_interface.dart';
 import 'package:ffi/ffi.dart';
@@ -75,6 +76,31 @@ class AurisEventRecord {
       'conf=${confidence.toStringAsFixed(2)}';
 }
 
+/// One encoded audio packet drained from the engine. [data] is a Dart-owned
+/// copy of the bytes — the native zero-copy borrow is released immediately
+/// after the copy, so the packet is safe to keep and forward.
+class AurisPacket {
+  const AurisPacket({
+    required this.segmentId,
+    required this.ptsUs,
+    required this.captureTsUs,
+    required this.flags,
+    required this.codec,
+    required this.data,
+  });
+
+  final int segmentId;
+  final int ptsUs;
+  final int captureTsUs;
+  final int flags;
+  final auris_codec codec;
+  final Uint8List data;
+
+  @override
+  String toString() =>
+      'AurisPacket(segment=$segmentId pts=$ptsUs ${codec.name} ${data.length}B)';
+}
+
 /// Configuration shape mirrored from auris_config_t. Every detector knob is
 /// surfaced so callers can tune sensitivity per detector or, more simply,
 /// via [AurisConfig.sensitive] for a single 0..1 dial that drives all of
@@ -104,6 +130,15 @@ class AurisConfig {
     this.soundClassModelPath,
     this.soundClassThreshold = 0.4,
     this.soundClassIntervalMs = 500,
+    // --- Segmentation + encoder + queues (parity with the C ABI / Go) ---
+    this.preRollMs = 300,
+    this.postRollMs = 300,
+    this.segmentMaxMs = 60000,
+    this.opusBitrateBps = 32000,
+    this.opusVbr = true,
+    this.opusComplexity = 5,
+    this.pcmRingFrames = 16384,
+    this.packetQueueCapacity = 256,
   });
 
   /// Build a config from a single [sensitivity] dial in 0..1, where 0 is the
@@ -233,6 +268,31 @@ class AurisConfig {
   /// Inference cadence in milliseconds. Smaller = more responsive but more
   /// CPU. 0 falls back to 500.
   final int soundClassIntervalMs;
+
+  /// Audio buffered before a segment trigger, emitted as PREROLL packets (ms).
+  final int preRollMs;
+
+  /// Audio kept after a segment closes, emitted as POSTROLL packets (ms).
+  final int postRollMs;
+
+  /// Hard cap on a single segment's length (ms); a longer segment is split.
+  final int segmentMaxMs;
+
+  /// Opus target bitrate (bps). Only used when [codec] is
+  /// [auris_codec.AURIS_CODEC_OPUS].
+  final int opusBitrateBps;
+
+  /// Opus variable-bitrate toggle.
+  final bool opusVbr;
+
+  /// Opus complexity 0..10 (higher = better quality, more CPU).
+  final int opusComplexity;
+
+  /// Capacity of the capture→worker PCM ring, in samples.
+  final int pcmRingFrames;
+
+  /// Capacity of the worker→host packet queue (drop-oldest when full).
+  final int packetQueueCapacity;
 }
 
 /// Broad semantic category derived from a YAMNet AudioSet class index.
@@ -408,7 +468,18 @@ class AurisEngine {
         ..enable_anomaly = config.enableAnomaly ? 1 : 0
         ..anomaly_rms_z = config.anomalyRmsZ
         ..anomaly_flux_z = config.anomalyFluxZ
-        ..anomaly_background_ms = config.anomalyBackgroundMs;
+        ..anomaly_background_ms = config.anomalyBackgroundMs
+        // Segmentation
+        ..pre_roll_ms = config.preRollMs
+        ..post_roll_ms = config.postRollMs
+        ..segment_max_ms = config.segmentMaxMs
+        // Encoder
+        ..opus_bitrate_bps = config.opusBitrateBps
+        ..opus_vbr = config.opusVbr ? 1 : 0
+        ..opus_complexity = config.opusComplexity
+        // Queues
+        ..pcm_ring_frames = config.pcmRingFrames
+        ..packet_queue_capacity = config.packetQueueCapacity;
 
       // Neural VAD model path. Borrowed by auris_create; the engine copies
       // any string it needs to retain, so freeing right after returns is
@@ -466,13 +537,20 @@ class AurisEngine {
   bool _disposed = false;
 
   final _events = StreamController<AurisEventRecord>.broadcast();
+  final _packets = StreamController<AurisPacket>.broadcast();
   final _stats = StreamController<AurisStatsSnapshot>.broadcast();
 
   /// Stream of events observed by the worker thread.
   Stream<AurisEventRecord> get events => _events.stream;
 
+  /// Stream of encoded audio packets (each carries a Dart-owned byte copy).
+  Stream<AurisPacket> get packets => _packets.stream;
+
   /// Stream of stats snapshots taken on the polling interval.
   Stream<AurisStatsSnapshot> get stats => _stats.stream;
+
+  /// The configuration this engine was created with.
+  AurisConfig get config => _config;
 
   /// True once [start] has succeeded and before [stop] has been called.
   bool get isRunning => _running;
@@ -508,20 +586,28 @@ class AurisEngine {
   Future<void> dispose() async {
     if (_disposed) return;
     if (_running) stop();
+    _disposed = true;
     _bindings.auris_destroy(_engine);
     _engine = ffi.nullptr;
-    _disposed = true;
     await _events.close();
+    await _packets.close();
     await _stats.close();
   }
 
   // --- polling ------------------------------------------------------------
 
   void _poll() {
-    if (_disposed) return;
-    _drainEvents();
-    _drainPackets();
-    _emitStats();
+    if (_disposed || _engine == ffi.nullptr) return;
+    // A native error inside the timer callback would otherwise escape to the
+    // isolate's unhandled-error zone — invisible to stream listeners — and the
+    // timer would keep re-throwing. Forward it onto the streams instead.
+    try {
+      _drainEvents();
+      _drainPackets();
+      _emitStats();
+    } catch (e, st) {
+      _events.addError(e, st);
+    }
   }
 
   void _drainEvents() {
@@ -560,12 +646,26 @@ class AurisEngine {
         if (s != auris_status.AURIS_OK) {
           throw AurisException('auris_drain', s);
         }
-        // v1: we don't ship bytes to the host yet (no transport). Just
-        // recycle the slot so the worker can keep producing.
+        // // FFI-BOUNDARY  data is a const borrow into the engine's pool that
+        // becomes invalid the instant auris_release returns. Copy it into a
+        // Dart-owned Uint8List FIRST, then release, then emit the copy.
+        final p = pkt.ref;
+        final view = (p.size > 0 && p.data != ffi.nullptr)
+            ? p.data.asTypedList(p.size)
+            : Uint8List(0);
+        final packet = AurisPacket(
+          segmentId: p.segment_id,
+          ptsUs: p.pts_us,
+          captureTsUs: p.capture_ts_us,
+          flags: p.flags,
+          codec: p.codec,
+          data: Uint8List.fromList(view), // copy out of the pool
+        );
         final r = _bindings.auris_release(_engine, pkt);
         if (r != auris_status.AURIS_OK) {
           throw AurisException('auris_release', r);
         }
+        _packets.add(packet);
       }
     } finally {
       calloc.free(pkt);
