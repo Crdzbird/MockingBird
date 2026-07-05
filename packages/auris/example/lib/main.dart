@@ -29,6 +29,36 @@ class AurisDemoApp extends StatelessWidget {
   }
 }
 
+/// A named bundle of detector settings — shows how the *same* engine adapts to
+/// very different jobs from one config. The sensitivity slider still fine-tunes
+/// whichever preset is active.
+class _Preset {
+  const _Preset(
+    this.label,
+    this.icon, {
+    this.sensitivity = 0.6,
+    this.neural = true,
+    this.vad = true,
+    this.anomaly = true,
+    this.soundClass = true,
+    this.denoise = false,
+  });
+  final String label;
+  final IconData icon;
+  final double sensitivity;
+  final bool neural, vad, anomaly, soundClass, denoise;
+}
+
+const _presets = <_Preset>[
+  _Preset('Balanced', Icons.tune), // everything on, neural VAD
+  _Preset('Voice only', Icons.record_voice_over,
+      anomaly: false, soundClass: false, denoise: true),
+  _Preset('Everything', Icons.hearing, sensitivity: 0.75),
+  _Preset('Anomaly watch', Icons.warning_amber_rounded,
+      vad: false, soundClass: false, sensitivity: 0.8),
+  _Preset('Sound ID', Icons.graphic_eq, vad: false, anomaly: false),
+];
+
 class _HomePage extends StatefulWidget {
   const _HomePage();
 
@@ -54,6 +84,7 @@ class _HomePageState extends State<_HomePage> {
   // AurisConfig.sensitive. 0 = conservative, 1 = catches everything.
   double _sensitivity = 0.6;
   bool _denoise = false;
+  int _presetIndex = 0;
 
   // Multilingual human-voice state, driven by Silero VAD SPEECH_BEGIN/END
   // (language-agnostic). True between begin and end.
@@ -134,17 +165,23 @@ class _HomePageState extends State<_HomePage> {
         backend = auris_backend.AURIS_BACKEND_MINIAUDIO;
       }
 
-      // One sensitivity dial drives every detector. NEURAL VAD (Silero) is
-      // language-agnostic, so voice detection is multilingual regardless of
-      // the dial. All 521 YAMNet classes are recognized + anomaly gate on.
+      // The active preset picks WHICH detectors run; the sensitivity slider
+      // tunes HOW eager they are. NEURAL VAD (Silero) is language-agnostic, so
+      // voice detection is multilingual regardless of the dial.
+      final p = _presets[_presetIndex];
       final engine = AurisEngine.create(
         AurisConfig.sensitive(
           _sensitivity,
           backend: backend,
-          vadTier: auris_vad_tier.AURIS_VAD_NEURAL,
+          vadTier: p.neural
+              ? auris_vad_tier.AURIS_VAD_NEURAL
+              : auris_vad_tier.AURIS_VAD_FAST,
+          enableVad: p.vad,
+          enableAnomaly: p.anomaly,
+          enableSoundClass: p.soundClass,
+          enableRnnoise: p.denoise || _denoise,
           neuralVadModelPath: sileroPath,
           soundClassModelPath: yamnetPath,
-          enableRnnoise: _denoise,
         ),
       );
 
@@ -252,6 +289,19 @@ class _HomePageState extends State<_HomePage> {
     }
   }
 
+  /// Switch to a different detector recipe; seeds the slider with the preset's
+  /// suggested sensitivity and recreates the engine if running.
+  Future<void> _selectPreset(int i) async {
+    setState(() {
+      _presetIndex = i;
+      _sensitivity = _presets[i].sensitivity;
+    });
+    if (_isRunning) {
+      await _stop();
+      await _start();
+    }
+  }
+
   /// Toggle RNNoise noise suppression; recreates the engine if running.
   Future<void> _setDenoise(bool v) async {
     setState(() => _denoise = v);
@@ -295,7 +345,23 @@ class _HomePageState extends State<_HomePage> {
                 ],
               ),
               const SizedBox(height: 12),
-              // Sensitivity dial — one knob drives every detector.
+              // Presets — the same engine, very different jobs. Tapping one
+              // recreates the engine with that detector combination.
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  for (var i = 0; i < _presets.length; i++)
+                    ChoiceChip(
+                      avatar: Icon(_presets[i].icon, size: 18),
+                      label: Text(_presets[i].label),
+                      selected: _presetIndex == i,
+                      onSelected: (_) => _selectPreset(i),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Sensitivity dial — one knob tunes the active preset's detectors.
               Row(
                 children: [
                   const Icon(Icons.tune, size: 18),
