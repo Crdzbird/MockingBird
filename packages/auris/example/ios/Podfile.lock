@@ -30,12 +30,12 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
 
 SPEC CHECKSUMS:
-  auris_ios: 42f31245f7e3e8a20c0485d61791a89fddc5c6a9
-  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  auris_ios: 3bdea075f01e65e5c63e14864b2c6df6c125ee98
+  Flutter: 71a624a5bc0c04062bf19101d501e466baf2fb47
   integration_test: 252f60fa39af5e17c3aa9899d35d908a0721b573
   onnxruntime-c: 07cfff40dda7e1c54a4350bb2ad226c63150fce3
   permission_handler_apple: ee2fe0fd04551b304eb002714ff067c371c822ed
 
-PODFILE CHECKSUM: 7d2bbdc6fd2b74eb561e514c8beea499d76f4cf2
+PODFILE CHECKSUM: 5c6e3d43aeaf1e6adffb282f21350f209f291bb4
 
 COCOAPODS: 1.16.2

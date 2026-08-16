@@ -105,7 +105,10 @@ Pod::Spec.new do |s|
       '"$(PODS_TARGET_SRCROOT)/Sources/third_party/libfvad/src"',
       '"$(PODS_TARGET_SRCROOT)/Sources/third_party/pffft"',
       '"$(PODS_TARGET_SRCROOT)/Sources/third_party/rnnoise/include"',
-      '"$(PODS_TARGET_SRCROOT)/Sources/third_party/rnnoise/src"',
+      # NOTE: rnnoise/src is deliberately NOT here. RNNoise vendors a fork of
+      # celt (arch.h, pitch.h, kiss_fft.h, celt_lpc.h) that SHADOWS opus'
+      # headers of the same name and silently miscompiles opus. RNNoise's own
+      # sources include them relative to themselves, so the path is not needed.
       '"$(PODS_TARGET_SRCROOT)/Sources/third_party/opus/include"',
       '"$(PODS_TARGET_SRCROOT)/Sources/third_party/opus/celt"',
       '"$(PODS_TARGET_SRCROOT)/Sources/third_party/opus/silk"',
