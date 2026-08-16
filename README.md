@@ -236,14 +236,15 @@ running files or datasets through the same pipeline is a few lines.
 
 ## Cross-binding conformance
 
-[`examples/conformance`](examples/conformance) is a bidirectional Go ⇄ Dart
-differential test: each peer feeds deterministic audio to the other, processes
-it through its own binding over the shared engine, and verifies the two produce
-**byte-identical** encoded packets, events, and timestamps — proving the
-language surfaces stay in sync.
+[`examples/conformance`](examples/conformance) is a bidirectional differential
+test across **every pair** of bindings (Go ⇄ Dart ⇄ Python): each peer feeds
+deterministic audio to the other, processes it through its own binding over the
+shared engine, and verifies the two produce **byte-identical** encoded packets,
+events, and timestamps — proving all three language surfaces stay in sync.
 
 ```bash
-cd examples/conformance && ./run.sh   # → ✅ CONFORMANCE PASS … both ways
+cd examples/conformance && ./run.sh
+# → ✅ conformance passed — every binding pair is byte-identical
 ```
 
 ---

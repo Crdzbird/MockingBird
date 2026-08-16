@@ -122,20 +122,23 @@ jobs:
         run: flutter test
 
   # ---------------------------------------------------------------------------
-  # Cross-binding conformance: the Go and Dart peers exchange deterministic
-  # audio and must produce byte-identical packets/events/stats. Enforces that
-  # the two language surfaces stay in sync over the shared engine.
+  # Cross-binding conformance: every pair of bindings (Go/Dart/Python) exchanges
+  # deterministic audio and must produce byte-identical packets/events/stats.
+  # Enforces that all three language surfaces stay in sync over the shared engine.
   # ---------------------------------------------------------------------------
   conformance:
-    name: conformance (Go <-> Dart)
+    name: conformance (Go <-> Dart <-> Python)
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-      - name: Run conformance harness
+      - name: Run conformance harness (all pairs)
         run: examples/conformance/run.sh

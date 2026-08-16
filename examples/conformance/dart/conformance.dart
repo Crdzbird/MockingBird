@@ -297,7 +297,9 @@ String hex16(int v) => '0x${(v & 0xFFFFFFFFFFFFFFFF).toRadixString(16).padLeft(1
 String ok(bool b) => b ? 'MATCH ✓' : 'MISMATCH ✗';
 
 String resolveLib(List<String> args) {
-  if (args.length >= 2) return args[1];
+  // Positional args only — skip flags like --peer=<name>.
+  final positional = args.where((a) => !a.startsWith('--')).toList();
+  if (positional.length >= 2) return positional[1];
   final ext = Platform.isMacOS ? 'dylib' : (Platform.isWindows ? 'dll' : 'so');
   final base = Platform.script.resolve('../../../build/');
   for (final name in ['libauris.$ext', 'libauris.0.1.0.$ext']) {
@@ -332,7 +334,12 @@ Future<void> main(List<String> args) async {
   socket.setOption(SocketOption.tcpNoDelay, true);
   final reader = ByteReader(socket);
 
-  const name = 'dart', peerName = 'go';
+  // The peer name is cosmetic (log labels only). Any binding can be on the
+  // other end — the seeds belong to the ROLE, not the language.
+  const name = 'dart';
+  final peerName = args
+      .firstWhere((a) => a.startsWith('--peer='), orElse: () => '--peer=go')
+      .substring('--peer='.length);
   final own = genSignal(dartSeed);
   final expected = process(b, own);
   stdout.writeln('[$name] generated ${own.length} samples (seed ${hex16(dartSeed)}); '
@@ -372,7 +379,8 @@ Future<void> main(List<String> args) async {
   await socket.close();
 
   if (dirA && dirB) {
-    stdout.writeln('\n✅ CONFORMANCE PASS — Dart and Go produce byte-identical results both ways');
+    stdout.writeln('\n✅ CONFORMANCE PASS — Dart and $peerName produce '
+        'byte-identical results both ways');
   } else {
     stdout.writeln('\n❌ CONFORMANCE FAIL — divergence detected');
     exit(1);

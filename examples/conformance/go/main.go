@@ -314,6 +314,7 @@ func main() {
 	addr := flag.String("addr", ":9999", "listen address")
 	self := flag.Bool("self", false, "self-check determinism without networking")
 	dump := flag.Bool("dump", false, "process the go-seed signal and dump per-packet/event detail")
+	peer := flag.String("peer", "dart", "name of the dialing peer, for log labels only")
 	flag.Parse()
 
 	if *dump {
@@ -337,14 +338,14 @@ func main() {
 
 	ln, err := net.Listen("tcp", *addr)
 	must(err)
-	fmt.Printf("[go] listening on %s — start the Dart peer now\n", *addr)
+	fmt.Printf("[go] listening on %s — start the %s peer now\n", *addr, *peer)
 	conn, err := ln.Accept()
 	must(err)
 	defer conn.Close()
 
-	pass := runPeer(conn, "go", goSeed, dartSeed, "dart")
+	pass := runPeer(conn, "go", goSeed, dartSeed, *peer)
 	if pass {
-		fmt.Println("\n✅ CONFORMANCE PASS — Go and Dart produce byte-identical results both ways")
+		fmt.Printf("\n✅ CONFORMANCE PASS — Go and %s produce byte-identical results both ways\n", *peer)
 	} else {
 		fmt.Println("\n❌ CONFORMANCE FAIL — divergence detected")
 		os.Exit(1)

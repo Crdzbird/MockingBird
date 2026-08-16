@@ -1,27 +1,42 @@
-# Go ⇄ Dart/Flutter conformance harness
+# Cross-binding conformance harness (Go ⇄ Dart ⇄ Python)
 
-Proves that the **Go** binding and the **Dart/Flutter** binding, both driving the
-same native `libauris`, turn identical input audio into **byte-identical**
-output — same encoded audio (quality), same events (information), same
-timestamps and stats (sync). It's a bidirectional cross-language differential
-test.
+Proves that the **Go**, **Dart/Flutter**, and **Python** bindings — all driving
+the same native `libauris` — turn identical input audio into **byte-identical**
+output: same encoded audio (quality), same events (information), same timestamps
+and stats (sync). It's a bidirectional cross-language differential test, run
+across every pair.
 
 ```
 ./run.sh
 ```
 ```
+════════ Go <-> Dart ════════
 [go]   generated 32000 samples; my engine: 100 packets / 6 events / 7656 bytes, digest 0x88587912845f408a
 [dart] received 32000 samples from go; generator parity MATCH ✓ — processing through MY binding…
 [dart] my result for go's audio: 100 packets / 6 events / 7656 bytes, digest 0x88587912845f408a
 [go]   parity go-audio→dart: MATCH ✓   |   dart-audio→go: MATCH ✓
-✅ CONFORMANCE PASS — byte-identical results both ways
+-------- Go <-> Dart: PASS
+════════ Go <-> Python ════════      -------- Go <-> Python: PASS
+════════ Python <-> Dart ════════    -------- Python <-> Dart: PASS
+
+✅ conformance passed — every binding pair is byte-identical
 ```
+
+Run a subset with `PAIRS="go-python" ./run.sh`, or move the base port with
+`PORT=9931 ./run.sh`.
 
 ## How it works
 
-Two peers connect over TCP — the **Go peer** ([`go/`](go)) listens, the **Dart
-peer** ([`dart/`](dart)) dials. The Dart peer uses the exact FFI bindings the
-Flutter plugin ships, loaded via `DynamicLibrary.open` instead of static linkage.
+Two peers connect over TCP per run: one **listens**, one **dials**. The Go peer
+([`go/`](go)) listens, the Dart peer ([`dart/`](dart)) dials, and the Python peer
+([`python/`](python)) does **either**, which is what makes all three pairings
+work. The Dart peer uses the exact FFI bindings the Flutter plugin ships (loaded
+via `DynamicLibrary.open` rather than static linkage); the Python peer uses the
+ctypes binding.
+
+The seeds belong to the **role**, not the language: the listener always generates
+from `0xA1A1…` and the dialer from `0xB2B2…`. That keeps every pairing
+compatible without any peer needing to know which language is on the other end.
 
 Each peer, symmetrically:
 
@@ -72,21 +87,34 @@ exactly what surfaced that timestamp determinism fix; see
 
 ## Running manually
 
-```bash
-# terminal 1 — Go peer (listener)
-cd go && go run . -addr 127.0.0.1:9999
+Any listener paired with any dialer:
 
-# terminal 2 — Dart peer (dialer)
-cd dart && dart pub get && dart run conformance.dart 127.0.0.1:9999
+```bash
+# listener (pick one)
+cd go     && go run . -addr 127.0.0.1:9999 -peer python
+python3 python/conformance.py listen 9999 dart
+
+# dialer (pick one)
+cd dart   && dart pub get && dart run conformance.dart 127.0.0.1:9999 --peer=go
+python3 python/conformance.py dial 127.0.0.1:9999 go
 ```
+
+The trailing peer name is cosmetic — it only labels the log output.
 
 Diagnostics:
 
 ```bash
-go run . -self                 # Go determinism: same signal twice → same digest
-go run . -dump                 # dump per-packet / per-event detail for the go-seed
-dart run conformance.dart dump # same dump from Dart — diff the two to localize any divergence
+go run . -self                       # determinism: same signal twice → same digest
+python3 python/conformance.py self   # ...from Python
+
+go run . -dump                       # per-packet / per-event detail
+dart run conformance.dart dump       # ...from Dart
+python3 python/conformance.py dump   # ...from Python
 ```
 
-Both peers auto-locate `build/libauris.{dylib,so}`; pass an explicit path to the
-Dart peer as a second argument if yours lives elsewhere.
+`diff` two dumps to localize a divergence to a specific field — that is exactly
+how the non-deterministic packet timestamps were found and fixed.
+
+Every peer auto-locates `build/libauris.{dylib,so}`. Override with an explicit
+path (Dart: second positional argument; Python: the `AURIS_LIBRARY_PATH`
+environment variable).
