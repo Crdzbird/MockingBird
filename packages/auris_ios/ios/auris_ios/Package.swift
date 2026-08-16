@@ -11,6 +11,16 @@
 //
 // The plugin keeps its podspec: Flutter supports both, and CocoaPods remains
 // the path that also wires up ONNX Runtime (see "Neural features" below).
+//
+// NEURAL FEATURES (current limitation): this package builds the core engine —
+// capture, RNNoise, fast VAD (libfvad), the anomaly gate, and Opus — but NOT
+// the ONNX-backed detectors. Silero neural VAD and YAMNet sound classification
+// need ONNX Runtime, which the podspec pulls in via the `onnxruntime-c` pod;
+// SwiftPM has no equivalent wired up here yet. Requesting AURIS_VAD_NEURAL or
+// enable_sound_class on an SPM build returns AURIS_ERR_UNSUPPORTED rather than
+// misbehaving. To get them, use the CocoaPods integration, or add
+// https://github.com/microsoft/onnxruntime-swift-package-manager as a
+// dependency and define AURIS_HAVE_NEURAL_VAD / AURIS_HAVE_SOUND_CLASS below.
 import PackageDescription
 
 // Opus ships SIMD variants, a fixed-point tree, tests, and demo programs with
@@ -116,8 +126,6 @@ let package = Package(
                 .define("AURIS_BUILDING", to: "1"),
                 .define("AURIS_HAVE_OPUS", to: "1"),
                 .define("AURIS_HAVE_RNNOISE", to: "1"),
-                // Neural VAD / YAMNet need ONNX Runtime, which the podspec
-                // supplies via the onnxruntime-c pod. See "Neural features".
                 .define("OPUS_BUILD", to: "1"),
                 .define("OPUS_DISABLE_INTRINSICS", to: "1"),
                 .define("VAR_ARRAYS", to: "1"),

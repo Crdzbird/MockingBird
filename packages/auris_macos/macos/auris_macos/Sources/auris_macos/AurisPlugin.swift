@@ -7,6 +7,15 @@
 
 import FlutterMacOS
 
+// Under Swift Package Manager the C engine is its own module (target
+// `auris_native`), so its declarations must be imported explicitly. Under
+// CocoaPods every source lands in one target and the pod's umbrella header
+// already exposes them, hence the canImport guard — the same file has to build
+// both ways while Flutter supports both integrations.
+#if canImport(auris_native)
+import auris_native
+#endif
+
 public class AurisPlugin: NSObject, FlutterPlugin {
   public static func register(with registrar: FlutterPluginRegistrar) {
     _ = registrar

@@ -63,3 +63,6 @@ pubspec.lock
 
 # ───────────────────────────── misc ─────────────────────────────────────
 *.log
+
+# SwiftPM build output inside the plugin packages
+.build/

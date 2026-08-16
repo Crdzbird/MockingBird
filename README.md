@@ -279,20 +279,28 @@ this section explains *why*, so they don't get accidentally removed.
      never-true guard, anchoring its transitive closure into the binary.
   2. The podspec adds `-Wl,-export_dynamic` to the **consumer** target, publishing those
      default-visibility symbols into the dynamic table.
-- **Swift Package Manager (iOS).** `auris_ios` ships a `Package.swift` alongside the
-  podspec, so it builds under either integration (Flutter supports both). SwiftPM
-  requires a target's sources to live inside the package, so
-  `ios/auris_ios/Sources/auris_native/` holds **symlinks** to the shared tree rather
-  than copies — the package cannot drift from the source of truth, and git stores 10
-  links instead of 10 MB. Two things are load-bearing:
+- **Swift Package Manager.** `auris_ios` and `auris_macos` each ship a `Package.swift`
+  alongside their podspec and build under either integration (Flutter supports both).
+  SwiftPM requires a target's sources to live inside the package, so
+  `<plugin>/Sources/auris_native/` holds **symlinks** to the shared tree rather than
+  copies — the package cannot drift from the source of truth, and git stores ~10 links
+  instead of 10 MB each. Three things are load-bearing:
   - `rnnoise/src` must **not** be on the header search path. RNNoise vendors a fork of
     celt (`arch.h`, `pitch.h`, `kiss_fft.h`, `celt_lpc.h`) that *shadows* opus' headers
     of the same name and silently miscompiles opus (mismatched `celt_inner_prod`
-    signatures, missing `celt_sig_assert`/`opus_fft`). Both podspecs had this latent
-    hazard too; it is now removed from all three.
+    signatures, missing `celt_sig_assert`/`opus_fft`). Both podspecs carried the same
+    latent hazard; it is now gone from all four build files.
   - Under SwiftPM the C engine is a separate module, so `AurisPlugin.swift` does
     `#if canImport(auris_native) import auris_native` — the CocoaPods build puts
     everything in one target and needs no import.
+  - **Feature tier.** The SPM packages build the core engine — capture, RNNoise, fast
+    VAD, anomaly, Opus — but *not* the ONNX-backed detectors. Silero neural VAD and
+    YAMNet need ONNX Runtime, which the podspecs supply via the `onnxruntime-c` pod
+    (that is why a CocoaPods build of the demo is 118 MB and an SPM one is 61 MB).
+    Requesting them on an SPM build returns `AURIS_ERR_UNSUPPORTED` rather than
+    misbehaving. For the full set use CocoaPods, or add
+    [onnxruntime-swift-package-manager](https://github.com/microsoft/onnxruntime-swift-package-manager)
+    and define `AURIS_HAVE_NEURAL_VAD` / `AURIS_HAVE_SOUND_CLASS`.
 - **Microphone permission & capture:**
   - **iOS** RemoteIO can't capture until an `AVAudioSession` (record category) is
     configured and activated — done in the capture backend. `permission_handler` needs

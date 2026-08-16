@@ -52,7 +52,7 @@ Pod::Spec.new do |s|
   CMD
 
   s.source_files = [
-    'Classes/**/*.{swift,h,m}',
+    'auris_macos/Sources/auris_macos/**/*.swift',
     'Sources/include/auris/*.h',
     'Sources/src/auris/**/*.{c,cpp,m,mm,h,hpp}',
     'Sources/third_party/miniaudio/miniaudio.h',
