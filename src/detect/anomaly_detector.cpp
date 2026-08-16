@@ -137,13 +137,7 @@ public:
         flux_stats_.init(window_frames);
         centroid_stats_.init(window_frames);
 
-        // Thresholds.
-        rms_threshold_ = cfg.anomaly_rms_z;
-        flux_threshold_ = cfg.anomaly_flux_z;
-        // Centroid uses the same flux z-threshold as a reasonable default;
-        // a separate knob can be added later without an ABI break (reserved
-        // slots remain in auris_config_t).
-        centroid_threshold_ = cfg.anomaly_flux_z;
+        apply_thresholds(cfg);
 
         // De-flicker hold (~150 ms): once an event trips, keep the gate
         // "active" for this many frames so one acoustic event surfaces as a
@@ -270,7 +264,21 @@ public:
         return r;
     }
 
+    // z-score thresholds are live-tunable; the rolling background stats, FFT
+    // setup, and de-flicker state are preserved, so retuning mid-stream only
+    // changes how far from the learned background counts as an event.
+    void retune(const auris_config_t& cfg) override { apply_thresholds(cfg); }
+
 private:
+    void apply_thresholds(const auris_config_t& cfg) {
+        rms_threshold_  = cfg.anomaly_rms_z;
+        flux_threshold_ = cfg.anomaly_flux_z;
+        // Centroid uses the same flux z-threshold as a reasonable default;
+        // a separate knob can be added later without an ABI break (reserved
+        // slots remain in auris_config_t).
+        centroid_threshold_ = cfg.anomaly_flux_z;
+    }
+
     void teardown() {
         if (setup_)    { pffft_destroy_setup(setup_); setup_    = nullptr; }
         if (padded_)   { pffft_aligned_free(padded_); padded_   = nullptr; }

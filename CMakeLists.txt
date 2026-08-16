@@ -346,6 +346,7 @@ if(AURIS_ENABLE_TESTS AND TARGET auris_static)
             tests/test_preroll_ring.cpp
             tests/test_abi_validation.cpp
             tests/test_lifecycle.cpp
+            tests/test_update_config.cpp
             tests/test_host_pcm.cpp
             tests/test_opus_encoder.cpp
             tests/test_detectors_golden.cpp

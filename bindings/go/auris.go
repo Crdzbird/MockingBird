@@ -185,6 +185,37 @@ func (e *Engine) PushPCM(samples []int16, captureTsUs uint64) error {
 	return nil
 }
 
+// UpdateConfig retunes a live engine in place — no destroy/recreate, no model
+// reload, and detector state (VAD hysteresis, the anomaly rolling background,
+// the classifier EMA) is preserved.
+//
+// Only the tunable subset is applied: EnableVAD, EnableAnomaly, EnableSoundClass,
+// VadAggressiveness, VadNeuralThreshold, VadHangoverMs, AnomalyRMSZ,
+// AnomalyFluxZ, and SoundClassThreshold. Every other field is structural and
+// must match what the engine was created with, so the usual pattern is to keep
+// the original Config, change a tunable field, and pass it back:
+//
+//	cfg.AnomalyRMSZ = 2.0
+//	err := engine.UpdateConfig(cfg)
+//
+// Returns an error if the config is invalid, a structural field differs, or it
+// tries to switch on a detector that was off at create time (it was never
+// constructed). Safe to call from any goroutine.
+func (e *Engine) UpdateConfig(cfg Config) error {
+	ccfg, free := cfg.toC()
+	defer free()
+
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	if e.c == nil {
+		return ErrClosed
+	}
+	if st := Status(C.auris_update_config(e.c, &ccfg)); st != StatusOK {
+		return st.err("auris_update_config")
+	}
+	return nil
+}
+
 // Stats snapshots the engine's observability counters.
 func (e *Engine) Stats() (Stats, error) {
 	e.mu.RLock()

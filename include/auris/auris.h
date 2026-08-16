@@ -427,6 +427,40 @@ AURIS_API auris_status_t auris_release(auris_engine_t*        engine,
                                        const auris_packet_t*  pkt);
 
 /* ============================================================================
+ * RUNTIME RECONFIGURATION
+ * ========================================================================== */
+
+/* Retune a RUNNING (or stopped) engine in place, without destroying it.
+ *
+ * Pass a full auris_config_t: the STRUCTURAL fields must match the ones the
+ * engine was created with, and only the TUNABLE subset is applied:
+ *
+ *   tunable    enable_vad, enable_anomaly, enable_sound_class,
+ *              vad_aggressiveness, vad_neural_threshold, vad_hangover_ms,
+ *              anomaly_rms_z, anomaly_flux_z, sound_class_threshold
+ *
+ *   structural everything else (backend, rate, channels, frame_ms, codec,
+ *              vad_tier, model paths, rnnoise, roll/segment/background/interval
+ *              durations, queue sizes, wait handle) — these size buffers, pick
+ *              backends, and load models, so they are fixed for the engine's
+ *              lifetime.
+ *
+ * The easiest correct call is: take the config you passed to auris_create,
+ * change a tunable field, and pass it back.
+ *
+ * Returns AURIS_ERR_INVALID_ARG if the config fails normal validation, if any
+ * structural field differs, or if it tries to switch ON a detector that was OFF
+ * at create time (that detector was never constructed, so it cannot start).
+ * Turning a detector off and back on again is supported.
+ *
+ * The change is applied by the worker between frames: detector state (VAD
+ * hysteresis, the anomaly rolling background, the classifier's EMA) is
+ * PRESERVED, so retuning mid-utterance does not restart detection or reload
+ * models. Safe to call from any thread; it does not block the worker. */
+AURIS_API auris_status_t auris_update_config(auris_engine_t*       engine,
+                                             const auris_config_t* cfg);
+
+/* ============================================================================
  * OBSERVABILITY
  * ========================================================================== */
 

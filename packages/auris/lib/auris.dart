@@ -441,77 +441,85 @@ class Auris {
 class AurisEngine {
   AurisEngine._(this._bindings, this._engine, this._config);
 
+  /// Marshals [config] into a freshly-allocated native `auris_config_t`.
+  ///
+  /// Returns the struct pointer plus the UTF-8 model-path buffers it borrows;
+  /// the caller MUST free all of them (the engine deep-copies any string it
+  /// retains, so freeing right after the native call returns is safe).
+  static ({
+    ffi.Pointer<auris_config_t> cfg,
+    ffi.Pointer<Utf8>? neuralPath,
+    ffi.Pointer<Utf8>? soundPath,
+  }) _marshalConfig(AurisBindings bindings, AurisConfig config) {
+    final cfgPtr = calloc<auris_config_t>();
+    _checkOk(bindings.auris_config_defaults(cfgPtr), 'auris_config_defaults');
+
+    // ffigen exposes enum-typed C fields as `<name>AsInt` setters with
+    // a read-only `<name>` getter that wraps the value in the Dart enum.
+    cfgPtr.ref
+      ..backendAsInt = config.backend.value
+      ..sample_rate_hz = config.sampleRateHz
+      ..frame_ms = config.frameMs
+      ..codecAsInt = config.codec.value
+      // Preprocess
+      ..enable_rnnoise = config.enableRnnoise ? 1 : 0
+      // VAD
+      ..enable_vad = config.enableVad ? 1 : 0
+      ..vad_tierAsInt = config.vadTier.value
+      ..vad_aggressiveness = config.vadAggressiveness
+      ..vad_neural_threshold = config.vadNeuralThreshold
+      ..vad_hangover_ms = config.vadHangoverMs
+      // Anomaly
+      ..enable_anomaly = config.enableAnomaly ? 1 : 0
+      ..anomaly_rms_z = config.anomalyRmsZ
+      ..anomaly_flux_z = config.anomalyFluxZ
+      ..anomaly_background_ms = config.anomalyBackgroundMs
+      // Segmentation
+      ..pre_roll_ms = config.preRollMs
+      ..post_roll_ms = config.postRollMs
+      ..segment_max_ms = config.segmentMaxMs
+      // Encoder
+      ..opus_bitrate_bps = config.opusBitrateBps
+      ..opus_vbr = config.opusVbr ? 1 : 0
+      ..opus_complexity = config.opusComplexity
+      // Queues
+      ..pcm_ring_frames = config.pcmRingFrames
+      ..packet_queue_capacity = config.packetQueueCapacity
+      // Sound classifier
+      ..enable_sound_class = config.enableSoundClass ? 1 : 0
+      ..sound_class_threshold = config.soundClassThreshold
+      ..sound_class_interval_ms = config.soundClassIntervalMs;
+
+    ffi.Pointer<Utf8>? neuralPath;
+    if (config.neuralVadModelPath != null &&
+        config.neuralVadModelPath!.isNotEmpty) {
+      neuralPath = config.neuralVadModelPath!.toNativeUtf8();
+      cfgPtr.ref.neural_vad_model_path = neuralPath.cast<ffi.Char>();
+    }
+    ffi.Pointer<Utf8>? soundPath;
+    if (config.soundClassModelPath != null &&
+        config.soundClassModelPath!.isNotEmpty) {
+      soundPath = config.soundClassModelPath!.toNativeUtf8();
+      cfgPtr.ref.sound_class_model_path = soundPath.cast<ffi.Char>();
+    }
+    return (cfg: cfgPtr, neuralPath: neuralPath, soundPath: soundPath);
+  }
+
   /// Constructs and immediately calls `auris_create`. Throws [AurisException]
   /// if the native side rejects the config.
   factory AurisEngine.create(AurisConfig config) {
     final bindings = AurisPlatform.instance.bindings;
-
-    final cfgPtr = calloc<auris_config_t>();
+    final m = _marshalConfig(bindings, config);
+    final cfgPtr = m.cfg;
     try {
-      _checkOk(bindings.auris_config_defaults(cfgPtr), 'auris_config_defaults');
-
-      // ffigen exposes enum-typed C fields as `<name>AsInt` setters with
-      // a read-only `<name>` getter that wraps the value in the Dart enum.
-      cfgPtr.ref
-        ..backendAsInt = config.backend.value
-        ..sample_rate_hz = config.sampleRateHz
-        ..frame_ms = config.frameMs
-        ..codecAsInt = config.codec.value
-        // Preprocess
-        ..enable_rnnoise = config.enableRnnoise ? 1 : 0
-        // VAD
-        ..enable_vad = config.enableVad ? 1 : 0
-        ..vad_tierAsInt = config.vadTier.value
-        ..vad_aggressiveness = config.vadAggressiveness
-        ..vad_neural_threshold = config.vadNeuralThreshold
-        ..vad_hangover_ms = config.vadHangoverMs
-        // Anomaly
-        ..enable_anomaly = config.enableAnomaly ? 1 : 0
-        ..anomaly_rms_z = config.anomalyRmsZ
-        ..anomaly_flux_z = config.anomalyFluxZ
-        ..anomaly_background_ms = config.anomalyBackgroundMs
-        // Segmentation
-        ..pre_roll_ms = config.preRollMs
-        ..post_roll_ms = config.postRollMs
-        ..segment_max_ms = config.segmentMaxMs
-        // Encoder
-        ..opus_bitrate_bps = config.opusBitrateBps
-        ..opus_vbr = config.opusVbr ? 1 : 0
-        ..opus_complexity = config.opusComplexity
-        // Queues
-        ..pcm_ring_frames = config.pcmRingFrames
-        ..packet_queue_capacity = config.packetQueueCapacity;
-
-      // Neural VAD model path. Borrowed by auris_create; the engine copies
-      // any string it needs to retain, so freeing right after returns is
-      // safe. try/finally so the buffer is freed even on _checkOk throw.
-      ffi.Pointer<Utf8>? modelPathPtr;
-      if (config.neuralVadModelPath != null &&
-          config.neuralVadModelPath!.isNotEmpty) {
-        modelPathPtr = config.neuralVadModelPath!.toNativeUtf8();
-        cfgPtr.ref.neural_vad_model_path = modelPathPtr.cast<ffi.Char>();
-      }
-
-      // Sound classifier knobs.
-      ffi.Pointer<Utf8>? soundClassPathPtr;
-      cfgPtr.ref.enable_sound_class = config.enableSoundClass ? 1 : 0;
-      cfgPtr.ref.sound_class_threshold = config.soundClassThreshold;
-      cfgPtr.ref.sound_class_interval_ms = config.soundClassIntervalMs;
-      if (config.soundClassModelPath != null &&
-          config.soundClassModelPath!.isNotEmpty) {
-        soundClassPathPtr = config.soundClassModelPath!.toNativeUtf8();
-        cfgPtr.ref.sound_class_model_path =
-            soundClassPathPtr.cast<ffi.Char>();
-      }
-
       final outEngine = calloc<ffi.Pointer<auris_engine_t>>();
       try {
         _checkOk(bindings.auris_create(cfgPtr, outEngine), 'auris_create');
         return AurisEngine._(bindings, outEngine.value, config);
       } finally {
         calloc.free(outEngine);
-        if (modelPathPtr != null) calloc.free(modelPathPtr);
-        if (soundClassPathPtr != null) calloc.free(soundClassPathPtr);
+        if (m.neuralPath != null) calloc.free(m.neuralPath!);
+        if (m.soundPath != null) calloc.free(m.soundPath!);
       }
     } finally {
       calloc.free(cfgPtr);
@@ -531,7 +539,7 @@ class AurisEngine {
   // async runtime. Latency is bounded by the poll interval (50 ms default).
   final AurisBindings _bindings;
   ffi.Pointer<auris_engine_t> _engine;
-  final AurisConfig _config;
+  AurisConfig _config;   // tracks the live config across updateConfig calls
 
   Timer? _pollTimer;
   bool _running = false;
@@ -580,6 +588,36 @@ class AurisEngine {
     // One last drain to capture trailing events (SEGMENT_END is emitted
     // during stop()).
     _poll();
+  }
+
+  /// Retune this engine in place — no teardown, no model reload, and detector
+  /// state (VAD hysteresis, the anomaly rolling background, the classifier EMA)
+  /// is preserved. Ideal for a live sensitivity slider.
+  ///
+  /// Only the tunable subset is applied: [AurisConfig.enableVad],
+  /// [AurisConfig.enableAnomaly], [AurisConfig.enableSoundClass],
+  /// [AurisConfig.vadAggressiveness], [AurisConfig.vadNeuralThreshold],
+  /// [AurisConfig.vadHangoverMs], [AurisConfig.anomalyRmsZ],
+  /// [AurisConfig.anomalyFluxZ], and [AurisConfig.soundClassThreshold]. Every
+  /// other field is structural and must match what the engine was created with.
+  ///
+  /// Throws [AurisException] if the config is invalid, a structural field
+  /// differs, or it tries to switch on a detector that was off at create time
+  /// (that detector was never constructed). Turning one off and back on is fine.
+  void updateConfig(AurisConfig config) {
+    _ensureLive();
+    final m = _marshalConfig(_bindings, config);
+    try {
+      _checkOk(
+        _bindings.auris_update_config(_engine, m.cfg),
+        'auris_update_config',
+      );
+      _config = config;
+    } finally {
+      calloc.free(m.cfg);
+      if (m.neuralPath != null) calloc.free(m.neuralPath!);
+      if (m.soundPath != null) calloc.free(m.soundPath!);
+    }
   }
 
   /// Feed 16-bit mono PCM into a `AURIS_BACKEND_HOST_PCM` engine. [captureTsUs]

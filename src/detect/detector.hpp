@@ -37,6 +37,13 @@ public:
     // perspective; each detector maintains its own internal state.
     virtual DetectionResult process(const int16_t* frame,
                                     uint32_t       frame_count) = 0;
+
+    // Apply new *tunable* parameters (thresholds / aggressiveness) without
+    // reinitialising. Called on the worker thread between frames when the host
+    // calls auris_update_config, so it must not allocate or block. Structural
+    // parameters (rate, frame size, model paths) never change here. Default is
+    // a no-op for detectors with nothing tunable.
+    virtual void retune(const auris_config_t& /*cfg*/) {}
 };
 
 // Factory for a Voice Activity Detector. AURIS_VAD_FAST → libfvad GMM;

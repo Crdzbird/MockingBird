@@ -381,19 +381,52 @@ void worker_run(auris_engine* e) {
             }
         }
     }
-    const float classifier_threshold = (e->cfg.sound_class_threshold > 0.0f &&
-                                        e->cfg.sound_class_threshold < 1.0f)
-        ? e->cfg.sound_class_threshold
-        : 0.4f;
+    // --- live-tunable state (see auris_update_config) -----------------------
+    // These mirror the tunable config subset. They start from the create-time
+    // config and are refreshed from e->live_cfg whenever the host bumps
+    // tune_generation. Everything else in e->cfg is structural and immutable.
+    auto threshold_or = [](float v, float fallback) {
+        return (v > 0.0f && v < 1.0f) ? v : fallback;
+    };
+    auto hangover_of = [&](uint32_t ms) -> uint32_t {
+        return (ms == 0) ? 0u : (ms + e->cfg.frame_ms - 1u) / e->cfg.frame_ms;
+    };
+
+    float    classifier_threshold = threshold_or(e->cfg.sound_class_threshold, 0.4f);
+    uint32_t hangover_frames      = hangover_of(e->cfg.vad_hangover_ms);
+    bool     vad_enabled          = e->cfg.enable_vad         != 0;
+    bool     anomaly_enabled      = e->cfg.enable_anomaly     != 0;
+    bool     sound_class_enabled  = e->cfg.enable_sound_class != 0;
+    uint64_t seen_tune_generation = e->tune_generation.load(std::memory_order_acquire);
+
+    // Pull a new tunable snapshot if the host retuned. One relaxed atomic load
+    // per frame in the common (unchanged) case; the mutex is taken only on an
+    // actual change, and never while a detector is mid-frame.
+    auto refresh_tunables = [&]() {
+        const uint64_t gen = e->tune_generation.load(std::memory_order_acquire);
+        if (gen == seen_tune_generation) return;
+        seen_tune_generation = gen;
+        auris_config_t live;
+        {
+            std::lock_guard lk(e->tune_mu);
+            live = e->live_cfg;
+        }
+        vad_enabled         = live.enable_vad         != 0;
+        anomaly_enabled     = live.enable_anomaly     != 0;
+        sound_class_enabled = live.enable_sound_class != 0;
+        classifier_threshold = threshold_or(live.sound_class_threshold, 0.4f);
+        hangover_frames      = hangover_of(live.vad_hangover_ms);
+        if (vad)     vad->retune(live);
+        if (anomaly) anomaly->retune(live);
+        AURIS_VLOG("retuned to generation %llu",
+                   static_cast<unsigned long long>(gen));
+    };
 
     bool     segment_open          = false;
     bool     segment_had_speech    = false;
     bool     vad_was_active        = false;
     bool     ano_was_active        = false;
     uint32_t silence_frames        = 0;
-    const uint32_t hangover_frames = (e->cfg.vad_hangover_ms == 0)
-        ? 0u
-        : (e->cfg.vad_hangover_ms + e->cfg.frame_ms - 1u) / e->cfg.frame_ms;
 
     auto open_segment = [&](uint64_t at_us, float confidence) {
         if (open_segment_id != 0) return;
@@ -515,18 +548,24 @@ void worker_run(auris_engine* e) {
                 preproc->process(scratch.data(), frame_samples);
             }
 
+            // Adopt any retune the host requested (cheap no-op when unchanged).
+            refresh_tunables();
+
             // Per-frame: run both detectors, OR their triggers. With both
-            // disabled the worker behaves as step-1 passthrough.
+            // disabled the worker behaves as step-1 passthrough. `*_ready`
+            // means "constructed + initialised"; `*_enabled` is the live toggle.
             auris::DetectionResult vr;
             auris::DetectionResult ar;
-            if (vad_ready && vad)         vr = vad->process(scratch.data(), frame_samples);
-            if (anomaly_ready && anomaly) ar = anomaly->process(scratch.data(), frame_samples);
+            const bool vad_on     = vad_ready     && vad_enabled     && vad;
+            const bool anomaly_on = anomaly_ready && anomaly_enabled && anomaly;
+            if (vad_on)     vr = vad->process(scratch.data(), frame_samples);
+            if (anomaly_on) ar = anomaly->process(scratch.data(), frame_samples);
 
             // Sound classifier: buffer audio, run inference periodically,
             // and emit AURIS_EVT_SOUND_CLASS when the top-1 probability
             // crosses threshold. Independent of the segment lifecycle; the
             // engine surfaces what was heard, the host decides what to do.
-            if (classifier_ready && classifier) {
+            if (classifier_ready && sound_class_enabled && classifier) {
                 const auto cr = classifier->feed(scratch.data(), frame_samples);
                 if (cr.ready && cr.confidence >= classifier_threshold &&
                     cr.class_id >= 0) {
@@ -540,7 +579,7 @@ void worker_run(auris_engine* e) {
                 }
             }
 
-            const bool detection_running = (vad_ready || anomaly_ready);
+            const bool detection_running = (vad_on || anomaly_on);
             const bool is_active         = vr.active || ar.active || !detection_running;
             const bool vad_rising        = vr.active && !vad_was_active;
             const bool ano_rising        = ar.active && !ano_was_active;
@@ -558,7 +597,7 @@ void worker_run(auris_engine* e) {
                     open_segment(now_ts, std::max(vr.confidence, ar.confidence));
                     flush_preroll_into_segment();
                 }
-                if (vad_rising && vad_ready) {
+                if (vad_rising && vad_on) {
                     segment_had_speech = true;
                     auris_event_t evt{};
                     evt.type         = AURIS_EVT_SPEECH_BEGIN;
@@ -567,7 +606,7 @@ void worker_run(auris_engine* e) {
                     evt.confidence   = vr.confidence;
                     emit_event(e, evt);
                 }
-                if (ano_rising && anomaly_ready) {
+                if (ano_rising && anomaly_on) {
                     auris_event_t evt{};
                     evt.type         = AURIS_EVT_ANOMALY;
                     evt.segment_id   = open_segment_id;
@@ -927,6 +966,68 @@ AURIS_API auris_status_t auris_release(auris_engine_t* e, const auris_packet_t* 
     if (e == nullptr) return AURIS_ERR_INVALID_ARG;
     try {
         return e->packets.release(pkt);
+    } catch (...) {
+        return AURIS_ERR_INTERNAL;
+    }
+}
+
+AURIS_API auris_status_t auris_update_config(auris_engine_t*       e,
+                                             const auris_config_t* cfg) {
+    if (e == nullptr || cfg == nullptr) return AURIS_ERR_INVALID_ARG;
+    try {
+        // Full validation first: a retune must never install a config the
+        // engine would have rejected at create time (NaN thresholds, etc.).
+        const auris_status_t v = validate_config(*cfg);
+        if (v != AURIS_OK) return v;
+
+        // Structural fields are fixed for the engine's lifetime — they size
+        // buffers, pick backends, and load models. Reject rather than silently
+        // ignore, so a caller never believes a change took effect.
+        const auris_config_t& c = e->cfg;
+        if (enum_as_int(cfg->backend)       != enum_as_int(c.backend)       ||
+            enum_as_int(cfg->sample_format) != enum_as_int(c.sample_format) ||
+            enum_as_int(cfg->vad_tier)      != enum_as_int(c.vad_tier)      ||
+            enum_as_int(cfg->codec)         != enum_as_int(c.codec)         ||
+            cfg->sample_rate_hz         != c.sample_rate_hz         ||
+            cfg->channels               != c.channels               ||
+            cfg->frame_ms               != c.frame_ms               ||
+            cfg->enable_rnnoise         != c.enable_rnnoise         ||
+            cfg->pre_roll_ms            != c.pre_roll_ms            ||
+            cfg->post_roll_ms           != c.post_roll_ms           ||
+            cfg->segment_max_ms         != c.segment_max_ms         ||
+            cfg->anomaly_background_ms  != c.anomaly_background_ms  ||
+            cfg->sound_class_interval_ms != c.sound_class_interval_ms ||
+            cfg->pcm_ring_frames        != c.pcm_ring_frames        ||
+            cfg->packet_queue_capacity  != c.packet_queue_capacity  ||
+            cfg->enable_wait_handle     != c.enable_wait_handle) {
+            return AURIS_ERR_INVALID_ARG;
+        }
+        // A detector that was off at create time was never constructed, so it
+        // cannot be switched on later. Turning one off and back on is fine.
+        if ((cfg->enable_vad         && !c.enable_vad)         ||
+            (cfg->enable_anomaly     && !c.enable_anomaly)     ||
+            (cfg->enable_sound_class && !c.enable_sound_class)) {
+            return AURIS_ERR_INVALID_ARG;
+        }
+
+        {
+            std::lock_guard lk(e->tune_mu);
+            // Copy ONLY the tunable subset; model-path pointers in live_cfg
+            // keep pointing at the engine's own storage.
+            e->live_cfg.enable_vad            = cfg->enable_vad;
+            e->live_cfg.enable_anomaly        = cfg->enable_anomaly;
+            e->live_cfg.enable_sound_class    = cfg->enable_sound_class;
+            e->live_cfg.vad_aggressiveness    = cfg->vad_aggressiveness;
+            e->live_cfg.vad_neural_threshold  = cfg->vad_neural_threshold;
+            e->live_cfg.vad_hangover_ms       = cfg->vad_hangover_ms;
+            e->live_cfg.anomaly_rms_z         = cfg->anomaly_rms_z;
+            e->live_cfg.anomaly_flux_z        = cfg->anomaly_flux_z;
+            e->live_cfg.sound_class_threshold = cfg->sound_class_threshold;
+        }
+        // Publish after the write: the worker's acquire-load of the generation
+        // pairs with this release so it always sees the completed snapshot.
+        e->tune_generation.fetch_add(1, std::memory_order_release);
+        return AURIS_OK;
     } catch (...) {
         return AURIS_ERR_INTERNAL;
     }

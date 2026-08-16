@@ -170,6 +170,23 @@ class AurisBindings {
   late final _auris_release = _auris_releasePtr.asFunction<
       int Function(ffi.Pointer<auris_engine_t>, ffi.Pointer<auris_packet_t>)>();
 
+  auris_status auris_update_config(
+    ffi.Pointer<auris_engine_t> engine,
+    ffi.Pointer<auris_config_t> cfg,
+  ) {
+    return auris_status.fromValue(_auris_update_config(
+      engine,
+      cfg,
+    ));
+  }
+
+  late final _auris_update_configPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<auris_engine_t>,
+              ffi.Pointer<auris_config_t>)>>('auris_update_config');
+  late final _auris_update_config = _auris_update_configPtr.asFunction<
+      int Function(ffi.Pointer<auris_engine_t>, ffi.Pointer<auris_config_t>)>();
+
   auris_status auris_get_stats(
     ffi.Pointer<auris_engine_t> engine,
     ffi.Pointer<auris_stats_t> out_stats,

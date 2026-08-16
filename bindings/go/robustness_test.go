@@ -216,6 +216,104 @@ done:
 	}
 }
 
+// UpdateConfig retunes in place: tunables apply, structural changes are
+// rejected, and the engine keeps running.
+func TestUpdateConfig(t *testing.T) {
+	cfg := hostCfg()
+	e, err := New(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer e.Close()
+	if err := e.Start(); err != nil {
+		t.Fatal(err)
+	}
+
+	tuned := cfg
+	tuned.AnomalyRMSZ = 1.75
+	tuned.AnomalyFluxZ = 1.75
+	tuned.VadAggressiveness = 0
+	tuned.VadHangoverMs = 500
+	if err := e.UpdateConfig(tuned); err != nil {
+		t.Fatalf("tunable update rejected: %v", err)
+	}
+
+	// Structural change must be refused.
+	bad := cfg
+	bad.SampleRateHz = 48000
+	if err := e.UpdateConfig(bad); err == nil {
+		t.Error("expected structural change to be rejected")
+	}
+
+	// Enabling a detector that was off at create time must be refused.
+	off := hostCfg()
+	off.EnableAnomaly = false
+	e2, err := New(off)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer e2.Close()
+	if err := e2.Start(); err != nil {
+		t.Fatal(err)
+	}
+	on := off
+	on.EnableAnomaly = true
+	if err := e2.UpdateConfig(on); err == nil {
+		t.Error("expected enabling a never-constructed detector to be rejected")
+	}
+
+	// Still functional after the retune.
+	frame := make([]int16, 320)
+	for i := 0; i < 10; i++ {
+		if err := e.PushPCM(frame, uint64(i)*20_000); err != nil {
+			t.Fatal(err)
+		}
+	}
+	drainFor(e, 100*time.Millisecond)
+	st, err := e.Stats()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.FramesCaptured != 3200 {
+		t.Errorf("frames_captured = %d, want 3200", st.FramesCaptured)
+	}
+}
+
+// Concurrent UpdateConfig from many goroutines must be race-free (-race).
+func TestConcurrentUpdateConfig(t *testing.T) {
+	cfg := hostCfg()
+	e, err := New(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer e.Close()
+	if err := e.Start(); err != nil {
+		t.Fatal(err)
+	}
+
+	var wg sync.WaitGroup
+	for g := 0; g < 4; g++ {
+		wg.Add(1)
+		go func(seed int) {
+			defer wg.Done()
+			c := cfg
+			for i := 0; i < 200; i++ {
+				c.AnomalyRMSZ = float32(1.5 + float64((i+seed)%40)*0.1)
+				if err := e.UpdateConfig(c); err != nil && err != ErrClosed {
+					t.Errorf("update: %v", err)
+					return
+				}
+			}
+		}(g)
+	}
+	frame := make([]int16, 320)
+	for i := 0; i < 100; i++ {
+		_ = e.PushPCM(frame, uint64(i)*20_000)
+	}
+	wg.Wait()
+	drainFor(e, 50*time.Millisecond)
+}
+
 // Stop then Start again must work (engine restart).
 func TestStartStopRestart(t *testing.T) {
 	e, err := New(hostCfg())

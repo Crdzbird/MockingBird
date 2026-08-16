@@ -64,6 +64,16 @@ struct auris_engine {
     // the host must still ensure no other call is in flight (see auris.h).
     std::mutex         lifecycle_mu;
 
+    // Live-tunable config. Starts as a copy of `cfg`; auris_update_config
+    // writes ONLY the tunable subset here (thresholds, detector enables) under
+    // tune_mu and bumps tune_generation. The worker polls the generation once
+    // per frame (one relaxed atomic load) and takes the mutex only when it
+    // actually changed. `cfg` itself stays immutable for the engine's lifetime,
+    // so every structural field the worker reads unlocked remains race-free.
+    std::mutex            tune_mu;
+    auris_config_t        live_cfg{};
+    std::atomic<uint64_t> tune_generation{0};
+
     // Lock-free wake signal. Producer (T1 or host's push thread) increments
     // and notify_one(); worker waits on a stale value.
     std::atomic<uint64_t> wake_count{0};
@@ -106,5 +116,6 @@ struct auris_engine {
                  size_t                max_payload_bytes)
         : cfg(c),
           pcm_ring(ring_frames),
-          packets(pool_capacity, max_payload_bytes) {}
+          packets(pool_capacity, max_payload_bytes),
+          live_cfg(c) {}   // declaration order: cfg, pcm_ring, packets, …, live_cfg
 };

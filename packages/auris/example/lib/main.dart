@@ -280,12 +280,30 @@ class _HomePageState extends State<_HomePage> {
     });
   }
 
-  /// Apply a new sensitivity while running by recreating the engine.
+  /// Apply a new sensitivity. While running this is a LIVE retune via
+  /// `updateConfig` — no teardown, no model reload, no gap in capture, and the
+  /// detectors keep their state (an utterance in progress isn't cut off).
   Future<void> _setSensitivity(double v) async {
     setState(() => _sensitivity = v);
-    if (_isRunning) {
-      await _stop();
-      await _start();
+    final eng = _engine;
+    if (eng == null || !_isRunning) return;
+    final p = _presets[_presetIndex];
+    try {
+      eng.updateConfig(
+        AurisConfig.sensitive(
+          v,
+          backend: eng.config.backend,
+          vadTier: eng.config.vadTier,
+          enableVad: p.vad,
+          enableAnomaly: p.anomaly,
+          enableSoundClass: p.soundClass,
+          enableRnnoise: eng.config.enableRnnoise,
+          neuralVadModelPath: eng.config.neuralVadModelPath,
+          soundClassModelPath: eng.config.soundClassModelPath,
+        ),
+      );
+    } on AurisException catch (e) {
+      setState(() => _error = 'retune failed: $e');
     }
   }
 

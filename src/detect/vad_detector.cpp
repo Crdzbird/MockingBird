@@ -65,6 +65,15 @@ public:
         return r;
     }
 
+    // Aggressiveness is the only live-tunable knob; fvad_set_mode keeps the
+    // detector's internal GMM state, so speech in progress is not disturbed.
+    void retune(const auris_config_t& cfg) override {
+        if (fvad_ == nullptr) return;
+        if (cfg.vad_aggressiveness >= 0 && cfg.vad_aggressiveness <= 3) {
+            fvad_set_mode(fvad_, cfg.vad_aggressiveness);
+        }
+    }
+
 private:
     Fvad*    fvad_         = nullptr;
     uint32_t frame_samples_ = 0;

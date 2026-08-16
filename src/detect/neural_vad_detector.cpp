@@ -113,15 +113,7 @@ public:
         window_        = (cfg.sample_rate_hz == 16000) ? size_t{512} : size_t{256};
         buf_.reserve(window_ + frame_samples_);
         state_.assign(kStateDim, 0.0f);
-        threshold_     = (cfg.vad_neural_threshold > 0.0f &&
-                         cfg.vad_neural_threshold < 1.0f)
-                            ? cfg.vad_neural_threshold
-                            : 0.5f;
-        // Hysteresis release threshold. Silero's reference VADIterator leaves
-        // speech at threshold - 0.15; the gap stops boundary chatter from
-        // chopping a single utterance into many micro-segments. Floored so an
-        // aggressive (low) on-threshold still has a positive release point.
-        neg_threshold_ = std::max(threshold_ - 0.15f, 0.05f);
+        apply_thresholds(cfg);
         // Require two consecutive in-speech windows (~64 ms at 16 kHz) before
         // declaring speech, so a lone transient that momentarily crosses the
         // threshold does not open a spurious segment.
@@ -160,7 +152,24 @@ public:
         return r;
     }
 
+    // Thresholds are live-tunable; the ONNX session, window, and recurrent
+    // state are untouched, so a retune mid-utterance just changes how eagerly
+    // the next window is judged.
+    void retune(const auris_config_t& cfg) override { apply_thresholds(cfg); }
+
 private:
+    void apply_thresholds(const auris_config_t& cfg) {
+        threshold_ = (cfg.vad_neural_threshold > 0.0f &&
+                      cfg.vad_neural_threshold < 1.0f)
+                         ? cfg.vad_neural_threshold
+                         : 0.5f;
+        // Hysteresis release threshold. Silero's reference VADIterator leaves
+        // speech at threshold - 0.15; the gap stops boundary chatter from
+        // chopping a single utterance into many micro-segments. Floored so an
+        // aggressive (low) on-threshold still has a positive release point.
+        neg_threshold_ = std::max(threshold_ - 0.15f, 0.05f);
+    }
+
     bool run_inference_(const float* samples_512) {
         try {
             Ort::MemoryInfo mem =
