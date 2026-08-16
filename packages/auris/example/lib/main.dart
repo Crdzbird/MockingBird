@@ -340,8 +340,10 @@ class _HomePageState extends State<_HomePage> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          // ListView (not Column) so the controls never overflow: this screen
+          // has a lot of fixed-height content and small phones cut it off —
+          // the level meter alone pushed an iPhone 17 Pro 3px over.
+          child: ListView(
             children: [
               Row(
                 children: [
@@ -448,7 +450,10 @@ class _HomePageState extends State<_HomePage> {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
-              Expanded(
+              // Bounded height rather than Expanded: inside a scroll view there
+              // is no free space to expand into.
+              SizedBox(
+                height: 220,
                 child: _EventLog(lines: _log.toList()),
               ),
             ],

@@ -360,6 +360,22 @@ enum AurisSoundCategory {
 class Auris {
   Auris._();
 
+  /// The `X.Y.Z` version of the linked native engine.
+  ///
+  /// Also a cheap liveness check for the FFI wiring: reading it resolves a
+  /// symbol through `DynamicLibrary.process()`, so it throws if the native
+  /// library was not linked into the app.
+  static String version() {
+    final ptr = AurisPlatform.instance.bindings.auris_version_string();
+    return ptr == ffi.nullptr ? '' : ptr.cast<Utf8>().toDartString();
+  }
+
+  /// Human-readable name for an [auris_status] code, from the native library.
+  static String statusName(int status) {
+    final ptr = AurisPlatform.instance.bindings.auris_status_str(status);
+    return ptr == ffi.nullptr ? '' : ptr.cast<Utf8>().toDartString();
+  }
+
   /// Map a YAMNet AudioSet class index to a broad [AurisSoundCategory].
   ///
   /// Boundaries follow the AudioSet ontology top-level groups as laid out

@@ -1,28 +1,15 @@
 PODS:
-  - auris_macos (0.1.0):
-    - FlutterMacOS
-    - onnxruntime-c (~> 1.20)
   - FlutterMacOS (1.0.0)
-  - onnxruntime-c (1.26.0)
 
 DEPENDENCIES:
-  - auris_macos (from `Flutter/ephemeral/.symlinks/plugins/auris_macos/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
 
-SPEC REPOS:
-  trunk:
-    - onnxruntime-c
-
 EXTERNAL SOURCES:
-  auris_macos:
-    :path: Flutter/ephemeral/.symlinks/plugins/auris_macos/macos
   FlutterMacOS:
     :path: Flutter/ephemeral
 
 SPEC CHECKSUMS:
-  auris_macos: 3e4b47c85fd25096198021310b0f0a422a52647a
   FlutterMacOS: c232990155153907050900a2e175c7773903ba4e
-  onnxruntime-c: e6e9272f5996fed3ea3ca3c9bc843478b2ecbc73
 
 PODFILE CHECKSUM: d8d2cdbacf7b3615873b2054790fd180e1389467
 
