@@ -1,40 +1,15 @@
 PODS:
-  - auris_ios (0.1.0):
-    - Flutter
-    - onnxruntime-c (~> 1.20)
   - Flutter (1.0.0)
-  - integration_test (0.0.1):
-    - Flutter
-  - onnxruntime-c (1.20.0)
-  - permission_handler_apple (9.4.8):
-    - Flutter
 
 DEPENDENCIES:
-  - auris_ios (from `.symlinks/plugins/auris_ios/ios`)
   - Flutter (from `Flutter`)
-  - integration_test (from `.symlinks/plugins/integration_test/ios`)
-  - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
-
-SPEC REPOS:
-  trunk:
-    - onnxruntime-c
 
 EXTERNAL SOURCES:
-  auris_ios:
-    :path: ".symlinks/plugins/auris_ios/ios"
   Flutter:
     :path: Flutter
-  integration_test:
-    :path: ".symlinks/plugins/integration_test/ios"
-  permission_handler_apple:
-    :path: ".symlinks/plugins/permission_handler_apple/ios"
 
 SPEC CHECKSUMS:
-  auris_ios: 3bdea075f01e65e5c63e14864b2c6df6c125ee98
   Flutter: 71a624a5bc0c04062bf19101d501e466baf2fb47
-  integration_test: 252f60fa39af5e17c3aa9899d35d908a0721b573
-  onnxruntime-c: 07cfff40dda7e1c54a4350bb2ad226c63150fce3
-  permission_handler_apple: ee2fe0fd04551b304eb002714ff067c371c822ed
 
 PODFILE CHECKSUM: 5c6e3d43aeaf1e6adffb282f21350f209f291bb4
 

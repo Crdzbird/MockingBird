@@ -66,3 +66,8 @@ pubspec.lock
 
 # SwiftPM build output inside the plugin packages
 .build/
+
+# Plugin packages are always consumed as SPM dependencies, so their own
+# Package.resolved is unused (the consuming app's is what pins versions).
+/packages/auris_ios/ios/auris_ios/Package.resolved
+/packages/auris_macos/macos/auris_macos/Package.resolved

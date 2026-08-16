@@ -3,7 +3,7 @@ PODS:
     - FlutterMacOS
     - onnxruntime-c (~> 1.20)
   - FlutterMacOS (1.0.0)
-  - onnxruntime-c (1.20.0)
+  - onnxruntime-c (1.26.0)
 
 DEPENDENCIES:
   - auris_macos (from `Flutter/ephemeral/.symlinks/plugins/auris_macos/macos`)
@@ -22,8 +22,8 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   auris_macos: 3e4b47c85fd25096198021310b0f0a422a52647a
   FlutterMacOS: c232990155153907050900a2e175c7773903ba4e
-  onnxruntime-c: 07cfff40dda7e1c54a4350bb2ad226c63150fce3
+  onnxruntime-c: e6e9272f5996fed3ea3ca3c9bc843478b2ecbc73
 
-PODFILE CHECKSUM: 0eb84696718b759d6d9fd7bbc092913604174b6f
+PODFILE CHECKSUM: d8d2cdbacf7b3615873b2054790fd180e1389467
 
 COCOAPODS: 1.16.2

@@ -293,14 +293,15 @@ this section explains *why*, so they don't get accidentally removed.
   - Under SwiftPM the C engine is a separate module, so `AurisPlugin.swift` does
     `#if canImport(auris_native) import auris_native` — the CocoaPods build puts
     everything in one target and needs no import.
-  - **Feature tier.** The SPM packages build the core engine — capture, RNNoise, fast
-    VAD, anomaly, Opus — but *not* the ONNX-backed detectors. Silero neural VAD and
-    YAMNet need ONNX Runtime, which the podspecs supply via the `onnxruntime-c` pod
-    (that is why a CocoaPods build of the demo is 118 MB and an SPM one is 61 MB).
-    Requesting them on an SPM build returns `AURIS_ERR_UNSUPPORTED` rather than
-    misbehaving. For the full set use CocoaPods, or add
+  - **Full feature parity**, including Silero neural VAD and YAMNet: the packages depend
+    on Microsoft's
     [onnxruntime-swift-package-manager](https://github.com/microsoft/onnxruntime-swift-package-manager)
-    and define `AURIS_HAVE_NEURAL_VAD` / `AURIS_HAVE_SOUND_CLASS`.
+    (pinned to 1.24.2), whose `onnxruntime` binary target wraps
+    `pod-archive-onnxruntime-c` — the *same* artifact the `onnxruntime-c` pod uses. Its
+    headers arrive framework-style, hence the extra
+    `__has_include(<onnxruntime/onnxruntime_cxx_api.h>)` arm in the detectors.
+    That dependency sets the SPM floor at **iOS 15 / macOS 14**; the podspecs keep their
+    lower minimums (iOS 14 / macOS 11), so CocoaPods users are not forced up.
 - **Microphone permission & capture:**
   - **iOS** RemoteIO can't capture until an `AVAudioSession` (record category) is
     configured and activated — done in the capture backend. `permission_handler` needs

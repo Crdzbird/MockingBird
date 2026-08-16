@@ -12,15 +12,10 @@
 // The plugin keeps its podspec: Flutter supports both, and CocoaPods remains
 // the path that also wires up ONNX Runtime (see "Neural features" below).
 //
-// NEURAL FEATURES (current limitation): this package builds the core engine —
-// capture, RNNoise, fast VAD (libfvad), the anomaly gate, and Opus — but NOT
-// the ONNX-backed detectors. Silero neural VAD and YAMNet sound classification
-// need ONNX Runtime, which the podspec pulls in via the `onnxruntime-c` pod;
-// SwiftPM has no equivalent wired up here yet. Requesting AURIS_VAD_NEURAL or
-// enable_sound_class on an SPM build returns AURIS_ERR_UNSUPPORTED rather than
-// misbehaving. To get them, use the CocoaPods integration, or add
-// https://github.com/microsoft/onnxruntime-swift-package-manager as a
-// dependency and define AURIS_HAVE_NEURAL_VAD / AURIS_HAVE_SOUND_CLASS below.
+// FEATURE PARITY: this package pulls in Microsoft's ONNX Runtime Swift package,
+// so the SPM build has the same capabilities as the CocoaPods one — including
+// Silero neural VAD and YAMNet sound classification. That dependency sets the
+// platform floor (iOS 15 / macOS 14), above what the podspecs require.
 import PackageDescription
 
 // Opus ships SIMD variants, a fixed-point tree, tests, and demo programs with
@@ -72,10 +67,17 @@ let package = Package(
     platforms: [
         // Matches the podspec (osx.deployment_target = 11.0) and the
         // CMake build's CMAKE_OSX_DEPLOYMENT_TARGET.
-        .macOS("11.0"),
+        .macOS("14.0"),   // raised by the ONNX Runtime Swift package
     ],
     products: [
         .library(name: "auris-macos", targets: ["auris_macos"]),
+    ],
+    dependencies: [
+        // Microsoft's official ONNX Runtime Swift package. Its `onnxruntime`
+        // binary target wraps pod-archive-onnxruntime-c — the SAME artifact the
+        // podspec's `onnxruntime-c` pod uses — so the C/C++ API is available.
+        .package(url: "https://github.com/microsoft/onnxruntime-swift-package-manager",
+                 exact: "1.24.2"),
     ],
     // No Flutter dependency is declared here: flutter_tools generates a wrapper
     // package (FlutterGeneratedPluginSwiftPackage) that vends the Flutter
@@ -86,6 +88,9 @@ let package = Package(
         // reach the C ABI through DynamicLibrary.process().
         .target(
             name: "auris_native",
+            dependencies: [
+                .product(name: "onnxruntime", package: "onnxruntime-swift-package-manager"),
+            ],
             path: "Sources/auris_native",
             exclude: [
                 // Compiled via the Objective-C shim below (miniaudio's Apple
@@ -145,6 +150,8 @@ let package = Package(
                 .define("AURIS_BUILDING", to: "1"),
                 .define("AURIS_HAVE_OPUS", to: "1"),
                 .define("AURIS_HAVE_RNNOISE", to: "1"),
+                .define("AURIS_HAVE_NEURAL_VAD", to: "1"),
+                .define("AURIS_HAVE_SOUND_CLASS", to: "1"),
             ],
             linkerSettings: [
                 .linkedFramework("CoreFoundation"),
