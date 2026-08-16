@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "auris"
+version = "0.1.0"
+description = "Native audio capture, denoise, multilingual voice + anomaly detection, and sound classification via the Auris C ABI"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+keywords = ["audio", "vad", "voice-activity-detection", "yamnet", "rnnoise", "opus", "speech"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Multimedia :: Sound/Audio :: Analysis",
+    "Topic :: Multimedia :: Sound/Audio :: Capture/Recording",
+]
+# Pure ctypes — no build step and no third-party runtime dependency. The native
+# libauris shared library is located at import time (see the README).
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/Crdzbird/MockingBird"
+Source = "https://github.com/Crdzbird/MockingBird/tree/main/bindings/python"
+
+[tool.setuptools]
+packages = ["auris"]

@@ -81,6 +81,25 @@ jobs:
         run: go test -race ./...
 
   # ---------------------------------------------------------------------------
+  # Python binding: pure ctypes, so it only needs libauris + stdlib unittest.
+  # ---------------------------------------------------------------------------
+  python:
+    name: test (Python)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build libauris (shared)
+        run: |
+          cmake -S . -B build -DAURIS_BUILD_SHARED=ON
+          cmake --build build -j
+      - name: Test
+        working-directory: bindings/python
+        run: python3 -m unittest discover -s tests -v
+
+  # ---------------------------------------------------------------------------
   # Dart package: static analysis + unit tests (pure-Dart logic; no native build
   # needed for these — they cover the category mapping + config dial).
   # ---------------------------------------------------------------------------

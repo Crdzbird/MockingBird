@@ -37,6 +37,11 @@ while a segment is open, so the host receives speech/events, not the silence bet
   "is this a human voice?" check.
 - **Mix and match** — enable any combination of RNNoise denoise, fast/neural VAD, anomaly
   gate, and sound classification, at any of 8/16/32/48 kHz, encoding to Opus or PCM.
+- **Retune live** — `auris_update_config` changes detector thresholds on a running engine
+  with no teardown, no model reload, and no loss of detector state.
+- **Meter and tap** — per-frame input level (`input_rms_dbfs` / `input_peak_dbfs`) plus an
+  optional *ungated* PCM tap, so a host can draw a waveform or archive the whole stream
+  while still receiving segment-gated packets.
 - **Deterministic** — packet/event timestamps depend only on frame position, not timing;
   a cross-binding conformance harness proves the Go and Flutter surfaces produce
   **byte-identical** output over the shared engine.
@@ -103,6 +108,7 @@ third_party/              vendored, permissive-only deps (see Licensing)
 tests/                    86 doctest cases incl. fuzz / stress / fault-injection
 packages/                 Flutter federated plugin (auris + per-platform + example app)
 bindings/go/              cgo binding (idiomatic Go API + example + tests)
+bindings/python/          ctypes binding (no build step + example + tests)
 examples/conformance/     Go ⇄ Dart byte-parity harness (run.sh)
 ```
 
@@ -209,6 +215,24 @@ The [example](bindings/go/example) is a flag-driven CLI that runs any combinatio
 backend (mic / file via `HOST_PCM`), VAD tier, detectors, RNNoise, and codec — plus
 named `-preset`s (`voice`, `everything`, `anomaly`, `denoised-voice`, `music`) that show
 common recipes.
+
+## Python
+
+`bindings/python` is a pure-**ctypes** binding — no compiler, no build step, no
+third-party runtime dependency. See [`bindings/python/README.md`](bindings/python/README.md).
+
+```python
+import auris
+
+with auris.Engine(auris.sensitive(0.6)) as engine:
+    engine.start()
+    for event in engine.events(timeout=10):
+        if event.type is auris.EventType.SPEECH_BEGIN:
+            print("voice, any language")
+```
+
+`push_pcm` takes anything buffer-like (`bytes`, `array('h')`, numpy `int16`), so
+running files or datasets through the same pipeline is a few lines.
 
 ## Cross-binding conformance
 
