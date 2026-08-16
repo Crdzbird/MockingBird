@@ -185,6 +185,36 @@ func (e *Engine) PushPCM(samples []int16, captureTsUs uint64) error {
 	return nil
 }
 
+// ReadPCM drains the continuous PCM tap into out and returns how many samples
+// were written (0 when nothing is buffered). Requires Config.EnablePCMTap.
+//
+// Unlike Packets, the tap is NOT gated by segments: it carries every frame the
+// worker processed, so you can render a waveform or archive the whole stream
+// while still receiving detections and encoded packets. Returns
+// StatusErrUnsupported wrapped in an error if the tap is disabled. Call from
+// one goroutine (single-consumer, like the packet drain).
+func (e *Engine) ReadPCM(out []int16) (int, error) {
+	if len(out) == 0 {
+		return 0, nil
+	}
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	if e.c == nil {
+		return 0, ErrClosed
+	}
+	var written C.uint32_t
+	st := Status(C.auris_read_pcm(
+		e.c,
+		(*C.int16_t)(unsafe.Pointer(&out[0])),
+		C.uint32_t(len(out)),
+		&written,
+	))
+	if st != StatusOK {
+		return 0, st.err("auris_read_pcm")
+	}
+	return int(written), nil
+}
+
 // UpdateConfig retunes a live engine in place — no destroy/recreate, no model
 // reload, and detector state (VAD hysteresis, the anomaly rolling background,
 // the classifier EMA) is preserved.

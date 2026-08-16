@@ -87,6 +87,12 @@ type Config struct {
 	SoundClassModelPath  string  // path to yamnet_3s.onnx
 	SoundClassThreshold  float32 // top-1 probability 0..1
 	SoundClassIntervalMs uint32  // inference cadence
+
+	// Continuous PCM tap. Packets are segment-gated; enable this to also get an
+	// UNGATED stream of every processed frame via Engine.ReadPCM — for a
+	// waveform view, or to archive everything while still getting detections.
+	EnablePCMTap bool
+	PCMTapFrames uint32 // tap ring capacity in samples; 0 = 1 second
 }
 
 // DefaultConfig returns the library's documented defaults (mirrors
@@ -146,6 +152,15 @@ func WithNeuralVADModel(path string) Option {
 // WithSoundClassModel sets the YAMNet ONNX model path.
 func WithSoundClassModel(path string) Option {
 	return func(c *Config) { c.SoundClassModelPath = path }
+}
+
+// WithPCMTap enables the continuous (ungated) PCM tap; capacity 0 means one
+// second of audio at the working rate. Drain it with Engine.ReadPCM.
+func WithPCMTap(capacitySamples uint32) Option {
+	return func(c *Config) {
+		c.EnablePCMTap = true
+		c.PCMTapFrames = capacitySamples
+	}
 }
 
 // WithDetectors toggles the three detectors at once.
@@ -242,6 +257,9 @@ func (cfg Config) toC() (C.auris_config_t, func()) {
 	c.pcm_ring_frames = C.uint32_t(cfg.PcmRingFrames)
 	c.packet_queue_capacity = C.uint32_t(cfg.PacketQueueCapacity)
 	c.enable_wait_handle = boolToC(cfg.EnableWaitHandle)
+
+	c.enable_pcm_tap = boolToC(cfg.EnablePCMTap)
+	c.pcm_tap_frames = C.uint32_t(cfg.PCMTapFrames)
 
 	c.enable_sound_class = boolToC(cfg.EnableSoundClass)
 	c.sound_class_threshold = C.float(cfg.SoundClassThreshold)

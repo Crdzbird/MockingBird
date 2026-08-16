@@ -42,6 +42,9 @@ class AurisStatsSnapshot {
     required this.segmentsClosed,
     required this.pcmRingFillFrames,
     required this.packetQueueFill,
+    this.inputRmsDbfs = 0,
+    this.inputPeakDbfs = 0,
+    this.tapSamplesDropped = 0,
   });
 
   final int framesCaptured;
@@ -52,6 +55,19 @@ class AurisStatsSnapshot {
   final int segmentsClosed;
   final int pcmRingFillFrames;
   final int packetQueueFill;
+
+  /// Input level of the most recent frame in dBFS (0 = full scale, negative
+  /// below, floored at -120 for digital silence). Measured *before* noise
+  /// suppression, so it reflects what the microphone received — this is the
+  /// value to drive a level meter with. 0 until the first frame is processed.
+  final double inputRmsDbfs;
+
+  /// Peak sample of the most recent frame, in dBFS. See [inputRmsDbfs].
+  final double inputPeakDbfs;
+
+  /// Samples the continuous PCM tap dropped because the host didn't drain it
+  /// fast enough. Always 0 when the tap is disabled.
+  final int tapSamplesDropped;
 }
 
 /// One event observed by the worker thread.
@@ -140,6 +156,9 @@ class AurisConfig {
     this.opusComplexity = 5,
     this.pcmRingFrames = 16384,
     this.packetQueueCapacity = 256,
+    // --- continuous PCM tap ---
+    this.enablePcmTap = false,
+    this.pcmTapFrames = 0,
   });
 
   /// Build a config from a single [sensitivity] dial in 0..1, where 0 is the
@@ -294,6 +313,15 @@ class AurisConfig {
 
   /// Capacity of the worker→host packet queue (drop-oldest when full).
   final int packetQueueCapacity;
+
+  /// Enable the continuous PCM tap. Packets are segment-gated; the tap is not,
+  /// so it carries every processed frame — use it to draw a waveform or archive
+  /// the full stream while still receiving detections. Drain with
+  /// [AurisEngine.readPcm].
+  final bool enablePcmTap;
+
+  /// Tap ring capacity in samples. 0 = one second at the working rate.
+  final int pcmTapFrames;
 }
 
 /// Broad semantic category derived from a YAMNet AudioSet class index.
@@ -485,6 +513,9 @@ class AurisEngine {
       // Queues
       ..pcm_ring_frames = config.pcmRingFrames
       ..packet_queue_capacity = config.packetQueueCapacity
+      // Continuous PCM tap
+      ..enable_pcm_tap = config.enablePcmTap ? 1 : 0
+      ..pcm_tap_frames = config.pcmTapFrames
       // Sound classifier
       ..enable_sound_class = config.enableSoundClass ? 1 : 0
       ..sound_class_threshold = config.soundClassThreshold
@@ -588,6 +619,34 @@ class AurisEngine {
     // One last drain to capture trailing events (SEGMENT_END is emitted
     // during stop()).
     _poll();
+  }
+
+  /// Drain the continuous PCM tap (requires [AurisConfig.enablePcmTap]).
+  ///
+  /// Returns up to [maxSamples] int16 mono samples — an empty list when nothing
+  /// is buffered. Unlike [packets], the tap is NOT gated by segments: it carries
+  /// every frame the worker processed, so you can render a waveform or archive
+  /// the whole stream while still receiving detections and encoded packets.
+  ///
+  /// Throws [AurisException] if the tap is disabled.
+  Int16List readPcm({int maxSamples = 4096}) {
+    _ensureLive();
+    if (maxSamples <= 0) return Int16List(0);
+    final buf = calloc<ffi.Int16>(maxSamples);
+    final written = calloc<ffi.Uint32>();
+    try {
+      _checkOk(
+        _bindings.auris_read_pcm(_engine, buf, maxSamples, written),
+        'auris_read_pcm',
+      );
+      final n = written.value;
+      if (n == 0) return Int16List(0);
+      // Copy out of native memory before it is freed.
+      return Int16List.fromList(buf.asTypedList(n));
+    } finally {
+      calloc.free(buf);
+      calloc.free(written);
+    }
   }
 
   /// Retune this engine in place — no teardown, no model reload, and detector
@@ -750,6 +809,9 @@ class AurisEngine {
           segmentsClosed: v.segments_closed,
           pcmRingFillFrames: v.pcm_ring_fill_frames,
           packetQueueFill: v.packet_queue_fill,
+          inputRmsDbfs: v.input_rms_dbfs,
+          inputPeakDbfs: v.input_peak_dbfs,
+          tapSamplesDropped: v.tap_samples_dropped,
         ),
       );
     } finally {

@@ -363,6 +363,14 @@ class _HomePageState extends State<_HomePage> {
                 ],
               ),
               const SizedBox(height: 12),
+              // Live input level, straight from stats — works even when no
+              // segment is open (packets only flow during segments).
+              _LevelMeter(
+                rmsDbfs: _stats?.inputRmsDbfs ?? 0,
+                peakDbfs: _stats?.inputPeakDbfs ?? 0,
+                running: _isRunning,
+              ),
+              const SizedBox(height: 12),
               // Presets — the same engine, very different jobs. Tapping one
               // recreates the engine with that detector combination.
               Wrap(
@@ -453,6 +461,71 @@ class _HomePageState extends State<_HomePage> {
 
 /// Big, language-agnostic "human voice" lamp. Lit while Silero VAD reports
 /// speech (any language) or YAMNet classifies a human-voice class.
+/// Live input-level meter driven by [AurisStatsSnapshot.inputRmsDbfs]. Works
+/// regardless of segmentation — this is exactly what the signal metrics exist
+/// for, since encoded packets only flow while a detector holds a segment open.
+class _LevelMeter extends StatelessWidget {
+  const _LevelMeter({
+    required this.rmsDbfs,
+    required this.peakDbfs,
+    required this.running,
+  });
+  final double rmsDbfs;
+  final double peakDbfs;
+  final bool running;
+
+  // Map -60..0 dBFS onto 0..1 for display.
+  static double _norm(double dbfs) => ((dbfs + 60) / 60).clamp(0.0, 1.0);
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final level = running ? _norm(rmsDbfs) : 0.0;
+    final peak = running ? _norm(peakDbfs) : 0.0;
+    final hot = peakDbfs > -3;
+    return Row(
+      children: [
+        Icon(Icons.graphic_eq, size: 18, color: cs.onSurfaceVariant),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Stack(
+            alignment: Alignment.centerLeft,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: level,
+                  minHeight: 10,
+                  backgroundColor: cs.surfaceContainerHighest,
+                  color: hot ? cs.error : cs.primary,
+                ),
+              ),
+              // Peak tick.
+              if (running)
+                FractionallySizedBox(
+                  widthFactor: peak,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Container(width: 2, height: 14, color: cs.onSurface),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 64,
+          child: Text(
+            running ? '${rmsDbfs.toStringAsFixed(1)} dB' : '—',
+            style: Theme.of(context).textTheme.labelSmall,
+            textAlign: TextAlign.right,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _VoiceIndicator extends StatelessWidget {
   const _VoiceIndicator({required this.active, required this.running});
   final bool active;

@@ -97,6 +97,17 @@ type Stats struct {
 	SegmentsClosed       uint64
 	PcmRingFillFrames    uint32
 	PacketQueueFill      uint32
+
+	// Input level of the most recent frame, in dBFS (0 = full scale, negative
+	// below, floored at -120 for digital silence). Measured before noise
+	// suppression, so it reflects what the microphone received — drive a level
+	// meter with this. Both are 0 until the first frame is processed.
+	InputRMSdBFS  float32
+	InputPeakdBFS float32
+
+	// Samples the continuous PCM tap dropped because the host didn't drain it
+	// fast enough. Always 0 when the tap is disabled.
+	TapSamplesDropped uint64
 }
 
 func eventFromC(e C.auris_event_t) Event {
@@ -134,5 +145,8 @@ func statsFromC(s C.auris_stats_t) Stats {
 		SegmentsClosed:       uint64(s.segments_closed),
 		PcmRingFillFrames:    uint32(s.pcm_ring_fill_frames),
 		PacketQueueFill:      uint32(s.packet_queue_fill),
+		InputRMSdBFS:         float32(s.input_rms_dbfs),
+		InputPeakdBFS:        float32(s.input_peak_dbfs),
+		TapSamplesDropped:    uint64(s.tap_samples_dropped),
 	}
 }

@@ -95,6 +95,9 @@ auris_status_t validate_config(const auris_config_t& c) {
         c.pcm_ring_frames > kMaxPcmRingFrames)   return AURIS_ERR_INVALID_ARG;
     if (c.packet_queue_capacity == 0 ||
         c.packet_queue_capacity > kMaxPacketQueueCapacity) return AURIS_ERR_INVALID_ARG;
+    // The tap ring is bounded by the same reasoning as the capture ring: 0 means
+    // "pick a default", anything above the cap is a buggy/hostile request.
+    if (c.pcm_tap_frames > kMaxPcmRingFrames) return AURIS_ERR_INVALID_ARG;
 
     // Duration fields (ms) become frame counts and, for pre-roll and the anomaly
     // background window, buffer allocations on the worker thread. Without a bound
@@ -542,10 +545,45 @@ void worker_run(auris_engine* e) {
             const uint64_t now_ts = base_ts + frame_index * frame_us;
             ++frame_index;
 
+            // Input level BEFORE noise suppression — a meter should show what
+            // the microphone actually received, not the denoised residue.
+            {
+                double sum_sq = 0.0;
+                int32_t peak  = 0;
+                for (uint32_t i = 0; i < frame_samples; ++i) {
+                    const int32_t s = scratch[i];
+                    sum_sq += static_cast<double>(s) * static_cast<double>(s);
+                    const int32_t a = (s < 0) ? -s : s;
+                    if (a > peak) peak = a;
+                }
+                constexpr float kFloorDbfs = -120.0f;
+                constexpr double kFullScale = 32768.0;
+                const double rms = std::sqrt(sum_sq / static_cast<double>(frame_samples));
+                const auto to_dbfs = [&](double v) -> float {
+                    if (v <= 0.0) return kFloorDbfs;
+                    const double db = 20.0 * std::log10(v / kFullScale);
+                    return (db < kFloorDbfs) ? kFloorDbfs : static_cast<float>(db);
+                };
+                e->input_rms_dbfs.store(to_dbfs(rms), std::memory_order_relaxed);
+                e->input_peak_dbfs.store(to_dbfs(static_cast<double>(peak)),
+                                         std::memory_order_relaxed);
+            }
+
             // Noise suppression first, in place: detectors, classifier, and
             // the encoded packet all consume the cleaned frame.
             if (preproc_ready && preproc) {
                 preproc->process(scratch.data(), frame_samples);
+            }
+
+            // Continuous tap: every processed frame, ungated by segmentation,
+            // so the host can archive/visualise the full stream. Drop-on-full
+            // (counted) keeps the worker free-running if the host stalls.
+            if (e->pcm_tap) {
+                const size_t wrote = e->pcm_tap->push(scratch.data(), frame_samples);
+                if (wrote < frame_samples) {
+                    e->tap_samples_dropped.fetch_add(frame_samples - wrote,
+                                                     std::memory_order_relaxed);
+                }
             }
 
             // Adopt any retune the host requested (cheap no-op when unchanged).
@@ -748,6 +786,8 @@ AURIS_API auris_status_t auris_config_defaults(auris_config_t* out_cfg) {
     out_cfg->sound_class_model_path  = nullptr;
     out_cfg->sound_class_threshold   = 0.4f;
     out_cfg->sound_class_interval_ms = 500;
+    out_cfg->enable_pcm_tap          = 0;
+    out_cfg->pcm_tap_frames          = 0;   // 0 => 1 s at the working rate
     return AURIS_OK;
 }
 
@@ -794,6 +834,15 @@ AURIS_API auris_status_t auris_create(const auris_config_t* cfg,
             /* max_payload_bytes  */ max_payload);
 
         e->encoder = std::move(encoder);
+
+        // Continuous PCM tap (opt-in). Default capacity is 1 s of audio at the
+        // working rate, which is ample for a UI polling at any sane cadence.
+        if (cfg->enable_pcm_tap) {
+            const size_t tap_capacity = (cfg->pcm_tap_frames != 0)
+                ? static_cast<size_t>(cfg->pcm_tap_frames)
+                : static_cast<size_t>(cfg->sample_rate_hz);
+            e->pcm_tap = std::make_unique<auris::SpscRing<int16_t>>(tap_capacity);
+        }
 
         // // CONTRACT  Deep-copy the borrowed model-path strings into
         // engine-owned storage and repoint e->cfg at them. The caller's
@@ -971,6 +1020,25 @@ AURIS_API auris_status_t auris_release(auris_engine_t* e, const auris_packet_t* 
     }
 }
 
+AURIS_API auris_status_t auris_read_pcm(auris_engine_t* e,
+                                        int16_t*        out,
+                                        uint32_t        max_samples,
+                                        uint32_t*       out_written) {
+    if (e == nullptr || out == nullptr || out_written == nullptr) {
+        return AURIS_ERR_INVALID_ARG;
+    }
+    *out_written = 0;
+    if (!e->pcm_tap) return AURIS_ERR_UNSUPPORTED;
+    if (max_samples == 0) return AURIS_OK;
+    try {
+        const size_t got = e->pcm_tap->pop(out, static_cast<size_t>(max_samples));
+        *out_written = static_cast<uint32_t>(got);
+        return AURIS_OK;
+    } catch (...) {
+        return AURIS_ERR_INTERNAL;
+    }
+}
+
 AURIS_API auris_status_t auris_update_config(auris_engine_t*       e,
                                              const auris_config_t* cfg) {
     if (e == nullptr || cfg == nullptr) return AURIS_ERR_INVALID_ARG;
@@ -999,6 +1067,8 @@ AURIS_API auris_status_t auris_update_config(auris_engine_t*       e,
             cfg->sound_class_interval_ms != c.sound_class_interval_ms ||
             cfg->pcm_ring_frames        != c.pcm_ring_frames        ||
             cfg->packet_queue_capacity  != c.packet_queue_capacity  ||
+            cfg->enable_pcm_tap         != c.enable_pcm_tap         ||
+            cfg->pcm_tap_frames         != c.pcm_tap_frames         ||
             cfg->enable_wait_handle     != c.enable_wait_handle) {
             return AURIS_ERR_INVALID_ARG;
         }
@@ -1044,6 +1114,9 @@ AURIS_API auris_status_t auris_get_stats(auris_engine_t* e, auris_stats_t* out) 
         out->segments_closed        = e->segments_closed.load(std::memory_order_relaxed);
         out->pcm_ring_fill_frames   = static_cast<uint32_t>(e->pcm_ring.size_relaxed());
         out->packet_queue_fill      = static_cast<uint32_t>(e->packets.ready_size());
+        out->input_rms_dbfs         = e->input_rms_dbfs.load(std::memory_order_relaxed);
+        out->input_peak_dbfs        = e->input_peak_dbfs.load(std::memory_order_relaxed);
+        out->tap_samples_dropped    = e->tap_samples_dropped.load(std::memory_order_relaxed);
         return AURIS_OK;
     } catch (...) {
         return AURIS_ERR_INTERNAL;

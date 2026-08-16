@@ -1,6 +1,7 @@
 package auris
 
 import (
+	"math"
 	"sync"
 	"testing"
 	"time"
@@ -312,6 +313,85 @@ func TestConcurrentUpdateConfig(t *testing.T) {
 	}
 	wg.Wait()
 	drainFor(e, 50*time.Millisecond)
+}
+
+// The PCM tap delivers the ungated stream, and stats carry input level.
+func TestPCMTapAndLevels(t *testing.T) {
+	cfg := hostCfg()
+	cfg.EnableVAD = false
+	cfg.EnableAnomaly = false
+	cfg.EnablePCMTap = true
+	cfg.PCMTapFrames = 1 << 15
+	e, err := New(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer e.Close()
+	if err := e.Start(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Square wave at a known amplitude => exact dBFS.
+	const amp = 8192
+	frame := make([]int16, 320)
+	for i := range frame {
+		if i%2 == 0 {
+			frame[i] = amp
+		} else {
+			frame[i] = -amp
+		}
+	}
+	const frames = 10
+	for i := 0; i < frames; i++ {
+		if err := e.PushPCM(frame, uint64(i)*20_000); err != nil {
+			t.Fatal(err)
+		}
+	}
+	time.Sleep(150 * time.Millisecond)
+
+	got := 0
+	buf := make([]int16, 512)
+	for {
+		n, err := e.ReadPCM(buf)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if n == 0 {
+			break
+		}
+		got += n
+	}
+	if got != frames*len(frame) {
+		t.Errorf("tap delivered %d samples, want %d", got, frames*len(frame))
+	}
+
+	st, err := e.Stats()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := float32(20 * math.Log10(float64(amp)/32768.0))
+	if math.Abs(float64(st.InputRMSdBFS-want)) > 0.1 {
+		t.Errorf("InputRMSdBFS = %v, want ~%v", st.InputRMSdBFS, want)
+	}
+	if st.TapSamplesDropped != 0 {
+		t.Errorf("TapSamplesDropped = %d, want 0", st.TapSamplesDropped)
+	}
+}
+
+// ReadPCM must report unsupported when the tap wasn't enabled.
+func TestReadPCMWithoutTap(t *testing.T) {
+	e, err := New(hostCfg())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer e.Close()
+	if err := e.Start(); err != nil {
+		t.Fatal(err)
+	}
+	buf := make([]int16, 64)
+	if _, err := e.ReadPCM(buf); err == nil {
+		t.Error("expected an error when the tap is disabled")
+	}
 }
 
 // Stop then Start again must work (engine restart).

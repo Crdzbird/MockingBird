@@ -110,6 +110,17 @@ struct auris_engine {
     // the producer and the worker — identical input yields identical timestamps.
     std::atomic<uint64_t> first_capture_ts_us{~uint64_t{0}};
 
+    // Input level of the most recent frame, in dBFS, measured before noise
+    // suppression. Written by the worker, read by auris_get_stats.
+    std::atomic<float>    input_rms_dbfs{0.0f};
+    std::atomic<float>    input_peak_dbfs{0.0f};
+
+    // Continuous (ungated) PCM tap. Non-null only when cfg.enable_pcm_tap is
+    // set. Producer is the worker; consumer is the host via auris_read_pcm —
+    // the same SPSC contract as the capture ring.
+    std::unique_ptr<auris::SpscRing<int16_t>> pcm_tap;
+    std::atomic<uint64_t> tap_samples_dropped{0};
+
     auris_engine(const auris_config_t& c,
                  size_t                ring_frames,
                  size_t                pool_capacity,

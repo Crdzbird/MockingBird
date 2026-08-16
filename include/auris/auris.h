@@ -286,6 +286,22 @@ typedef struct auris_config {
     /* How often the classifier runs, in milliseconds. 0 falls back to 500. */
     uint32_t sound_class_interval_ms;
 
+    /* Continuous PCM tap. Packets are segment-gated (they flow only while a
+     * detector holds a segment open), so a host that also wants an UNGATED
+     * stream — to draw a waveform, or to archive everything while still
+     * receiving detections — enables the tap and drains it with
+     * auris_read_pcm.
+     *
+     * The tap carries the same frames the detectors and encoder consume, i.e.
+     * AFTER RNNoise when enable_rnnoise is set. It is a bounded ring: if the
+     * host does not drain fast enough the newest samples are dropped and
+     * auris_stats.tap_samples_dropped counts them. */
+    int      enable_pcm_tap;
+
+    /* Tap ring capacity in SAMPLES. 0 falls back to 1 second at the working
+     * rate. Rounded up to a power of two internally. */
+    uint32_t pcm_tap_frames;
+
     /* Reserved for future expansion. MUST be zeroed by auris_config_defaults
      * and treated as zero by the engine. Allows additive growth without ABI
      * break. */
@@ -345,6 +361,18 @@ typedef struct auris_stats {
     uint64_t  segments_closed;
     uint32_t  pcm_ring_fill_frames;
     uint32_t  packet_queue_fill;
+
+    /* Input signal level of the most recently processed frame, in dBFS
+     * (0.0 == full scale, negative below; floored at -120.0 for digital
+     * silence). Measured on the captured frame BEFORE noise suppression, so it
+     * reflects what the microphone actually received — the right value to drive
+     * a level meter. Both are 0.0 until the first frame is processed. */
+    float     input_rms_dbfs;
+    float     input_peak_dbfs;
+
+    /* Samples the continuous PCM tap had to drop because the host did not drain
+     * it fast enough. Always 0 when enable_pcm_tap is 0. */
+    uint64_t  tap_samples_dropped;
 } auris_stats_t;
 
 /* ============================================================================
@@ -425,6 +453,23 @@ AURIS_API auris_status_t auris_drain(auris_engine_t*  engine,
  * undefined: returns AURIS_ERR_INVALID_ARG when detectable. */
 AURIS_API auris_status_t auris_release(auris_engine_t*        engine,
                                        const auris_packet_t*  pkt);
+
+/* Drain the continuous PCM tap (requires config.enable_pcm_tap).
+ *
+ * Copies up to max_samples int16 mono samples into out and writes the count to
+ * out_written. Unlike auris_drain, this is NOT gated by segments: it delivers
+ * every frame the worker processed, so a host can render a waveform or archive
+ * the full stream while still receiving detections and encoded packets.
+ *
+ * Returns AURIS_OK (out_written may be 0 when nothing is buffered),
+ * AURIS_ERR_UNSUPPORTED if the tap is disabled, or AURIS_ERR_INVALID_ARG on a
+ * null argument. The host owns `out`; nothing is borrowed, so there is no
+ * release call. Drain from ONE thread (same single-consumer contract as
+ * auris_drain). */
+AURIS_API auris_status_t auris_read_pcm(auris_engine_t* engine,
+                                        int16_t*        out,
+                                        uint32_t        max_samples,
+                                        uint32_t*       out_written);
 
 /* ============================================================================
  * RUNTIME RECONFIGURATION

@@ -170,6 +170,28 @@ class AurisBindings {
   late final _auris_release = _auris_releasePtr.asFunction<
       int Function(ffi.Pointer<auris_engine_t>, ffi.Pointer<auris_packet_t>)>();
 
+  auris_status auris_read_pcm(
+    ffi.Pointer<auris_engine_t> engine,
+    ffi.Pointer<ffi.Int16> out,
+    int max_samples,
+    ffi.Pointer<ffi.Uint32> out_written,
+  ) {
+    return auris_status.fromValue(_auris_read_pcm(
+      engine,
+      out,
+      max_samples,
+      out_written,
+    ));
+  }
+
+  late final _auris_read_pcmPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<auris_engine_t>, ffi.Pointer<ffi.Int16>,
+              ffi.Uint32, ffi.Pointer<ffi.Uint32>)>>('auris_read_pcm');
+  late final _auris_read_pcm = _auris_read_pcmPtr.asFunction<
+      int Function(ffi.Pointer<auris_engine_t>, ffi.Pointer<ffi.Int16>, int,
+          ffi.Pointer<ffi.Uint32>)>();
+
   auris_status auris_update_config(
     ffi.Pointer<auris_engine_t> engine,
     ffi.Pointer<auris_config_t> cfg,
@@ -491,6 +513,12 @@ final class auris_config extends ffi.Struct {
   @ffi.Uint32()
   external int sound_class_interval_ms;
 
+  @ffi.Int()
+  external int enable_pcm_tap;
+
+  @ffi.Uint32()
+  external int pcm_tap_frames;
+
   @ffi.Array.multi([8])
   external ffi.Array<ffi.Uint32> _reserved;
 }
@@ -574,6 +602,15 @@ final class auris_stats extends ffi.Struct {
 
   @ffi.Uint32()
   external int packet_queue_fill;
+
+  @ffi.Float()
+  external double input_rms_dbfs;
+
+  @ffi.Float()
+  external double input_peak_dbfs;
+
+  @ffi.Uint64()
+  external int tap_samples_dropped;
 }
 
 typedef auris_stats_t = auris_stats;
