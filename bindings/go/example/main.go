@@ -40,6 +40,8 @@ func main() {
 		sileroF = flag.String("neural-model", "", "path to silero_vad.onnx")
 		yamnetF = flag.String("yamnet-model", "", "path to yamnet_3s.onnx")
 		seconds = flag.Int("seconds", 0, "mic capture seconds; 0 = until Ctrl-C")
+		adapt   = flag.String("adaptive", "", "on | off: shed YAMNet work under load (default: on for mic, off for -file)")
+		gate    = flag.Float64("gate", 0, "silence gate in dBFS (0 = library default -60; -120 disables)")
 	)
 	flag.Parse()
 
@@ -50,6 +52,16 @@ func main() {
 	cfg := buildConfig(*preset, *sens, silero, yamnet)
 	applyOverrides(&cfg, *backend, *file, *vad, *anomaly, *sound, *rnnoise, *codec, silero, yamnet)
 	sanitize(&cfg, silero, yamnet)
+
+	// Adaptive degradation reacts to wall-clock load, so it belongs on the live
+	// mic path only: an offline file run should always produce full output.
+	cfg.EnableAdaptiveDegradation = cfg.Backend != auris.BackendHostPCM && *file == ""
+	if *adapt != "" {
+		cfg.EnableAdaptiveDegradation = *adapt == "on"
+	}
+	if *gate != 0 {
+		cfg.SilenceGateDbfs = float32(*gate)
+	}
 
 	fmt.Printf("Auris %s — %s\n", auris.Version(), describe(cfg, *preset))
 
@@ -155,9 +167,13 @@ func report(e *auris.Engine, pkts, bytesN int) {
 		"frames captured : %d\n"+
 		"segments        : %d opened / %d closed\n"+
 		"packets to host : %d (%d bytes encoded)\n"+
-		"native dropped  : %d frames, %d packets  |  host-side dropped: %d events, %d packets\n",
+		"native dropped  : %d frames, %d packets  |  host-side dropped: %d events, %d packets\n"+
+		"worker          : %.2f%% busy (last window), max frame %d µs, %d wakeups\n"+
+		"work shed       : YAMNet %d ran / %d skipped, RNNoise skipped %d quiet frames, degradation level %d\n",
 		st.FramesCaptured, st.SegmentsOpened, st.SegmentsClosed,
-		pkts, bytesN, st.FramesDroppedCapture, st.PacketsDropped, de, dp)
+		pkts, bytesN, st.FramesDroppedCapture, st.PacketsDropped, de, dp,
+		float64(st.WorkerBusyPpm)/1e4, st.WorkerMaxFrameUs, st.WorkerWakeups,
+		st.SoundClassInferences, st.SoundClassInferencesSkipped, st.PreprocFramesSkipped, st.DegradationLevel)
 }
 
 func printEvent(ev auris.Event, labels []string) {
@@ -176,6 +192,9 @@ func printEvent(ev auris.Event, labels []string) {
 		}
 		fmt.Printf("sound   [%s]%s (class %d, conf %.2f)\n",
 			auris.CategoryForYAMNetClass(cls), name, cls, ev.Confidence)
+	case auris.EventDegradation:
+		fmt.Printf("engine  ⚠ degradation level %d (worker %.0f%% busy) — shedding YAMNet work\n",
+			ev.DegradationLevel(), ev.Confidence*100)
 	case auris.EventBackendError:
 		fmt.Fprintf(os.Stderr, "backend error: %v — a detector's model may be missing or "+
 			"libauris was built without ONNX Runtime\n", ev.BackendError())

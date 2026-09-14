@@ -45,6 +45,13 @@ class AurisStatsSnapshot {
     this.inputRmsDbfs = 0,
     this.inputPeakDbfs = 0,
     this.tapSamplesDropped = 0,
+    this.workerBusyPpm = 0,
+    this.workerMaxFrameUs = 0,
+    this.workerWakeups = 0,
+    this.soundClassInferences = 0,
+    this.soundClassInferencesSkipped = 0,
+    this.preprocFramesSkipped = 0,
+    this.degradationLevel = 0,
   });
 
   final int framesCaptured;
@@ -68,6 +75,32 @@ class AurisStatsSnapshot {
   /// Samples the continuous PCM tap dropped because the host didn't drain it
   /// fast enough. Always 0 when the tap is disabled.
   final int tapSamplesDropped;
+
+  /// Share of wall time the native worker spent processing over the most
+  /// recent ~1 s window, in parts per million (1 000 000 = saturated).
+  final int workerBusyPpm;
+
+  /// [workerBusyPpm] as a 0..1 fraction — the number to show in a UI.
+  double get workerBusyFraction => workerBusyPpm / 1e6;
+
+  /// Longest single-frame processing time since start, microseconds.
+  final int workerMaxFrameUs;
+
+  /// Worker thread parks/unparks. On mobile, wakeup rate is a better battery
+  /// proxy than CPU share.
+  final int workerWakeups;
+
+  /// YAMNet inferences that ran / were due but shed (silence gate or
+  /// adaptive degradation).
+  final int soundClassInferences;
+  final int soundClassInferencesSkipped;
+
+  /// Frames RNNoise did not run on because they were below the silence gate.
+  final int preprocFramesSkipped;
+
+  /// Current adaptive-degradation level (0 nominal .. 3 classifier suspended).
+  /// Always 0 unless [AurisConfig.enableAdaptiveDegradation] is set.
+  final int degradationLevel;
 }
 
 /// One event observed by the worker thread.
@@ -146,7 +179,7 @@ class AurisConfig {
     this.enableSoundClass = false,
     this.soundClassModelPath,
     this.soundClassThreshold = 0.4,
-    this.soundClassIntervalMs = 500,
+    this.soundClassIntervalMs = 1000,
     // --- Segmentation + encoder + queues (parity with the C ABI / Go) ---
     this.preRollMs = 300,
     this.postRollMs = 300,
@@ -159,6 +192,10 @@ class AurisConfig {
     // --- continuous PCM tap ---
     this.enablePcmTap = false,
     this.pcmTapFrames = 0,
+    // --- silence gate / adaptive degradation ---
+    this.silenceGateDbfs = -60.0,
+    this.enableAdaptiveDegradation = false,
+    this.degradeBusyPpm = 700000,
   });
 
   /// Build a config from a single [sensitivity] dial in 0..1, where 0 is the
@@ -187,7 +224,10 @@ class AurisConfig {
     bool enableRnnoise = false,
     String? neuralVadModelPath,
     String? soundClassModelPath,
-    int soundClassIntervalMs = 500,
+    int soundClassIntervalMs = 1000,
+    double silenceGateDbfs = -60.0,
+    bool enableAdaptiveDegradation = false,
+    int degradeBusyPpm = 700000,
   }) {
     final s = sensitivity.clamp(0.0, 1.0);
     double lerp(double a, double b) => a + (b - a) * s;
@@ -209,6 +249,9 @@ class AurisConfig {
       soundClassModelPath: soundClassModelPath,
       soundClassThreshold: lerp(0.70, 0.12),
       soundClassIntervalMs: soundClassIntervalMs,
+      silenceGateDbfs: silenceGateDbfs,
+      enableAdaptiveDegradation: enableAdaptiveDegradation,
+      degradeBusyPpm: degradeBusyPpm,
     );
   }
 
@@ -322,6 +365,24 @@ class AurisConfig {
 
   /// Tap ring capacity in samples. 0 = one second at the working rate.
   final int pcmTapFrames;
+
+  /// Frames whose input RMS is below this level (dBFS) are "quiet": RNNoise is
+  /// skipped for them and YAMNet skips an inference whose whole 3 s window was
+  /// quiet. VAD/anomaly are never gated and audio always flows. -60 is
+  /// conservative (digital silence / muted mic); raise to about -50 to also
+  /// shed quiet-room tone. <= -120 disables. Live-tunable.
+  final double silenceGateDbfs;
+
+  /// Let the engine shed YAMNet work (cadence x2, x4, then suspend) when the
+  /// worker exceeds [degradeBusyPpm] busy share or drops frames, restoring it
+  /// after a few calm seconds. Emits `AURIS_EVT_DEGRADATION` (reason_mask =
+  /// level) and shows in [AurisStatsSnapshot.degradationLevel]. Off by
+  /// default because it reacts to wall-clock timing — enable it for live
+  /// microphone capture on constrained devices, not for offline processing.
+  final bool enableAdaptiveDegradation;
+
+  /// Busy threshold for degradation, parts per million (default 700 000 = 70%).
+  final int degradeBusyPpm;
 }
 
 /// Broad semantic category derived from a YAMNet AudioSet class index.
@@ -532,6 +593,10 @@ class AurisEngine {
       // Continuous PCM tap
       ..enable_pcm_tap = config.enablePcmTap ? 1 : 0
       ..pcm_tap_frames = config.pcmTapFrames
+      // Silence gate / adaptive degradation
+      ..silence_gate_dbfs = config.silenceGateDbfs
+      ..enable_adaptive_degradation = config.enableAdaptiveDegradation ? 1 : 0
+      ..degrade_busy_ppm = config.degradeBusyPpm
       // Sound classifier
       ..enable_sound_class = config.enableSoundClass ? 1 : 0
       ..sound_class_threshold = config.soundClassThreshold
@@ -828,6 +893,13 @@ class AurisEngine {
           inputRmsDbfs: v.input_rms_dbfs,
           inputPeakDbfs: v.input_peak_dbfs,
           tapSamplesDropped: v.tap_samples_dropped,
+          workerBusyPpm: v.worker_busy_ppm,
+          workerMaxFrameUs: v.worker_max_frame_us,
+          workerWakeups: v.worker_wakeups,
+          soundClassInferences: v.sound_class_inferences,
+          soundClassInferencesSkipped: v.sound_class_inferences_skipped,
+          preprocFramesSkipped: v.preproc_frames_skipped,
+          degradationLevel: v.degradation_level,
         ),
       );
     } finally {

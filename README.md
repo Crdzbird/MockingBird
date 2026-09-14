@@ -42,6 +42,11 @@ while a segment is open, so the host receives speech/events, not the silence bet
 - **Meter and tap** — per-frame input level (`input_rms_dbfs` / `input_peak_dbfs`) plus an
   optional *ungated* PCM tap, so a host can draw a waveform or archive the whole stream
   while still receiving segment-gated packets.
+- **Cheap when nothing is happening** — a silence gate skips RNNoise and YAMNet on quiet
+  input (VAD/anomaly stay live; audio always flows), so a quiet room costs ~0.4% of a core
+  with *every* feature on. Per-window worker health (`worker_busy_ppm`, wakeups, max
+  frame) is in the stats, and opt-in **adaptive degradation** sheds YAMNet work under
+  load and restores it when calm — emitting `AURIS_EVT_DEGRADATION` so the host knows.
 - **Deterministic** — packet/event timestamps depend only on frame position, not timing;
   a cross-binding conformance harness proves the Go and Flutter surfaces produce
   **byte-identical** output over the shared engine.
@@ -64,7 +69,8 @@ flowchart TB
 
     subgraph WORKER["T2 · worker thread"]
         direction TB
-        RING --> RN["RNNoise denoise<br/>optional · 48 kHz bridge"]
+        RING --> LVL["Level meter · silence gate<br/>quiet frames skip RNNoise / YAMNet"]
+        LVL --> RN["RNNoise denoise<br/>optional · 48 kHz bridge"]
         RN --> VAD["Voice · libfvad / Silero<br/>multilingual"]
         RN --> ANO["Anomaly · RMS / flux / centroid z-score"]
         RN --> YAM["YAMNet · 521 AudioSet classes"]
@@ -105,7 +111,7 @@ explicit release (guarded by a generation cookie against stale double-release).
 include/auris/auris.h     the C ABI (the contract — bindings generate from this)
 src/                      engine, detectors, encoders, capture backends, preprocess
 third_party/              vendored, permissive-only deps (see Licensing)
-tests/                    86 doctest cases incl. fuzz / stress / fault-injection
+tests/                    115 doctest cases incl. fuzz / stress / fault-injection
 packages/                 Flutter federated plugin (auris + per-platform + example app)
 bindings/go/              cgo binding (idiomatic Go API + example + tests)
 bindings/python/          ctypes binding (no build step + example + tests)
@@ -120,7 +126,8 @@ examples/conformance/     Go ⇄ Dart byte-parity harness (run.sh)
 cmake -S . -B build -DAURIS_ENABLE_TESTS=ON \
       -DAURIS_ENABLE_NEURAL_VAD=ON          # Silero + YAMNet (needs ONNX Runtime)
 cmake --build build -j
-./build/test_auris                          # 79 cases
+./build/test_auris                          # 115 cases
+./build/bench_auris 20                      # CPU cost per feature, 20 s of audio
 ```
 
 Useful options (all default to a sane value):
@@ -132,6 +139,31 @@ Useful options (all default to a sane value):
 | `AURIS_ENABLE_RNNOISE` | OFF | compile RNNoise preprocessing |
 | `AURIS_ENABLE_OPUS` | ON | compile the Opus encoder |
 | **`AURIS_ENABLE_LOG`** | **OFF** | emit internal diagnostics to stderr/logcat. **Release builds are silent by default** — turn this on only to debug. |
+
+### Performance
+
+`bench/throughput.cpp` (built with the tests) pushes synthetic audio through `HOST_PCM`
+faster than real time so the worker is the bottleneck, and reports the real-time factor
+per feature. Release build, Apple M3 Max, one core:
+
+| Configuration | Share of one core | Notes |
+|---|---|---|
+| passthrough · fast VAD · anomaly | 0.01% | the engine core is at the noise floor |
+| Opus encode (complexity 5) | 0.32% | |
+| neural VAD (Silero) | 0.43% | |
+| RNNoise | 1.02% | includes the 16→48→16 kHz bridge |
+| YAMNet, 1000 ms cadence (default) | 1.43% | 500 ms cadence: 2.84% |
+| **everything + Opus** | **3.16%** | |
+| everything + Opus, **quiet room** (−75 dBFS) | **0.40%** | silence gate sheds RNNoise + YAMNet |
+
+Expect roughly 3× on a recent iPhone and 5–8× on mid-range Android. The two levers that
+matter are both algorithmic: YAMNet's cadence (`sound_class_interval_ms`) and the silence
+gate (`silence_gate_dbfs`, default −60; raise to about −50 to also shed quiet-room tone).
+For constrained devices, `enable_adaptive_degradation` lets the engine step YAMNet's
+cadence down (×2, ×4, then suspend) whenever the worker's busy share exceeds
+`degrade_busy_ppm` or the capture ring drops frames, and step it back after ~3 calm
+seconds. It is **off by default** because it reacts to wall-clock timing, which would make
+faster-than-real-time offline runs (and the conformance harness) non-deterministic.
 
 ### Sanitizers
 

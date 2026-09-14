@@ -175,7 +175,9 @@ typedef enum auris_event_type {
      * AudioSet class index (0..520, see yamnet_class_map.txt);
      * confidence is the model's top-1 probability in [0, 1]. Opens a
      * segment when the class is a known anomaly / animal / alarm. */
-    AURIS_EVT_SOUND_CLASS     = 8
+    AURIS_EVT_SOUND_CLASS     = 8,
+    AURIS_EVT_DEGRADATION     = 9   /* reason_mask = new degradation level (0..3),
+                                       confidence  = worker busy fraction 0..1 */
 } auris_event_type_t;
 
 /* Packet flags. Bitmask. */
@@ -302,10 +304,42 @@ typedef struct auris_config {
      * rate. Rounded up to a power of two internally. */
     uint32_t pcm_tap_frames;
 
+    /* Silence gate. A frame whose input RMS (measured BEFORE noise suppression,
+     * same value as auris_stats_t.input_rms_dbfs) is below this level is
+     * "quiet". Quiet frames skip RNNoise (they carry nothing to denoise), and
+     * the sound classifier skips an inference whose entire 3 s window was
+     * quiet (YAMNet would only ever answer "Silence"). VAD and the anomaly
+     * detector are NOT gated: they are cheap and their behaviour must not
+     * depend on level. Audio itself is never gated — every frame still flows
+     * to the tap and the encoder.
+     *   0        => default, -60 dBFS (conservative: digital silence / muted
+     *               mic; raise to ~-50 to also skip quiet-room tone)
+     *   <= -120  => disabled (nothing is ever quiet)
+     * Live-tunable via auris_update_config. */
+    float    silence_gate_dbfs;
+
+    /* Adaptive degradation. When the worker cannot keep up — it spends more
+     * than degrade_busy_ppm of wall time processing over a ~1 s window, or the
+     * capture ring dropped frames — the engine sheds the most expensive
+     * optional work in steps, and restores it after ~3 calm windows:
+     *   level 1: sound-class inference cadence x2
+     *   level 2: sound-class inference cadence x4
+     *   level 3: sound-class inference suspended (audio still buffered, so
+     *            recovery is immediate)
+     * Each change emits AURIS_EVT_DEGRADATION (reason_mask = new level,
+     * confidence = busy fraction) and is visible in
+     * auris_stats_t.degradation_level. Default OFF: the policy reacts to wall-
+     * clock timing, so a host that pushes HOST_PCM faster than real time
+     * (offline processing, the conformance harness) would otherwise get
+     * timing-dependent output. Turn it on for live capture on constrained
+     * devices. Live-tunable. */
+    int      enable_adaptive_degradation;
+    uint32_t degrade_busy_ppm;                /* 0 => 700000 (70%); max 1000000 */
+
     /* Reserved for future expansion. MUST be zeroed by auris_config_defaults
      * and treated as zero by the engine. Allows additive growth without ABI
      * break. */
-    uint32_t  _reserved[8];
+    uint32_t  _reserved[5];
 } auris_config_t;
 
 /* ============================================================================
@@ -373,6 +407,28 @@ typedef struct auris_stats {
     /* Samples the continuous PCM tap had to drop because the host did not drain
      * it fast enough. Always 0 when enable_pcm_tap is 0. */
     uint64_t  tap_samples_dropped;
+
+    /* Worker health. busy_ppm is the share of wall time the worker spent
+     * processing frames over the most recent ~1 s window (parts per million;
+     * 1000000 == saturated). max_frame_us is the longest single frame since
+     * start. wakeups counts worker thread parks/unparks — on mobile, wakeup
+     * rate is a better battery proxy than CPU share. */
+    uint32_t  worker_busy_ppm;
+    uint32_t  worker_max_frame_us;
+    uint64_t  worker_wakeups;
+
+    /* Work-shedding counters. `skipped` counts inferences that were due but
+     * gated (silence gate or degradation); preproc_frames_skipped counts
+     * frames RNNoise did not run on because they were quiet. */
+    uint64_t  sound_class_inferences;
+    uint64_t  sound_class_inferences_skipped;
+    uint64_t  preproc_frames_skipped;
+
+    /* Current adaptive-degradation level (0 = nominal .. 3 = classifier
+     * suspended). Always 0 unless enable_adaptive_degradation is set. */
+    uint32_t  degradation_level;
+
+    uint32_t  _reserved[7];                   /* additive growth; always 0 */
 } auris_stats_t;
 
 /* ============================================================================

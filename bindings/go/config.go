@@ -93,6 +93,22 @@ type Config struct {
 	// waveform view, or to archive everything while still getting detections.
 	EnablePCMTap bool
 	PCMTapFrames uint32 // tap ring capacity in samples; 0 = 1 second
+
+	// Silence gate. Frames whose input RMS is below this (dBFS) are "quiet":
+	// RNNoise is skipped for them and YAMNet skips an inference whose whole
+	// 3 s window was quiet. VAD/anomaly are never gated; audio always flows.
+	// -60 is conservative (digital silence); ~-50 also sheds quiet-room tone.
+	// <= -120 disables. Live-tunable via UpdateConfig.
+	SilenceGateDbfs float32
+
+	// Adaptive degradation: shed YAMNet work (cadence x2, x4, then suspend)
+	// when the worker exceeds DegradeBusyPpm busy share or drops frames, and
+	// restore it after a few calm seconds. Emits EventDegradation and shows in
+	// Stats.DegradationLevel. Off by default because it reacts to wall-clock
+	// timing — enable for live capture on constrained devices, not for
+	// faster-than-real-time offline processing.
+	EnableAdaptiveDegradation bool
+	DegradeBusyPpm            uint32 // parts per million; 0 = 700000 (70%)
 }
 
 // DefaultConfig returns the library's documented defaults (mirrors
@@ -125,7 +141,9 @@ func DefaultConfig() Config {
 		PacketQueueCapacity:  256,
 		EnableSoundClass:     false,
 		SoundClassThreshold:  0.4,
-		SoundClassIntervalMs: 500,
+		SoundClassIntervalMs: 1000,
+		SilenceGateDbfs:      -60,
+		DegradeBusyPpm:       700000,
 	}
 }
 
@@ -260,6 +278,10 @@ func (cfg Config) toC() (C.auris_config_t, func()) {
 
 	c.enable_pcm_tap = boolToC(cfg.EnablePCMTap)
 	c.pcm_tap_frames = C.uint32_t(cfg.PCMTapFrames)
+
+	c.silence_gate_dbfs = C.float(cfg.SilenceGateDbfs)
+	c.enable_adaptive_degradation = boolToC(cfg.EnableAdaptiveDegradation)
+	c.degrade_busy_ppm = C.uint32_t(cfg.DegradeBusyPpm)
 
 	c.enable_sound_class = boolToC(cfg.EnableSoundClass)
 	c.sound_class_threshold = C.float(cfg.SoundClassThreshold)

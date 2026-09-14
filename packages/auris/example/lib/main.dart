@@ -182,6 +182,8 @@ class _HomePageState extends State<_HomePage> {
           enableRnnoise: p.denoise || _denoise,
           neuralVadModelPath: sileroPath,
           soundClassModelPath: yamnetPath,
+          // Live mic on a phone: let the engine shed YAMNet work under load.
+          enableAdaptiveDegradation: true,
         ),
       );
 
@@ -300,6 +302,8 @@ class _HomePageState extends State<_HomePage> {
           enableRnnoise: eng.config.enableRnnoise,
           neuralVadModelPath: eng.config.neuralVadModelPath,
           soundClassModelPath: eng.config.soundClassModelPath,
+          enableAdaptiveDegradation: eng.config.enableAdaptiveDegradation,
+          silenceGateDbfs: eng.config.silenceGateDbfs,
         ),
       );
     } on AurisException catch (e) {
@@ -688,6 +692,15 @@ class _StatsCard extends StatelessWidget {
               _statRow('segments_closed', s.segmentsClosed),
               _statRow('pcm_ring_fill_frames', s.pcmRingFillFrames),
               _statRow('packet_queue_fill', s.packetQueueFill),
+              const Divider(height: 16),
+              // Worker health + work shedding (silence gate / degradation).
+              _statRow('worker_busy_%', (s.workerBusyPpm / 1e4).round()),
+              _statRow('worker_max_frame_us', s.workerMaxFrameUs),
+              _statRow('worker_wakeups', s.workerWakeups),
+              _statRow('yamnet_inferences', s.soundClassInferences),
+              _statRow('yamnet_skipped (gate/degrade)', s.soundClassInferencesSkipped),
+              _statRow('rnnoise_skipped_quiet', s.preprocFramesSkipped),
+              _statRow('degradation_level', s.degradationLevel),
             ],
           ],
         ),

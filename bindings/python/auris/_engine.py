@@ -102,6 +102,10 @@ def _to_c_config(cfg: Config, lib: ctypes.CDLL) -> _ffi.AurisConfig:
     c.enable_pcm_tap = int(bool(cfg.enable_pcm_tap))
     c.pcm_tap_frames = cfg.pcm_tap_frames
 
+    c.silence_gate_dbfs = cfg.silence_gate_dbfs
+    c.enable_adaptive_degradation = int(bool(cfg.enable_adaptive_degradation))
+    c.degrade_busy_ppm = cfg.degrade_busy_ppm
+
     # The engine deep-copies any string it retains, but the bytes must outlive
     # this call — keep them alive on the struct object.
     c._keepalive = []  # type: ignore[attr-defined]
@@ -327,6 +331,13 @@ class Engine:
             input_rms_dbfs=st.input_rms_dbfs,
             input_peak_dbfs=st.input_peak_dbfs,
             tap_samples_dropped=st.tap_samples_dropped,
+            worker_busy_ppm=st.worker_busy_ppm,
+            worker_max_frame_us=st.worker_max_frame_us,
+            worker_wakeups=st.worker_wakeups,
+            sound_class_inferences=st.sound_class_inferences,
+            sound_class_inferences_skipped=st.sound_class_inferences_skipped,
+            preproc_frames_skipped=st.preproc_frames_skipped,
+            degradation_level=st.degradation_level,
         )
 
     def update_config(self, config: Config) -> None:

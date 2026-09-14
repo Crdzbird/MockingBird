@@ -127,8 +127,18 @@ public:
         // the sound).
         min_fill_      = std::min<size_t>(buf_.size(), 32000);
 
+        // Frames per 3 s window: an inference is skipped when at least this
+        // many consecutive quiet frames precede it (see FeedHints::quiet).
+        frames_per_window_ =
+            (static_cast<uint32_t>(kYamnetSampleCount) + frame_samples_ - 1u) / frame_samples_;
+        quiet_run_frames_  = 0;
+
+        // Default cadence 1000 ms (was 500): windows overlap 83% at 500 ms so
+        // consecutive results are near-identical and the EMA already assumes
+        // that; halving the inference rate halves YAMNet's cost, which the
+        // throughput benchmark shows is the single largest item.
         const uint32_t step_ms =
-            cfg.sound_class_interval_ms == 0 ? 500u : cfg.sound_class_interval_ms;
+            cfg.sound_class_interval_ms == 0 ? 1000u : cfg.sound_class_interval_ms;
         frames_per_inference_ =
             (step_ms + cfg.frame_ms - 1u) / cfg.frame_ms;
         frames_since_inference_ = 0;
@@ -136,9 +146,14 @@ public:
         return AURIS_OK;
     }
 
-    ClassificationResult feed(const int16_t* frame, uint32_t n) override {
+    ClassificationResult feed(const int16_t* frame, uint32_t n,
+                              const FeedHints& hints) override {
         ClassificationResult r;
         if (session_ == nullptr || frame == nullptr || n == 0) return r;
+
+        // Track the run of quiet frames; the buffer below is filled regardless
+        // so a suspended or gated classifier resumes with a full, current window.
+        if (hints.quiet) ++quiet_run_frames_; else quiet_run_frames_ = 0;
 
         // Append frame into the circular buffer.
         for (uint32_t i = 0; i < n; ++i) {
@@ -149,8 +164,23 @@ public:
 
         ++frames_since_inference_;
         if (filled_ < min_fill_)              return r;     // warmup
-        if (frames_since_inference_ < frames_per_inference_) return r;
+        const uint32_t due = frames_per_inference_ *
+                             (hints.cadence_multiplier == 0 ? 1u : hints.cadence_multiplier);
+        if (frames_since_inference_ < due) return r;
         frames_since_inference_ = 0;
+
+        // Shed the inference (not the audio) when degraded, or when nothing in
+        // the window rose above the silence gate — YAMNet on 3 s of silence is
+        // the most expensive way to learn nothing.
+        // "All quiet" means every sample currently buffered was quiet — during
+        // the warm-up ramp that is fewer than a full window's worth of frames.
+        const bool all_quiet =
+            quiet_run_frames_ >= frames_per_window_ ||
+            static_cast<size_t>(quiet_run_frames_) * frame_samples_ >= filled_;
+        if (hints.inhibit || all_quiet) {
+            r.skipped = true;
+            return r;
+        }
 
         // Linearize the circular buffer into contiguous_ before inference.
         contiguous_.resize(buf_.size());
@@ -158,7 +188,8 @@ public:
         std::memcpy(contiguous_.data(), buf_.data() + write_pos_, tail * sizeof(float));
         std::memcpy(contiguous_.data() + tail, buf_.data(), write_pos_ * sizeof(float));
 
-        const ClassificationResult fresh = run_inference_(contiguous_.data());
+        ClassificationResult fresh = run_inference_(contiguous_.data());
+        fresh.ran = true;
         if (fresh.ready) last_result_ = fresh;
         return fresh;
     }
@@ -261,8 +292,10 @@ private:
     size_t                        write_pos_              = 0;
     size_t                        filled_                 = 0;
     uint32_t                      frame_samples_          = 0;
-    uint32_t                      frames_per_inference_   = 25;
+    uint32_t                      frames_per_inference_   = 50;
     uint32_t                      frames_since_inference_ = 0;
+    uint32_t                      frames_per_window_      = 150;
+    uint32_t                      quiet_run_frames_       = 0;
     ClassificationResult          last_result_{};
 };
 

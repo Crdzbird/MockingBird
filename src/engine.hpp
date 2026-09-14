@@ -121,6 +121,16 @@ struct auris_engine {
     std::unique_ptr<auris::SpscRing<int16_t>> pcm_tap;
     std::atomic<uint64_t> tap_samples_dropped{0};
 
+    // Worker health + work-shedding counters (auris_stats_t). Written only by
+    // the worker; relaxed loads from auris_get_stats.
+    std::atomic<uint32_t> worker_busy_ppm{0};
+    std::atomic<uint32_t> worker_max_frame_us{0};
+    std::atomic<uint64_t> worker_wakeups{0};
+    std::atomic<uint64_t> sound_class_inferences{0};
+    std::atomic<uint64_t> sound_class_inferences_skipped{0};
+    std::atomic<uint64_t> preproc_frames_skipped{0};
+    std::atomic<uint32_t> degradation_level{0};
+
     auris_engine(const auris_config_t& c,
                  size_t                ring_frames,
                  size_t                pool_capacity,

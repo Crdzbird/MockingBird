@@ -42,6 +42,9 @@ class EventType(IntEnum):
     OVERRUN = 6
     BACKEND_ERROR = 7
     SOUND_CLASS = 8
+    DEGRADATION = 9
+    """Adaptive degradation changed level: ``reason_mask`` is the new level
+    (0..3), ``confidence`` the worker's busy fraction."""
 
 
 class Status(IntEnum):
@@ -206,6 +209,27 @@ class Stats:
     input_peak_dbfs: float = 0.0
     tap_samples_dropped: int = 0
 
+    #: Share of wall time the worker spent processing over the last ~1 s
+    #: window, parts per million (1_000_000 = saturated).
+    worker_busy_ppm: int = 0
+    #: Longest single-frame processing time since start, microseconds.
+    worker_max_frame_us: int = 0
+    #: Worker thread parks/unparks — a battery proxy on mobile.
+    worker_wakeups: int = 0
+    #: YAMNet inferences that ran / were due but shed (silence gate or
+    #: degradation).
+    sound_class_inferences: int = 0
+    sound_class_inferences_skipped: int = 0
+    #: Frames RNNoise skipped because they were below the silence gate.
+    preproc_frames_skipped: int = 0
+    #: Adaptive-degradation level, 0 (nominal) .. 3 (classifier suspended).
+    degradation_level: int = 0
+
+    @property
+    def worker_busy_fraction(self) -> float:
+        """:attr:`worker_busy_ppm` as 0..1."""
+        return self.worker_busy_ppm / 1_000_000
+
 
 @dataclass(slots=True)
 class Config:
@@ -257,11 +281,24 @@ class Config:
     enable_sound_class: bool = False
     sound_class_model_path: str | None = None
     sound_class_threshold: float = 0.4
-    sound_class_interval_ms: int = 500
+    sound_class_interval_ms: int = 1000
 
     # Continuous (ungated) PCM tap — see Engine.read_pcm
     enable_pcm_tap: bool = False
     pcm_tap_frames: int = 0
+
+    #: Frames whose input RMS is below this (dBFS) are "quiet": RNNoise is
+    #: skipped for them and YAMNet skips an inference whose whole 3 s window
+    #: was quiet. VAD/anomaly are never gated; audio always flows. -60 is
+    #: conservative; ~-50 also sheds quiet-room tone; <= -120 disables.
+    silence_gate_dbfs: float = -60.0
+    #: Shed YAMNet work under load (cadence x2, x4, then suspend) and restore
+    #: it after a few calm seconds; emits :attr:`EventType.DEGRADATION`. Off
+    #: by default because it reacts to wall-clock timing — enable for live
+    #: capture, not for faster-than-real-time offline processing.
+    enable_adaptive_degradation: bool = False
+    #: Busy threshold, parts per million (700_000 = 70%).
+    degrade_busy_ppm: int = 700_000
 
 
 def sensitive(dial: float, **overrides: object) -> Config:

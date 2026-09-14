@@ -19,6 +19,7 @@ const (
 	EventOverrun      EventType = 6 // packet queue dropped oldest
 	EventBackendError EventType = 7 // ReasonMask carries an auris_status_t
 	EventSoundClass   EventType = 8 // ReasonMask = YAMNet AudioSet class index (0..520)
+	EventDegradation  EventType = 9 // ReasonMask = new degradation level (0..3); Confidence = worker busy fraction
 )
 
 // String returns a short name for the event type.
@@ -40,6 +41,8 @@ func (t EventType) String() string {
 		return "BACKEND_ERROR"
 	case EventSoundClass:
 		return "SOUND_CLASS"
+	case EventDegradation:
+		return "DEGRADATION"
 	default:
 		return "UNKNOWN"
 	}
@@ -108,7 +111,29 @@ type Stats struct {
 	// Samples the continuous PCM tap dropped because the host didn't drain it
 	// fast enough. Always 0 when the tap is disabled.
 	TapSamplesDropped uint64
+
+	// Worker health. WorkerBusyPpm is the share of wall time the worker spent
+	// processing over the most recent ~1 s window (parts per million;
+	// 1_000_000 = saturated). WorkerMaxFrameUs is the longest single frame
+	// since start. WorkerWakeups counts thread parks/unparks — on mobile a
+	// better battery proxy than CPU share.
+	WorkerBusyPpm    uint32
+	WorkerMaxFrameUs uint32
+	WorkerWakeups    uint64
+
+	// Work shedding: YAMNet inferences that ran / were due but skipped
+	// (silence gate or degradation), and frames RNNoise skipped as quiet.
+	SoundClassInferences        uint64
+	SoundClassInferencesSkipped uint64
+	PreprocFramesSkipped        uint64
+
+	// Current adaptive-degradation level (0 nominal .. 3 classifier
+	// suspended). Always 0 unless Config.EnableAdaptiveDegradation.
+	DegradationLevel uint32
 }
+
+// DegradationLevel returns the new level carried by an EventDegradation.
+func (e Event) DegradationLevel() int { return int(e.ReasonMask) }
 
 func eventFromC(e C.auris_event_t) Event {
 	return Event{
@@ -137,16 +162,23 @@ func packetFromC(p C.auris_packet_t) Packet {
 
 func statsFromC(s C.auris_stats_t) Stats {
 	return Stats{
-		FramesCaptured:       uint64(s.frames_captured),
-		FramesDroppedCapture: uint64(s.frames_dropped_capture),
-		PacketsEmitted:       uint64(s.packets_emitted),
-		PacketsDropped:       uint64(s.packets_dropped),
-		SegmentsOpened:       uint64(s.segments_opened),
-		SegmentsClosed:       uint64(s.segments_closed),
-		PcmRingFillFrames:    uint32(s.pcm_ring_fill_frames),
-		PacketQueueFill:      uint32(s.packet_queue_fill),
-		InputRMSdBFS:         float32(s.input_rms_dbfs),
-		InputPeakdBFS:        float32(s.input_peak_dbfs),
-		TapSamplesDropped:    uint64(s.tap_samples_dropped),
+		FramesCaptured:              uint64(s.frames_captured),
+		FramesDroppedCapture:        uint64(s.frames_dropped_capture),
+		PacketsEmitted:              uint64(s.packets_emitted),
+		PacketsDropped:              uint64(s.packets_dropped),
+		SegmentsOpened:              uint64(s.segments_opened),
+		SegmentsClosed:              uint64(s.segments_closed),
+		PcmRingFillFrames:           uint32(s.pcm_ring_fill_frames),
+		PacketQueueFill:             uint32(s.packet_queue_fill),
+		InputRMSdBFS:                float32(s.input_rms_dbfs),
+		InputPeakdBFS:               float32(s.input_peak_dbfs),
+		TapSamplesDropped:           uint64(s.tap_samples_dropped),
+		WorkerBusyPpm:               uint32(s.worker_busy_ppm),
+		WorkerMaxFrameUs:            uint32(s.worker_max_frame_us),
+		WorkerWakeups:               uint64(s.worker_wakeups),
+		SoundClassInferences:        uint64(s.sound_class_inferences),
+		SoundClassInferencesSkipped: uint64(s.sound_class_inferences_skipped),
+		PreprocFramesSkipped:        uint64(s.preproc_frames_skipped),
+		DegradationLevel:            uint32(s.degradation_level),
 	}
 }

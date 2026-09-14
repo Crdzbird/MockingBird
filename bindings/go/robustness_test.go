@@ -411,3 +411,71 @@ func TestStartStopRestart(t *testing.T) {
 		}
 	}
 }
+
+// The silence gate and worker-health stats through the Go surface. RNNoise is
+// the fixture-free way to observe the gate: digital silence must be skipped,
+// signal must not. Skips if the library was built without RNNoise.
+func TestSilenceGateAndWorkerHealth(t *testing.T) {
+	cfg := DefaultConfig()
+	if cfg.SilenceGateDbfs != -60 || cfg.EnableAdaptiveDegradation || cfg.DegradeBusyPpm != 700000 ||
+		cfg.SoundClassIntervalMs != 1000 {
+		t.Fatalf("unexpected defaults: %+v", cfg)
+	}
+	if EventDegradation.String() != "DEGRADATION" {
+		t.Fatalf("EventDegradation.String() = %q", EventDegradation.String())
+	}
+	cfg.Backend = BackendHostPCM
+	cfg.Codec = CodecPCMS16LE
+	cfg.EnableVAD, cfg.EnableAnomaly = false, false
+	cfg.EnableRNNoise = true
+	e, err := New(cfg)
+	if err != nil {
+		t.Skipf("RNNoise not compiled in: %v", err)
+	}
+	defer e.Close()
+	if err := e.Start(); err != nil {
+		t.Fatal(err)
+	}
+	silent := make([]int16, 320)
+	loud := make([]int16, 320)
+	for i := range loud {
+		if i%32 < 16 {
+			loud[i] = 3000
+		} else {
+			loud[i] = -3000
+		}
+	}
+	var ts uint64
+	push := func(f []int16, n int) {
+		for i := 0; i < n; i++ {
+			if err := e.PushPCM(f, ts); err != nil {
+				t.Fatal(err)
+			}
+			ts += 20_000
+		}
+		time.Sleep(150 * time.Millisecond)
+	}
+	push(silent, 25)
+	st, _ := e.Stats()
+	if st.PreprocFramesSkipped != 25 {
+		t.Fatalf("PreprocFramesSkipped after silence = %d, want 25", st.PreprocFramesSkipped)
+	}
+	push(loud, 25)
+	st, _ = e.Stats()
+	if st.PreprocFramesSkipped != 25 {
+		t.Fatalf("PreprocFramesSkipped after signal = %d, want 25 (unchanged)", st.PreprocFramesSkipped)
+	}
+	if st.DegradationLevel != 0 {
+		t.Fatalf("DegradationLevel = %d, want 0 (adaptive off)", st.DegradationLevel)
+	}
+	// Live retune: disabling the gate stops the skipping.
+	cfg.SilenceGateDbfs = -120
+	if err := e.UpdateConfig(cfg); err != nil {
+		t.Fatal(err)
+	}
+	push(silent, 10)
+	st, _ = e.Stats()
+	if st.PreprocFramesSkipped != 25 {
+		t.Fatalf("PreprocFramesSkipped after disabling gate = %d, want 25", st.PreprocFramesSkipped)
+	}
+}

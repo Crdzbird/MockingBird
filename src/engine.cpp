@@ -9,6 +9,9 @@
 #include "encode/encoder.hpp"
 #include "engine.hpp"
 #include "preprocess/preprocessor.hpp"
+#include "degrade.hpp"
+
+#include <chrono>
 #include "preroll_ring.hpp"
 
 #include "auris_log.hpp"
@@ -98,6 +101,11 @@ auris_status_t validate_config(const auris_config_t& c) {
     // The tap ring is bounded by the same reasoning as the capture ring: 0 means
     // "pick a default", anything above the cap is a buggy/hostile request.
     if (c.pcm_tap_frames > kMaxPcmRingFrames) return AURIS_ERR_INVALID_ARG;
+    // Silence gate is a dBFS level: finite and never above full scale.
+    if (!std::isfinite(c.silence_gate_dbfs) || c.silence_gate_dbfs > 0.0f) {
+        return AURIS_ERR_INVALID_ARG;
+    }
+    if (c.degrade_busy_ppm > 1000000u) return AURIS_ERR_INVALID_ARG;
 
     // Duration fields (ms) become frame counts and, for pre-roll and the anomaly
     // background window, buffer allocations on the worker thread. Without a bound
@@ -402,6 +410,22 @@ void worker_run(auris_engine* e) {
     bool     sound_class_enabled  = e->cfg.enable_sound_class != 0;
     uint64_t seen_tune_generation = e->tune_generation.load(std::memory_order_acquire);
 
+    // Silence gate (0 => -60 dBFS default; <= -120 never matches since RMS is
+    // floored at -120) and adaptive degradation (see auris.h). The health
+    // window is closed from inside the frame loop, so it only advances while
+    // audio flows — an idle engine reports its last known busy share.
+    const auto gate_or = [](float v) { return v == 0.0f ? -60.0f : v; };
+    float    silence_gate_dbfs = gate_or(e->cfg.silence_gate_dbfs);
+    bool     adaptive_on       = e->cfg.enable_adaptive_degradation != 0;
+    auris::DegradationPolicy degrade;
+    degrade.configure(e->cfg.degrade_busy_ppm);
+    using clock = std::chrono::steady_clock;
+    constexpr uint64_t kHealthWindowNs = 1000000000ull;   // ~1 s
+    auto     win_start      = clock::now();
+    uint64_t win_busy_ns    = 0;
+    uint64_t win_drops_seen = e->frames_dropped_capture.load(std::memory_order_relaxed);
+    uint32_t max_frame_us   = 0;
+
     // Pull a new tunable snapshot if the host retuned. One relaxed atomic load
     // per frame in the common (unchanged) case; the mutex is taken only on an
     // actual change, and never while a detector is mid-frame.
@@ -419,6 +443,9 @@ void worker_run(auris_engine* e) {
         sound_class_enabled = live.enable_sound_class != 0;
         classifier_threshold = threshold_or(live.sound_class_threshold, 0.4f);
         hangover_frames      = hangover_of(live.vad_hangover_ms);
+        silence_gate_dbfs    = gate_or(live.silence_gate_dbfs);
+        adaptive_on          = live.enable_adaptive_degradation != 0;
+        degrade.configure(live.degrade_busy_ppm);   // keeps the current level
         if (vad)     vad->retune(live);
         if (anomaly) anomaly->retune(live);
         AURIS_VLOG("retuned to generation %llu",
@@ -544,6 +571,13 @@ void worker_run(auris_engine* e) {
             if (base_ts == ~uint64_t{0}) base_ts = 0;
             const uint64_t now_ts = base_ts + frame_index * frame_us;
             ++frame_index;
+            const auto frame_t0 = clock::now();
+            bool frame_quiet = false;
+
+            // Adopt any retune the host requested first (cheap no-op when
+            // unchanged), so this frame's gate and detector decisions already
+            // use the new values rather than lagging one frame behind.
+            refresh_tunables();
 
             // Input level BEFORE noise suppression — a meter should show what
             // the microphone actually received, not the denoised residue.
@@ -562,9 +596,11 @@ void worker_run(auris_engine* e) {
                 const auto to_dbfs = [&](double v) -> float {
                     if (v <= 0.0) return kFloorDbfs;
                     const double db = 20.0 * std::log10(v / kFullScale);
-                    return (db < kFloorDbfs) ? kFloorDbfs : static_cast<float>(db);
+                    return (db < static_cast<double>(kFloorDbfs)) ? kFloorDbfs : static_cast<float>(db);
                 };
-                e->input_rms_dbfs.store(to_dbfs(rms), std::memory_order_relaxed);
+                const float rms_dbfs = to_dbfs(rms);
+                frame_quiet = rms_dbfs < silence_gate_dbfs;
+                e->input_rms_dbfs.store(rms_dbfs, std::memory_order_relaxed);
                 e->input_peak_dbfs.store(to_dbfs(static_cast<double>(peak)),
                                          std::memory_order_relaxed);
             }
@@ -572,7 +608,12 @@ void worker_run(auris_engine* e) {
             // Noise suppression first, in place: detectors, classifier, and
             // the encoded packet all consume the cleaned frame.
             if (preproc_ready && preproc) {
-                preproc->process(scratch.data(), frame_samples);
+                if (frame_quiet) {
+                    // Nothing to denoise; the frame passes through unchanged.
+                    e->preproc_frames_skipped.fetch_add(1, std::memory_order_relaxed);
+                } else {
+                    preproc->process(scratch.data(), frame_samples);
+                }
             }
 
             // Continuous tap: every processed frame, ungated by segmentation,
@@ -585,9 +626,6 @@ void worker_run(auris_engine* e) {
                                                      std::memory_order_relaxed);
                 }
             }
-
-            // Adopt any retune the host requested (cheap no-op when unchanged).
-            refresh_tunables();
 
             // Per-frame: run both detectors, OR their triggers. With both
             // disabled the worker behaves as step-1 passthrough. `*_ready`
@@ -604,7 +642,13 @@ void worker_run(auris_engine* e) {
             // crosses threshold. Independent of the segment lifecycle; the
             // engine surfaces what was heard, the host decides what to do.
             if (classifier_ready && sound_class_enabled && classifier) {
-                const auto cr = classifier->feed(scratch.data(), frame_samples);
+                auris::FeedHints hints;
+                hints.quiet              = frame_quiet;
+                hints.cadence_multiplier = degrade.cadence_multiplier();
+                hints.inhibit            = degrade.inhibit();
+                const auto cr = classifier->feed(scratch.data(), frame_samples, hints);
+                if (cr.ran)     e->sound_class_inferences.fetch_add(1, std::memory_order_relaxed);
+                if (cr.skipped) e->sound_class_inferences_skipped.fetch_add(1, std::memory_order_relaxed);
                 if (cr.ready && cr.confidence >= classifier_threshold &&
                     cr.class_id >= 0) {
                     auris_event_t evt{};
@@ -683,6 +727,47 @@ void worker_run(auris_engine* e) {
 
             vad_was_active = vr.active;
             ano_was_active = ar.active;
+
+            // Worker health: per-frame cost, peak-hold, and a ~1 s busy window
+            // that also drives adaptive degradation.
+            {
+                const auto     frame_t1 = clock::now();
+                const uint64_t ns = static_cast<uint64_t>(
+                    std::chrono::duration_cast<std::chrono::nanoseconds>(frame_t1 - frame_t0).count());
+                win_busy_ns += ns;
+                const uint32_t us = static_cast<uint32_t>(ns / 1000u);
+                if (us > max_frame_us) {
+                    max_frame_us = us;
+                    e->worker_max_frame_us.store(us, std::memory_order_relaxed);
+                }
+                const uint64_t win_ns = static_cast<uint64_t>(
+                    std::chrono::duration_cast<std::chrono::nanoseconds>(frame_t1 - win_start).count());
+                if (win_ns >= kHealthWindowNs) {
+                    uint64_t ppm = (win_busy_ns * 1000000ull) / win_ns;
+                    if (ppm > 1000000ull) ppm = 1000000ull;
+                    e->worker_busy_ppm.store(static_cast<uint32_t>(ppm), std::memory_order_relaxed);
+
+                    const uint64_t drops_now =
+                        e->frames_dropped_capture.load(std::memory_order_relaxed);
+                    const bool dropped = drops_now != win_drops_seen;
+                    win_drops_seen = drops_now;
+
+                    if (adaptive_on && degrade.update(static_cast<uint32_t>(ppm), dropped)) {
+                        e->degradation_level.store(degrade.level(), std::memory_order_relaxed);
+                        auris_event_t evt{};
+                        evt.type         = AURIS_EVT_DEGRADATION;
+                        evt.timestamp_us = now_ts;
+                        evt.reason_mask  = degrade.level();
+                        evt.confidence   = static_cast<float>(ppm) / 1000000.0f;
+                        emit_event(e, evt);
+                        AURIS_VLOG("degradation level -> %u (busy %llu ppm%s)",
+                                   degrade.level(), static_cast<unsigned long long>(ppm),
+                                   dropped ? ", drops" : "");
+                    }
+                    win_start   = frame_t1;
+                    win_busy_ns = 0;
+                }
+            }
         }
 
         if (did_work) {
@@ -698,6 +783,7 @@ void worker_run(auris_engine* e) {
         const uint64_t cur = e->wake_count.load(std::memory_order_acquire);
         if (cur == last_seen_wake) {
             e->wake_count.wait(cur, std::memory_order_acquire);
+            e->worker_wakeups.fetch_add(1, std::memory_order_relaxed);
         }
         last_seen_wake = e->wake_count.load(std::memory_order_acquire);
     }
@@ -785,9 +871,12 @@ AURIS_API auris_status_t auris_config_defaults(auris_config_t* out_cfg) {
     out_cfg->enable_sound_class      = 0;
     out_cfg->sound_class_model_path  = nullptr;
     out_cfg->sound_class_threshold   = 0.4f;
-    out_cfg->sound_class_interval_ms = 500;
+    out_cfg->sound_class_interval_ms = 1000;
     out_cfg->enable_pcm_tap          = 0;
     out_cfg->pcm_tap_frames          = 0;   // 0 => 1 s at the working rate
+    out_cfg->silence_gate_dbfs           = -60.0f;
+    out_cfg->enable_adaptive_degradation = 0;
+    out_cfg->degrade_busy_ppm            = 700000;
     return AURIS_OK;
 }
 
@@ -1093,6 +1182,9 @@ AURIS_API auris_status_t auris_update_config(auris_engine_t*       e,
             e->live_cfg.anomaly_rms_z         = cfg->anomaly_rms_z;
             e->live_cfg.anomaly_flux_z        = cfg->anomaly_flux_z;
             e->live_cfg.sound_class_threshold = cfg->sound_class_threshold;
+            e->live_cfg.silence_gate_dbfs             = cfg->silence_gate_dbfs;
+            e->live_cfg.enable_adaptive_degradation   = cfg->enable_adaptive_degradation;
+            e->live_cfg.degrade_busy_ppm              = cfg->degrade_busy_ppm;
         }
         // Publish after the write: the worker's acquire-load of the generation
         // pairs with this release so it always sees the completed snapshot.
@@ -1117,6 +1209,14 @@ AURIS_API auris_status_t auris_get_stats(auris_engine_t* e, auris_stats_t* out) 
         out->input_rms_dbfs         = e->input_rms_dbfs.load(std::memory_order_relaxed);
         out->input_peak_dbfs        = e->input_peak_dbfs.load(std::memory_order_relaxed);
         out->tap_samples_dropped    = e->tap_samples_dropped.load(std::memory_order_relaxed);
+        out->worker_busy_ppm                = e->worker_busy_ppm.load(std::memory_order_relaxed);
+        out->worker_max_frame_us            = e->worker_max_frame_us.load(std::memory_order_relaxed);
+        out->worker_wakeups                 = e->worker_wakeups.load(std::memory_order_relaxed);
+        out->sound_class_inferences         = e->sound_class_inferences.load(std::memory_order_relaxed);
+        out->sound_class_inferences_skipped = e->sound_class_inferences_skipped.load(std::memory_order_relaxed);
+        out->preproc_frames_skipped         = e->preproc_frames_skipped.load(std::memory_order_relaxed);
+        out->degradation_level              = e->degradation_level.load(std::memory_order_relaxed);
+        std::memset(out->_reserved, 0, sizeof(out->_reserved));
         return AURIS_OK;
     } catch (...) {
         return AURIS_ERR_INTERNAL;

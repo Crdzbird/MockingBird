@@ -21,6 +21,17 @@ struct ClassificationResult {
     bool     ready       = false;   // false = not enough audio buffered yet
     int      class_id    = -1;
     float    confidence  = 0.0f;
+    bool     ran         = false;   // an inference executed on this call
+    bool     skipped     = false;   // an inference was due but gated
+};
+
+// Per-frame steering from the engine. `quiet` is the silence gate's verdict
+// for this frame; an inference whose whole window was quiet is skipped.
+// `cadence_multiplier` / `inhibit` come from adaptive degradation.
+struct FeedHints {
+    bool     quiet              = false;
+    uint32_t cadence_multiplier = 1;
+    bool     inhibit            = false;
 };
 
 class SoundClassifier {
@@ -31,7 +42,8 @@ public:
 
     // Feed one frame of mono int16. Returns ready=true only when a fresh
     // inference completed on this call (typically every Nth frame).
-    virtual ClassificationResult feed(const int16_t* frame, uint32_t n) = 0;
+    virtual ClassificationResult feed(const int16_t* frame, uint32_t n,
+                                      const FeedHints& hints = FeedHints{}) = 0;
 };
 
 // Factory. Returns nullptr if the build does not have AURIS_HAVE_SOUND_CLASS.

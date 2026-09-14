@@ -138,6 +138,43 @@ void main() {
     });
   });
 
+  group('worker health and silence gate', () {
+    test('stats expose worker health; the gate sheds YAMNet on silence',
+        () async {
+      final model = await Auris.extractBundledSoundClassModel();
+      final engine = AurisEngine.create(
+        hostConfig(soundClass: true, soundModel: model),
+      )..start();
+      addTearDown(engine.dispose);
+
+      // 5 s of digital silence: YAMNet inferences come due but every window
+      // is entirely quiet, so they are shed rather than run.
+      for (var i = 0; i < 250; i++) {
+        engine.pushPcm(frame(), captureTsUs: i * 20000);
+        if (i % 25 == 24) {
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+        }
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      var stats = await engine.stats.first;
+      expect(stats.soundClassInferences, 0);
+      expect(stats.soundClassInferencesSkipped, greaterThan(0));
+      expect(stats.workerWakeups, greaterThan(0));
+      expect(stats.degradationLevel, 0); // adaptive is off by default
+
+      // Then real signal: inference resumes.
+      for (var i = 250; i < 350; i++) {
+        engine.pushPcm(frame(amplitude: 9000), captureTsUs: i * 20000);
+        if (i % 25 == 24) {
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+        }
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+      stats = await engine.stats.first;
+      expect(stats.soundClassInferences, greaterThan(0));
+    });
+  });
+
   group('ONNX-backed detectors load (proves ONNX Runtime is linked)', () {
     test('neural (Silero) VAD initialises and detects a loud signal', () async {
       final model = await Auris.extractBundledNeuralVadModel();

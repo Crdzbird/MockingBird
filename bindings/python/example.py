@@ -68,6 +68,10 @@ def build_config(args: argparse.Namespace) -> auris.Config:
         cfg.enable_pcm_tap = True
         cfg.pcm_tap_frames = 1 << 16
 
+    # Adaptive degradation reacts to wall-clock load, so it belongs on the live
+    # mic path only: an offline file run should always produce full output.
+    cfg.enable_adaptive_degradation = not args.file
+
     # Degrade gracefully instead of failing when a model or build flag is absent.
     if cfg.enable_vad and cfg.vad_tier is auris.VadTier.NEURAL and not silero:
         print("note: no silero_vad.onnx — falling back to fast VAD", file=sys.stderr)
@@ -90,6 +94,8 @@ def describe(cfg: auris.Config, preset: str) -> str:
         on.append("RNNoise")
     if cfg.enable_pcm_tap:
         on.append("tap")
+    if cfg.enable_adaptive_degradation:
+        on.append("adaptive")
     tag = f"preset={preset} · " if preset else ""
     backend = "host-pcm" if cfg.backend is auris.Backend.HOST_PCM else "mic"
     return f"{tag}{backend} · {cfg.sample_rate_hz} Hz · {cfg.codec.name.lower()} · [{' '.join(on)}]"
@@ -107,6 +113,9 @@ def print_event(ev: auris.Event, labels: list[str]) -> None:
         name = f" {labels[cls]}" if 0 <= cls < len(labels) else ""
         cat = auris.category_for_yamnet_class(cls)
         print(f"sound   [{cat}]{name} (class {cls}, conf {ev.confidence:.2f})")
+    elif ev.type is auris.EventType.DEGRADATION:
+        print(f"engine  ⚠ degradation level {ev.reason_mask} "
+              f"(worker {ev.confidence * 100:.0f}% busy) — shedding YAMNet work")
     elif ev.type is auris.EventType.BACKEND_ERROR:
         print(f"backend error: {ev.backend_error}", file=sys.stderr)
 
@@ -120,6 +129,11 @@ def report(engine: auris.Engine, packets: int, nbytes: int, tapped: int) -> None
         f"packets to host : {packets} ({nbytes} bytes encoded)\n"
         f"tapped samples  : {tapped}\n"
         f"input level     : {st.input_rms_dbfs:.1f} dBFS rms, {st.input_peak_dbfs:.1f} peak\n"
+        f"worker          : {st.worker_busy_fraction * 100:.2f}% busy (last window), "
+        f"max frame {st.worker_max_frame_us} µs, {st.worker_wakeups} wakeups\n"
+        f"work shed       : YAMNet {st.sound_class_inferences} ran / "
+        f"{st.sound_class_inferences_skipped} skipped, RNNoise skipped "
+        f"{st.preproc_frames_skipped} quiet frames, degradation level {st.degradation_level}\n"
         f"dropped         : {st.frames_dropped_capture} frames, {st.packets_dropped} packets, "
         f"{st.tap_samples_dropped} tap samples"
     )

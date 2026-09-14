@@ -228,5 +228,49 @@ class TestRealVoice(unittest.TestCase):
         self.assertGreaterEqual(speech_begins, 1)
 
 
+
+class SilenceGateAndHealthTest(unittest.TestCase):
+    """Silence gate + worker-health stats through the Python surface."""
+
+    def test_defaults(self) -> None:
+        cfg = auris.Config()
+        self.assertEqual(cfg.silence_gate_dbfs, -60.0)
+        self.assertFalse(cfg.enable_adaptive_degradation)
+        self.assertEqual(cfg.degrade_busy_ppm, 700_000)
+        self.assertEqual(cfg.sound_class_interval_ms, 1000)
+        self.assertEqual(auris.EventType.DEGRADATION, 9)
+
+    def test_rnnoise_gate_and_health(self) -> None:
+        cfg = host_config(enable_vad=False, enable_anomaly=False, enable_rnnoise=True)
+        try:
+            engine = auris.Engine(cfg)
+        except Exception as exc:  # library built without RNNoise
+            self.skipTest(f"RNNoise not compiled in: {exc}")
+        with engine:
+            engine.start()
+            silent = array.array("h", [0] * 320)
+            loud = array.array("h", [3000 if i % 32 < 16 else -3000 for i in range(320)])
+            ts = 0
+            for _ in range(25):
+                engine.push_pcm(silent, ts); ts += 20_000
+            time.sleep(0.15)
+            st = engine.stats()
+            self.assertEqual(st.preproc_frames_skipped, 25)
+            self.assertEqual(st.degradation_level, 0)
+            for _ in range(25):
+                engine.push_pcm(loud, ts); ts += 20_000
+            time.sleep(0.15)
+            st = engine.stats()
+            self.assertEqual(st.preproc_frames_skipped, 25)
+            self.assertGreaterEqual(st.worker_busy_fraction, 0.0)
+            self.assertLessEqual(st.worker_busy_fraction, 1.0)
+            # Live retune: disabling the gate stops the skipping.
+            cfg.silence_gate_dbfs = -120.0
+            engine.update_config(cfg)
+            for _ in range(10):
+                engine.push_pcm(silent, ts); ts += 20_000
+            time.sleep(0.15)
+            self.assertEqual(engine.stats().preproc_frames_skipped, 25)
+
 if __name__ == "__main__":
     unittest.main()

@@ -397,7 +397,8 @@ enum auris_event_type {
   AURIS_EVT_SEGMENT_END(5),
   AURIS_EVT_OVERRUN(6),
   AURIS_EVT_BACKEND_ERROR(7),
-  AURIS_EVT_SOUND_CLASS(8);
+  AURIS_EVT_SOUND_CLASS(8),
+  AURIS_EVT_DEGRADATION(9);
 
   final int value;
   const auris_event_type(this.value);
@@ -411,6 +412,7 @@ enum auris_event_type {
         6 => AURIS_EVT_OVERRUN,
         7 => AURIS_EVT_BACKEND_ERROR,
         8 => AURIS_EVT_SOUND_CLASS,
+        9 => AURIS_EVT_DEGRADATION,
         _ => throw ArgumentError("Unknown value for auris_event_type: $value"),
       };
 }
@@ -519,7 +521,16 @@ final class auris_config extends ffi.Struct {
   @ffi.Uint32()
   external int pcm_tap_frames;
 
-  @ffi.Array.multi([8])
+  @ffi.Float()
+  external double silence_gate_dbfs;
+
+  @ffi.Int()
+  external int enable_adaptive_degradation;
+
+  @ffi.Uint32()
+  external int degrade_busy_ppm;
+
+  @ffi.Array.multi([5])
   external ffi.Array<ffi.Uint32> _reserved;
 }
 
@@ -611,6 +622,30 @@ final class auris_stats extends ffi.Struct {
 
   @ffi.Uint64()
   external int tap_samples_dropped;
+
+  @ffi.Uint32()
+  external int worker_busy_ppm;
+
+  @ffi.Uint32()
+  external int worker_max_frame_us;
+
+  @ffi.Uint64()
+  external int worker_wakeups;
+
+  @ffi.Uint64()
+  external int sound_class_inferences;
+
+  @ffi.Uint64()
+  external int sound_class_inferences_skipped;
+
+  @ffi.Uint64()
+  external int preproc_frames_skipped;
+
+  @ffi.Uint32()
+  external int degradation_level;
+
+  @ffi.Array.multi([7])
+  external ffi.Array<ffi.Uint32> _reserved;
 }
 
 typedef auris_stats_t = auris_stats;

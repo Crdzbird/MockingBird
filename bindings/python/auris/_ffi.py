@@ -96,7 +96,10 @@ class AurisConfig(ctypes.Structure):
         ("sound_class_interval_ms", ctypes.c_uint32),
         ("enable_pcm_tap", ctypes.c_int),
         ("pcm_tap_frames", ctypes.c_uint32),
-        ("_reserved", ctypes.c_uint32 * 8),
+        ("silence_gate_dbfs", ctypes.c_float),
+        ("enable_adaptive_degradation", ctypes.c_int),
+        ("degrade_busy_ppm", ctypes.c_uint32),
+        ("_reserved", ctypes.c_uint32 * 5),
     ]
 
 
@@ -143,6 +146,14 @@ class AurisStats(ctypes.Structure):
         ("input_rms_dbfs", ctypes.c_float),
         ("input_peak_dbfs", ctypes.c_float),
         ("tap_samples_dropped", ctypes.c_uint64),
+        ("worker_busy_ppm", ctypes.c_uint32),
+        ("worker_max_frame_us", ctypes.c_uint32),
+        ("worker_wakeups", ctypes.c_uint64),
+        ("sound_class_inferences", ctypes.c_uint64),
+        ("sound_class_inferences_skipped", ctypes.c_uint64),
+        ("preproc_frames_skipped", ctypes.c_uint64),
+        ("degradation_level", ctypes.c_uint32),
+        ("_reserved", ctypes.c_uint32 * 7),
     ]
 
 

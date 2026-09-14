@@ -348,6 +348,8 @@ if(AURIS_ENABLE_TESTS AND TARGET auris_static)
             tests/test_lifecycle.cpp
             tests/test_update_config.cpp
             tests/test_signal_tap.cpp
+            tests/test_degrade_policy.cpp
+            tests/test_silence_gate.cpp
             tests/test_host_pcm.cpp
             tests/test_opus_encoder.cpp
             tests/test_detectors_golden.cpp
@@ -381,6 +383,26 @@ if(AURIS_ENABLE_TESTS AND TARGET auris_static)
     endif()
 
     add_test(NAME auris_unit COMMAND test_auris)
+endif()
+
+# ---------------------------------------------------------------------------
+# Throughput benchmark (bench/throughput.cpp): CPU cost per second of audio for
+# each feature combination. Built with the tests; run ./bench_auris [seconds].
+if(AURIS_ENABLE_TESTS AND TARGET auris_static)
+    add_executable(bench_auris bench/throughput.cpp)
+    target_compile_definitions(bench_auris PRIVATE
+            AURIS_BENCH_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
+    target_link_libraries(bench_auris PRIVATE auris_static)
+    target_compile_options(bench_auris PRIVATE ${AURIS_WARN_FLAGS})
+    if(AURIS_HAVE_OPUS)
+        target_compile_definitions(bench_auris PRIVATE AURIS_HAVE_OPUS=1)
+    endif()
+    if(AURIS_HAVE_NEURAL_VAD)
+        target_compile_definitions(bench_auris PRIVATE AURIS_HAVE_NEURAL_VAD=1 AURIS_HAVE_SOUND_CLASS=1)
+    endif()
+    if(AURIS_HAVE_RNNOISE)
+        target_compile_definitions(bench_auris PRIVATE AURIS_HAVE_RNNOISE=1)
+    endif()
 endif()
 
 # Note: main.cpp (CLion boilerplate) is intentionally not referenced.
