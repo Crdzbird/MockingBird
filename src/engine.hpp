@@ -131,6 +131,10 @@ struct auris_engine {
     std::atomic<uint64_t> preproc_frames_skipped{0};
     std::atomic<uint32_t> degradation_level{0};
 
+    // Wake batching threshold in SAMPLES (worker_batch_frames * frame). Read
+    // relaxed on the capture thread per push; 0 => wake on every push.
+    std::atomic<size_t>   wake_batch_samples{0};
+
     auris_engine(const auris_config_t& c,
                  size_t                ring_frames,
                  size_t                pool_capacity,

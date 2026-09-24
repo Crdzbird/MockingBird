@@ -23,7 +23,7 @@ jobs:
     name: build + test (C++)
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Configure
         run: cmake -S . -B build -DAURIS_ENABLE_TESTS=ON
       - name: Build
@@ -46,7 +46,7 @@ jobs:
           - name: tsan
             flags: "-fsanitize=thread -fno-omit-frame-pointer -g"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Configure (${{ matrix.name }})
         run: >
           cmake -S . -B build-san -DAURIS_ENABLE_TESTS=ON
@@ -65,8 +65,8 @@ jobs:
     name: build + test (Go)
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: stable
       - name: Build libauris (shared)
@@ -87,8 +87,8 @@ jobs:
     name: test (Python)
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Build libauris (shared)
@@ -107,7 +107,7 @@ jobs:
     name: analyze + test (Dart)
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -130,11 +130,11 @@ jobs:
     name: conformance (Go <-> Dart <-> Python)
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: stable
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - uses: subosito/flutter-action@v2

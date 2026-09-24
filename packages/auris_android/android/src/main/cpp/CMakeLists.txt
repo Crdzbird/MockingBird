@@ -48,11 +48,14 @@ set(AURIS_RNNOISE_SOURCES
         ${AURIS_RNNOISE_DIR}/src/kiss_fft.c
         ${AURIS_RNNOISE_DIR}/src/pitch.c
         ${AURIS_RNNOISE_DIR}/src/rnn.c
-        ${AURIS_RNNOISE_DIR}/src/rnn_data.c
-        ${AURIS_RNNOISE_DIR}/src/rnn_reader.c)
+        ${AURIS_RNNOISE_DIR}/src/nnet.c
+        ${AURIS_RNNOISE_DIR}/src/nnet_default.c
+        ${AURIS_RNNOISE_DIR}/src/parse_lpcnet_weights.c
+        ${AURIS_RNNOISE_DIR}/src/rnnoise_data.c
+        ${AURIS_RNNOISE_DIR}/src/rnnoise_tables.c)
 list(APPEND AURIS_SOURCES ${AURIS_RNNOISE_SOURCES})
 
-# Vendored libopus 1.5.2.
+# Vendored libopus 1.6.1 (third_party/opus/VENDORED_FROM.txt).
 set(AURIS_OPUS_DIR ${AURIS_ROOT}/third_party/opus)
 if(EXISTS ${AURIS_OPUS_DIR}/CMakeLists.txt)
     set(OPUS_BUILD_PROGRAMS              OFF CACHE BOOL "" FORCE)

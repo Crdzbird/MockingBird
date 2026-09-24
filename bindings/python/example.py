@@ -71,6 +71,7 @@ def build_config(args: argparse.Namespace) -> auris.Config:
     # Adaptive degradation reacts to wall-clock load, so it belongs on the live
     # mic path only: an offline file run should always produce full output.
     cfg.enable_adaptive_degradation = not args.file
+    cfg.worker_batch_frames = 0 if args.file else 4   # 80 ms wake cadence on the mic path
 
     # Degrade gracefully instead of failing when a model or build flag is absent.
     if cfg.enable_vad and cfg.vad_tier is auris.VadTier.NEURAL and not silero:

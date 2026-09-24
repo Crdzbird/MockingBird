@@ -299,6 +299,9 @@ class Config:
     enable_adaptive_degradation: bool = False
     #: Busy threshold, parts per million (700_000 = 70%).
     degrade_busy_ppm: int = 700_000
+    #: Wake the native worker only once this many frames are queued (0/1 =
+    #: every push): N× fewer thread wakeups for up to N-1 frames of latency.
+    worker_batch_frames: int = 0
 
 
 def sensitive(dial: float, **overrides: object) -> Config:

@@ -43,7 +43,8 @@ Pod::Spec.new do |s|
     rm -rf Sources/third_party/opus/silk/float/x86
     rm -rf Sources/third_party/opus/dnn
     # Drop opus demo / projection / multistream sources we do not link.
-    rm -f Sources/third_party/opus/src/{opus_demo,opus_compare,repacketizer_demo}.c
+    rm -f Sources/third_party/opus/src/{opus_demo,opus_compare,repacketizer_demo,qext_compare}.c
+    rm -f Sources/third_party/opus/celt/mini_kfft.c   # 1.6: test-only FFT
     rm -f Sources/third_party/opus/src/opus_multistream*.c
     rm -f Sources/third_party/opus/src/opus_projection*.c
     # celt/opus_custom_demo.c carries its own main() and references the
@@ -84,7 +85,9 @@ Pod::Spec.new do |s|
   # std::stop_token, and std::atomic::wait/notify, which libc++ marks as
   # introduced in iOS 14. iOS 14 ships on every device made since 2015,
   # so the practical compatibility loss is essentially zero.
-  s.platform     = :ios, '14.0'
+  # Xcode 27's SDK refuses deployment targets below 15.0 (and 15 is also the
+  # ONNX Runtime Swift package's floor, so SPM and CocoaPods now agree).
+  s.platform     = :ios, '15.0'
   s.swift_version = '5.0'
 
   s.frameworks = 'CoreFoundation', 'CoreAudio', 'AudioToolbox', 'AVFoundation'

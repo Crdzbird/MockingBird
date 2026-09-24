@@ -17,7 +17,7 @@ hears, and streams only the relevant audio out as encoded packets.
 | Stage | Component | Notes |
 |---|---|---|
 | Capture | miniaudio / Oboe (Android) / CoreAudio (Apple) | int16 mono, 8/16/32/48 kHz |
-| Preprocess *(optional)* | **RNNoise** | recurrent noise suppression; bridged to its native 48 kHz |
+| Preprocess *(optional)* | **RNNoise 0.2** (full model) | recurrent noise suppression; bridged to its native 48 kHz |
 | Voice detection | **libfvad** (fast) or **Silero v5** via ONNX Runtime (neural) | language-agnostic |
 | Anomaly gate | RMS + spectral-flux + centroid z-scores (PFFFT) | adaptive rolling background |
 | Sound classification | **YAMNet** via ONNX Runtime | all 521 AudioSet classes |
@@ -148,13 +148,13 @@ per feature. Release build, Apple M3 Max, one core:
 
 | Configuration | Share of one core | Notes |
 |---|---|---|
-| passthrough · fast VAD · anomaly | 0.01% | the engine core is at the noise floor |
-| Opus encode (complexity 5) | 0.32% | |
-| neural VAD (Silero) | 0.43% | |
-| RNNoise | 1.02% | includes the 16→48→16 kHz bridge |
-| YAMNet, 1000 ms cadence (default) | 1.43% | 500 ms cadence: 2.84% |
-| **everything + Opus** | **3.16%** | |
-| everything + Opus, **quiet room** (−75 dBFS) | **0.40%** | silence gate sheds RNNoise + YAMNet |
+| passthrough · fast VAD · anomaly | 0.02% | the engine core is at the noise floor |
+| Opus encode (complexity 5) | 0.40% | |
+| neural VAD (Silero) | 0.50% | |
+| RNNoise 0.2, full model | 2.45% | includes the 16→48→16 kHz bridge; the little model is ~1.35%, the retired classic model was 1.02% |
+| YAMNet, 1000 ms cadence (default) | 1.67% | 500 ms cadence: ~2× |
+| **everything + Opus** | **4.95%** | |
+| everything + Opus, **quiet room** (−75 dBFS) | **0.47%** | silence gate sheds RNNoise + YAMNet |
 
 Expect roughly 3× on a recent iPhone and 5–8× on mid-range Android. The two levers that
 matter are both algorithmic: YAMNet's cadence (`sound_class_interval_ms`) and the silence
@@ -164,6 +164,24 @@ cadence down (×2, ×4, then suspend) whenever the worker's busy share exceeds
 `degrade_busy_ppm` or the capture ring drops frames, and step it back after ~3 calm
 seconds. It is **off by default** because it reacts to wall-clock timing, which would make
 faster-than-real-time offline runs (and the conformance harness) non-deterministic.
+
+`worker_batch_frames` (default 0) wakes the worker only once N frames are queued: the same
+CPU work in N× fewer thread wakeups — the metric that actually maps to battery on phones —
+for up to N−1 frames of added detection latency. `worker_wakeups` in the stats shows the
+effect.
+
+Measured and **rejected** (numbers from the same harness, so they can be re-checked):
+
+- **CoreML execution provider** for the ONNX detectors: YAMNet 1.5% → 26% of wall time
+  (81 of 82 nodes offload, so this is per-inference dispatch overhead, not fallback);
+  Silero 0.6% → 2.4% with unsupported-dimension errors. Set `AURIS_ORT_EP=coreml` to
+  re-measure with a newer ONNX Runtime; the CPU provider stays the default.
+- **Opus NEON intrinsics vs the portable path**: 0.37–0.40% either way, inside run-to-run
+  noise, so the Apple SPM/CocoaPods builds keep `OPUS_DISABLE_INTRINSICS`.
+- **RNNoise 0.2 and the arm64 dot-product extension**: macOS compiles with
+  `__ARM_FEATURE_DOTPROD`, iOS/Android defaults do not. Measured with `-march=armv8-a`:
+  2.42–2.45% vs 2.14–2.44% — no difference outside noise, so the 2.45% figure is
+  representative of the plain NEON path phones run; no runtime dispatch is warranted.
 
 ### Sanitizers
 
@@ -333,7 +351,8 @@ this section explains *why*, so they don't get accidentally removed.
     headers arrive framework-style, hence the extra
     `__has_include(<onnxruntime/onnxruntime_cxx_api.h>)` arm in the detectors.
     That dependency sets the SPM floor at **iOS 15 / macOS 14**; the podspecs keep their
-    lower minimums (iOS 14 / macOS 11), so CocoaPods users are not forced up.
+    lower minimums (iOS 15 / macOS 12 — the floors Xcode 27's SDKs accept), so CocoaPods
+    users are not forced up to macOS 14.
 - **Microphone permission & capture:**
   - **iOS** RemoteIO can't capture until an `AVAudioSession` (record category) is
     configured and activated — done in the capture backend. `permission_handler` needs
@@ -354,12 +373,16 @@ extracted to an app-writable path at runtime.
 
 Auris is permissive-only — **no GPL/LGPL**. Vendored dependencies:
 
-| Dep | License |
-|---|---|
-| miniaudio | public domain / MIT-0 |
-| libfvad | BSD-3-Clause (WebRTC) + MIT |
-| PFFFT | BSD-like (FFTPACK-derived) |
-| libopus | BSD-3-Clause |
-| RNNoise | BSD-3-Clause (Xiph) |
-| ONNX Runtime | MIT (linked, not vendored) |
-| doctest | MIT (test only) |
+| Dep | Version | License |
+|---|---|---|
+| miniaudio | 0.11.25 | public domain / MIT-0 |
+| libfvad | 1.0 | BSD-3-Clause (WebRTC) + MIT |
+| PFFFT | 2013 original (J. Pommier; unversioned) | BSD-like (FFTPACK-derived) |
+| libopus | 1.6.1 release (DRED/OSCE weights and autotools output trimmed — see `third_party/opus/VENDORED_FROM.txt`) | BSD-3-Clause |
+| RNNoise | 0.2 release + full model `0b50c45` compiled in (`third_party/rnnoise/VENDORED_FROM.txt` documents the little-model alternative and the `os_support.h` shim) | BSD-3-Clause (Xiph) |
+| ONNX Runtime | Homebrew 1.30 · Android `onnxruntime-android:1.30.0` · SwiftPM 1.24.2 (newest tag of Microsoft's Swift package) · CocoaPods `onnxruntime-c ~> 1.20` | MIT (linked, not vendored) |
+| doctest | 2.5.3 | MIT (test only) |
+
+Android builds against Oboe 1.11.0, compileSdk 36, NDK r28c (LTS); the example app uses
+Gradle 9.3.1 / AGP 8.13.2 / Kotlin 2.4.0 — the newest versions inside Flutter 3.47's
+tested envelope.

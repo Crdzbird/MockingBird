@@ -45,8 +45,8 @@ let opusExcludes: [String] = [
     "third_party/opus/celt/x86",
     "third_party/opus/celt/mips",
     "third_party/opus/celt/tests",
-    "third_party/opus/celt/dump_modes",
     "third_party/opus/celt/opus_custom_demo.c",
+    "third_party/opus/celt/mini_kfft.c",         // 1.6: test-only FFT, not in the library
     "third_party/opus/silk/x86",
     "third_party/opus/silk/mips",
     "third_party/opus/silk/fixed",
@@ -55,6 +55,7 @@ let opusExcludes: [String] = [
     "third_party/opus/src/opus_demo.c",
     "third_party/opus/src/opus_compare.c",
     "third_party/opus/src/repacketizer_demo.c",
+    "third_party/opus/src/qext_compare.c",       // 1.6: demo program with main()
     "third_party/opus/src/opus_multistream.c",
     "third_party/opus/src/opus_multistream_decoder.c",
     "third_party/opus/src/opus_multistream_encoder.c",

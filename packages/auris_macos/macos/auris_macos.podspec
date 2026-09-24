@@ -37,7 +37,8 @@ Pod::Spec.new do |s|
     rm -rf Sources/third_party/opus/silk/{x86,arm,mips,fixed,tests}
     rm -rf Sources/third_party/opus/silk/float/x86
     rm -rf Sources/third_party/opus/dnn
-    rm -f Sources/third_party/opus/src/{opus_demo,opus_compare,repacketizer_demo}.c
+    rm -f Sources/third_party/opus/src/{opus_demo,opus_compare,repacketizer_demo,qext_compare}.c
+    rm -f Sources/third_party/opus/celt/mini_kfft.c   # 1.6: test-only FFT
     rm -f Sources/third_party/opus/src/opus_multistream*.c
     rm -f Sources/third_party/opus/src/opus_projection*.c
     # celt/opus_custom_demo.c carries its own main() and references the
@@ -74,7 +75,8 @@ Pod::Spec.new do |s|
   s.platform     = :osx
   # macOS 11 (Big Sur) is the first universal-binary baseline and is the
   # iOS-14-equivalent floor for std::atomic::wait/notify.
-  s.osx.deployment_target = '11.0'
+  # Xcode 27's SDK refuses deployment targets below 12.0.
+  s.osx.deployment_target = '12.0'
   s.swift_version = '5.0'
 
   s.frameworks = 'CoreFoundation', 'CoreAudio', 'AudioToolbox'

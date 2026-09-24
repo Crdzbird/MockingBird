@@ -196,6 +196,7 @@ class AurisConfig {
     this.silenceGateDbfs = -60.0,
     this.enableAdaptiveDegradation = false,
     this.degradeBusyPpm = 700000,
+    this.workerBatchFrames = 0,
   });
 
   /// Build a config from a single [sensitivity] dial in 0..1, where 0 is the
@@ -228,6 +229,7 @@ class AurisConfig {
     double silenceGateDbfs = -60.0,
     bool enableAdaptiveDegradation = false,
     int degradeBusyPpm = 700000,
+    int workerBatchFrames = 0,
   }) {
     final s = sensitivity.clamp(0.0, 1.0);
     double lerp(double a, double b) => a + (b - a) * s;
@@ -252,6 +254,7 @@ class AurisConfig {
       silenceGateDbfs: silenceGateDbfs,
       enableAdaptiveDegradation: enableAdaptiveDegradation,
       degradeBusyPpm: degradeBusyPpm,
+      workerBatchFrames: workerBatchFrames,
     );
   }
 
@@ -383,6 +386,11 @@ class AurisConfig {
 
   /// Busy threshold for degradation, parts per million (default 700 000 = 70%).
   final int degradeBusyPpm;
+
+  /// Wake the native worker only once this many frames are queued (0/1 = every
+  /// push). Same CPU work, N× fewer thread wakeups — what actually saves
+  /// battery on phones — at up to (N−1) frames of added latency. Live-tunable.
+  final int workerBatchFrames;
 }
 
 /// Broad semantic category derived from a YAMNet AudioSet class index.
@@ -597,6 +605,7 @@ class AurisEngine {
       ..silence_gate_dbfs = config.silenceGateDbfs
       ..enable_adaptive_degradation = config.enableAdaptiveDegradation ? 1 : 0
       ..degrade_busy_ppm = config.degradeBusyPpm
+      ..worker_batch_frames = config.workerBatchFrames
       // Sound classifier
       ..enable_sound_class = config.enableSoundClass ? 1 : 0
       ..sound_class_threshold = config.soundClassThreshold

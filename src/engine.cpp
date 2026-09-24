@@ -31,6 +31,17 @@ namespace {
 
 constexpr uint16_t kChannelsV1 = 1;
 
+// worker_batch_frames -> samples, clamped so a batch never exceeds half the
+// ring (the producer must always be able to queue one more batch).
+size_t batch_samples_for(const auris_config_t& c, uint32_t batch_frames) {
+    if (batch_frames <= 1u) return 0;
+    const size_t frame  = static_cast<size_t>(c.sample_rate_hz / 1000u) * c.frame_ms;
+    size_t       wanted = static_cast<size_t>(batch_frames) * frame;
+    const size_t cap    = static_cast<size_t>(c.pcm_ring_frames) / 2u;
+    if (wanted > cap) wanted = cap;
+    return wanted < 2u * frame ? 0 : wanted;
+}
+
 bool is_valid_sample_rate(uint32_t hz) {
     // // VERIFY  libfvad documented set; libopus accepts a similar set.
     return hz == 8000 || hz == 16000 || hz == 32000 || hz == 48000;
@@ -106,6 +117,9 @@ auris_status_t validate_config(const auris_config_t& c) {
         return AURIS_ERR_INVALID_ARG;
     }
     if (c.degrade_busy_ppm > 1000000u) return AURIS_ERR_INVALID_ARG;
+    // A batch must fit in the ring with room to spare, or the worker would
+    // never be woken.
+    if (c.worker_batch_frames > 64u) return AURIS_ERR_INVALID_ARG;
 
     // Duration fields (ms) become frame counts and, for pre-roll and the anomaly
     // background window, buffer allocations on the worker thread. Without a bound
@@ -217,6 +231,13 @@ void engine_ingest_pcm(auris_engine* e,
                                             std::memory_order_relaxed);
     }
 
+    // Wake batching: leave the worker parked until a whole batch is queued.
+    // Dropped frames also wake it — a full ring means it must run now.
+    const size_t batch = e->wake_batch_samples.load(std::memory_order_relaxed);
+    if (batch != 0 && written == frame_count &&
+        e->pcm_ring.size_relaxed() < batch) {
+        return;
+    }
     e->wake_count.fetch_add(1, std::memory_order_release);
     e->wake_count.notify_one();
 }
@@ -877,6 +898,7 @@ AURIS_API auris_status_t auris_config_defaults(auris_config_t* out_cfg) {
     out_cfg->silence_gate_dbfs           = -60.0f;
     out_cfg->enable_adaptive_degradation = 0;
     out_cfg->degrade_busy_ppm            = 700000;
+    out_cfg->worker_batch_frames         = 0;
     return AURIS_OK;
 }
 
@@ -926,6 +948,8 @@ AURIS_API auris_status_t auris_create(const auris_config_t* cfg,
 
         // Continuous PCM tap (opt-in). Default capacity is 1 s of audio at the
         // working rate, which is ample for a UI polling at any sane cadence.
+        e->wake_batch_samples.store(batch_samples_for(e->cfg, cfg->worker_batch_frames),
+                                    std::memory_order_relaxed);
         if (cfg->enable_pcm_tap) {
             const size_t tap_capacity = (cfg->pcm_tap_frames != 0)
                 ? static_cast<size_t>(cfg->pcm_tap_frames)
@@ -1185,7 +1209,10 @@ AURIS_API auris_status_t auris_update_config(auris_engine_t*       e,
             e->live_cfg.silence_gate_dbfs             = cfg->silence_gate_dbfs;
             e->live_cfg.enable_adaptive_degradation   = cfg->enable_adaptive_degradation;
             e->live_cfg.degrade_busy_ppm              = cfg->degrade_busy_ppm;
+            e->live_cfg.worker_batch_frames           = cfg->worker_batch_frames;
         }
+        e->wake_batch_samples.store(batch_samples_for(e->cfg, cfg->worker_batch_frames),
+                                    std::memory_order_relaxed);
         // Publish after the write: the worker's acquire-load of the generation
         // pairs with this release so it always sees the completed snapshot.
         e->tune_generation.fetch_add(1, std::memory_order_release);

@@ -336,10 +336,20 @@ typedef struct auris_config {
     int      enable_adaptive_degradation;
     uint32_t degrade_busy_ppm;                /* 0 => 700000 (70%); max 1000000 */
 
+    /* Worker wake batching. The capture thread normally wakes the worker on
+     * every push (every 10-20 ms frame). With N > 1 it wakes the worker only
+     * once at least N frames are queued, so the worker runs N frames per wake
+     * and sleeps N times longer between them. CPU work is unchanged; what
+     * drops is the wakeup rate, which on phones is what timer coalescing and
+     * the scheduler reward with battery. Cost: up to (N-1) frames of added
+     * detection latency. 0 or 1 = wake per push. Bounded so the ring can
+     * always hold a batch; live-tunable. */
+    uint32_t worker_batch_frames;
+
     /* Reserved for future expansion. MUST be zeroed by auris_config_defaults
      * and treated as zero by the engine. Allows additive growth without ABI
      * break. */
-    uint32_t  _reserved[5];
+    uint32_t  _reserved[4];
 } auris_config_t;
 
 /* ============================================================================

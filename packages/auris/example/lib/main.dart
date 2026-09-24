@@ -182,8 +182,10 @@ class _HomePageState extends State<_HomePage> {
           enableRnnoise: p.denoise || _denoise,
           neuralVadModelPath: sileroPath,
           soundClassModelPath: yamnetPath,
-          // Live mic on a phone: let the engine shed YAMNet work under load.
+          // Live mic on a phone: let the engine shed YAMNet work under load,
+          // and wake the worker every 4 frames (80 ms) instead of every 20 ms.
           enableAdaptiveDegradation: true,
+          workerBatchFrames: 4,
         ),
       );
 
@@ -304,6 +306,7 @@ class _HomePageState extends State<_HomePage> {
           soundClassModelPath: eng.config.soundClassModelPath,
           enableAdaptiveDegradation: eng.config.enableAdaptiveDegradation,
           silenceGateDbfs: eng.config.silenceGateDbfs,
+          workerBatchFrames: eng.config.workerBatchFrames,
         ),
       );
     } on AurisException catch (e) {

@@ -88,6 +88,7 @@ public:
             Ort::SessionOptions opts;
             opts.SetIntraOpNumThreads(1);
             opts.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
+            apply_execution_provider(opts);
             // // VERIFY  Model surface (Silero v5.1.2 pinned):
             //   input[0]  "input"  shape [-1,-1] float32
             //   input[1]  "state"  shape [2,-1,128] float32

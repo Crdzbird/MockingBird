@@ -18,19 +18,22 @@ android {
         namespace 'io.auris'
     }
 
-    compileSdk 35
+    compileSdk 36
 
     // NDK r28+ for 16KB-page-aligned shared libraries on Android 15+.
     // // VERIFY  Adjust to match the NDK version installed on the build host.
-    ndkVersion "28.0.13004108"
+    ndkVersion "28.2.13676358"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
     }
 
-    kotlinOptions {
-        jvmTarget = '11'
+    // Kotlin 2.4 retires the kotlinOptions DSL; compilerOptions is the replacement.
+    kotlin {
+        compilerOptions {
+            jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
+        }
     }
 
     sourceSets {
@@ -104,9 +107,9 @@ dependencies {
     // Native low-latency capture path. Oboe ships as a Prefab module
     // (libOboe.so + AAR-bundled headers). 1.10.0 ships 16KB-page-aligned
     // shared libraries for Android 15+.
-    implementation 'com.google.oboe:oboe:1.10.0'
+    implementation 'com.google.oboe:oboe:1.11.0'
 
     // ONNX Runtime mobile bundle: ships libonnxruntime.so + Prefab module
     // descriptors. 1.26.0 ships 16KB-page-aligned shared libraries.
-    implementation 'com.microsoft.onnxruntime:onnxruntime-android:1.26.0'
+    implementation 'com.microsoft.onnxruntime:onnxruntime-android:1.30.0'
 }

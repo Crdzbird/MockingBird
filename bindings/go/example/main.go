@@ -42,6 +42,7 @@ func main() {
 		seconds = flag.Int("seconds", 0, "mic capture seconds; 0 = until Ctrl-C")
 		adapt   = flag.String("adaptive", "", "on | off: shed YAMNet work under load (default: on for mic, off for -file)")
 		gate    = flag.Float64("gate", 0, "silence gate in dBFS (0 = library default -60; -120 disables)")
+		batch   = flag.Uint("batch", 4, "wake the worker every N frames on the mic path (0/1 = every frame)")
 	)
 	flag.Parse()
 
@@ -61,6 +62,9 @@ func main() {
 	}
 	if *gate != 0 {
 		cfg.SilenceGateDbfs = float32(*gate)
+	}
+	if cfg.Backend != auris.BackendHostPCM && *file == "" {
+		cfg.WorkerBatchFrames = uint32(*batch) // fewer wakeups on the live path only
 	}
 
 	fmt.Printf("Auris %s — %s\n", auris.Version(), describe(cfg, *preset))

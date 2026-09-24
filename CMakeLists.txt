@@ -131,8 +131,8 @@ set(AURIS_PFFFT_SOURCES ${AURIS_PFFFT_DIR}/pffft.c)
 list(APPEND AURIS_SOURCES ${AURIS_PFFFT_SOURCES})
 
 # Vendored RNNoise (recurrent noise suppression). BSD-3-Clause (Xiph).
-# // VERIFY  Pinned to commit bad0a75 of github.com/xiph/rnnoise — the last
-# classic revision with the model baked into rnn_data.c (no model download).
+# rnnoise 0.2 with the full 0b50c45 model compiled in (see third_party/rnnoise/
+# VENDORED_FROM.txt for the size/CPU trade-off and the os_support.h shim).
 set(AURIS_RNNOISE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/rnnoise)
 set(AURIS_RNNOISE_SOURCES
         ${AURIS_RNNOISE_DIR}/src/celt_lpc.c
@@ -140,8 +140,11 @@ set(AURIS_RNNOISE_SOURCES
         ${AURIS_RNNOISE_DIR}/src/kiss_fft.c
         ${AURIS_RNNOISE_DIR}/src/pitch.c
         ${AURIS_RNNOISE_DIR}/src/rnn.c
-        ${AURIS_RNNOISE_DIR}/src/rnn_data.c
-        ${AURIS_RNNOISE_DIR}/src/rnn_reader.c)
+        ${AURIS_RNNOISE_DIR}/src/nnet.c
+        ${AURIS_RNNOISE_DIR}/src/nnet_default.c
+        ${AURIS_RNNOISE_DIR}/src/parse_lpcnet_weights.c
+        ${AURIS_RNNOISE_DIR}/src/rnnoise_data.c
+        ${AURIS_RNNOISE_DIR}/src/rnnoise_tables.c)
 if(EXISTS ${AURIS_RNNOISE_DIR}/include/rnnoise.h)
     list(APPEND AURIS_SOURCES ${AURIS_RNNOISE_SOURCES})
     set(AURIS_HAVE_RNNOISE ON)
@@ -350,6 +353,7 @@ if(AURIS_ENABLE_TESTS AND TARGET auris_static)
             tests/test_signal_tap.cpp
             tests/test_degrade_policy.cpp
             tests/test_silence_gate.cpp
+            tests/test_wake_batching.cpp
             tests/test_host_pcm.cpp
             tests/test_opus_encoder.cpp
             tests/test_detectors_golden.cpp

@@ -109,6 +109,11 @@ type Config struct {
 	// faster-than-real-time offline processing.
 	EnableAdaptiveDegradation bool
 	DegradeBusyPpm            uint32 // parts per million; 0 = 700000 (70%)
+
+	// Wake the native worker only once this many frames are queued (0/1 =
+	// every push). Same CPU work, N× fewer thread wakeups — what actually
+	// saves battery on phones — at up to N-1 frames of added latency.
+	WorkerBatchFrames uint32
 }
 
 // DefaultConfig returns the library's documented defaults (mirrors
@@ -282,6 +287,7 @@ func (cfg Config) toC() (C.auris_config_t, func()) {
 	c.silence_gate_dbfs = C.float(cfg.SilenceGateDbfs)
 	c.enable_adaptive_degradation = boolToC(cfg.EnableAdaptiveDegradation)
 	c.degrade_busy_ppm = C.uint32_t(cfg.DegradeBusyPpm)
+	c.worker_batch_frames = C.uint32_t(cfg.WorkerBatchFrames)
 
 	c.enable_sound_class = boolToC(cfg.EnableSoundClass)
 	c.sound_class_threshold = C.float(cfg.SoundClassThreshold)

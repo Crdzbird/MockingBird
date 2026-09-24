@@ -105,6 +105,7 @@ def _to_c_config(cfg: Config, lib: ctypes.CDLL) -> _ffi.AurisConfig:
     c.silence_gate_dbfs = cfg.silence_gate_dbfs
     c.enable_adaptive_degradation = int(bool(cfg.enable_adaptive_degradation))
     c.degrade_busy_ppm = cfg.degrade_busy_ppm
+    c.worker_batch_frames = cfg.worker_batch_frames
 
     # The engine deep-copies any string it retains, but the bytes must outlive
     # this call — keep them alive on the struct object.

@@ -19,6 +19,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <thread>
@@ -73,6 +74,8 @@ auris_config_t base() {
 }
 
 void run(const Case& k, const std::vector<int16_t>& audio) {
+    // AURIS_BENCH_ONLY=<substring> runs just the matching cases.
+    if (const char* only = std::getenv("AURIS_BENCH_ONLY"); only && !std::strstr(k.name, only)) return;
     auris_engine_t* e = nullptr;
     auris_status_t st = auris_create(&k.cfg, &e);
     if (st != AURIS_OK) { std::printf("%-28s  SKIPPED (%s)\n", k.name, auris_status_str(st)); return; }
@@ -142,7 +145,7 @@ int main(int argc, char** argv) {
     { auto c = base(); c.codec = AURIS_CODEC_OPUS; cases.push_back({"Opus encode", c}); }
     { auto c = base(); c.enable_rnnoise = 1; cases.push_back({"RNNoise", c}); }
     { auto c = base(); c.enable_vad = 1; c.vad_tier = AURIS_VAD_NEURAL; c.neural_vad_model_path = silero.c_str(); cases.push_back({"neural VAD (Silero)", c}); }
-    { auto c = base(); c.enable_sound_class = 1; c.sound_class_model_path = yamnet.c_str(); cases.push_back({"YAMNet @500ms (old default)", c}); }
+    { auto c = base(); c.enable_sound_class = 1; c.sound_class_model_path = yamnet.c_str(); c.sound_class_interval_ms = 500; cases.push_back({"YAMNet @500ms (old default)", c}); }
     { auto c = base(); c.enable_sound_class = 1; c.sound_class_model_path = yamnet.c_str(); c.sound_class_interval_ms = 1000; cases.push_back({"YAMNet @1000ms (new default)", c}); }
     { auto c = base(); c.enable_vad = 1; c.vad_tier = AURIS_VAD_NEURAL; c.neural_vad_model_path = silero.c_str();
       c.enable_anomaly = 1; c.enable_rnnoise = 1; c.enable_sound_class = 1; c.sound_class_model_path = yamnet.c_str();

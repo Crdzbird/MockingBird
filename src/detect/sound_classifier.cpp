@@ -67,6 +67,7 @@ public:
             Ort::SessionOptions opts;
             opts.SetIntraOpNumThreads(1);
             opts.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
+            apply_execution_provider(opts);
             session_ = std::make_unique<Ort::Session>(shared_ort_env(), path.c_str(), opts);
             AURIS_VLOG("yamnet model loaded OK");
 
