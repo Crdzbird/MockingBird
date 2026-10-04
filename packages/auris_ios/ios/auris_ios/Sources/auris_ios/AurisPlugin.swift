@@ -23,24 +23,38 @@ public class AurisPlugin: NSObject, FlutterPlugin {
   }
 }
 
-// libauris's C ABI is referenced only at runtime from Dart (dart:ffi against
-// DynamicLibrary.process()), so the static linker, seeing no link-time
-// reference, would drop the whole archive and the lookup would fail with
-// "Failed to lookup symbol 'auris_*': symbol not found".
-//
-// register() (always invoked by Flutter's plugin registrant) calls into the
-// ABI below, which anchors the entire transitive closure — engine, detectors,
-// preprocessor, encoders, and the vendored C deps — into the host binary. The
-// guard is a condition the optimizer cannot fold away, so the calls are
-// retained but never actually run. The podspec's -export_dynamic then publishes
-// these (default-visibility) symbols into the executable's dynamic symbol table
-// so DynamicLibrary.process() can resolve them.
+// The C ABI is referenced only at runtime from Dart, so without a link-time
+// reference the static linker would drop its objects and dart:ffi would fail
+// with "symbol not found". register() is always called by the plugin
+// registrant and reaches every entry point below; the guard is a condition the
+// optimizer cannot fold away, so the calls are kept but never run. Each entry
+// point lives in its own object file, so every one of them must be named here.
 enum AurisSymbolAnchor {
   static func keep() {
     guard getenv("AURIS_FORCE_KEEP_SYMBOLS") != nil else { return }
     var cfg = auris_config_t()
-    _ = auris_config_defaults(&cfg)   // pulls engine.o + its transitive graph
-    _ = auris_status_str(0)           // pulls status.o
+    var engine: OpaquePointer? = nil
+    var event = auris_event_t()
+    var packet = auris_packet_t()
+    var stats = auris_stats_t()
+    var sample: Int16 = 0
+    var written: UInt32 = 0
+    var handle: Int = 0
+    _ = auris_config_defaults(&cfg)
+    _ = auris_create(&cfg, &engine)
+    _ = auris_start(engine)
+    _ = auris_set_event_callback(engine, nil, nil)
+    _ = auris_push_pcm(engine, &sample, 0, 0)
+    _ = auris_poll_event(engine, &event)
+    _ = auris_drain(engine, &packet)
+    _ = auris_release(engine, &packet)
+    _ = auris_read_pcm(engine, &sample, 0, &written)
+    _ = auris_update_config(engine, &cfg)
+    _ = auris_get_stats(engine, &stats)
+    _ = auris_wait_handle(engine, &handle)
+    _ = auris_stop(engine)
+    auris_destroy(engine)
+    _ = auris_status_str(0)
     _ = auris_version_string()
   }
 }
