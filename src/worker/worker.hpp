@@ -20,9 +20,10 @@ public:
     explicit Worker(auris_engine* e);
 
     void run();
+    bool drain_ring();
+    void finish();
 
 private:
-    bool drain_ring();
     void process_frame(uint64_t now_ts);
     void tap(const int16_t* samples);
     void park();

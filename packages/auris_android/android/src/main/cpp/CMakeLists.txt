@@ -36,6 +36,7 @@ set(AURIS_SOURCES
         ${AURIS_ROOT}/src/config_validation.cpp
         ${AURIS_ROOT}/src/engine_events.cpp
         ${AURIS_ROOT}/src/engine_ingest.cpp
+        ${AURIS_ROOT}/src/engine_lifetime.cpp
         ${AURIS_ROOT}/src/packet_pool.cpp
         ${AURIS_ROOT}/src/status.cpp
         ${AURIS_ROOT}/src/worker/detector_bank.cpp
@@ -46,6 +47,7 @@ set(AURIS_SOURCES
         ${AURIS_ROOT}/src/worker/worker.cpp
         ${AURIS_ROOT}/src/worker/worker_frame.cpp
         ${AURIS_ROOT}/src/worker/worker_health.cpp
+        ${AURIS_ROOT}/src/worker/worker_thread.cpp
         ${AURIS_ROOT}/src/capture/backend_factory.cpp
         ${AURIS_ROOT}/src/capture/miniaudio_backend.cpp
         ${AURIS_ROOT}/src/capture/miniaudio_impl.c

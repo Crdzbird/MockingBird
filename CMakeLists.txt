@@ -78,6 +78,7 @@ set(AURIS_SOURCES
         src/config_validation.cpp
         src/engine_events.cpp
         src/engine_ingest.cpp
+        src/engine_lifetime.cpp
         src/packet_pool.cpp
         src/status.cpp
         src/worker/detector_bank.cpp
@@ -88,6 +89,7 @@ set(AURIS_SOURCES
         src/worker/worker.cpp
         src/worker/worker_frame.cpp
         src/worker/worker_health.cpp
+        src/worker/worker_thread.cpp
         src/capture/backend_factory.cpp
         src/capture/miniaudio_backend.cpp
         src/capture/miniaudio_impl.c
@@ -110,6 +112,25 @@ if(APPLE)
             src/capture/coreaudio_backend_init.mm
             src/capture/coreaudio_render.mm
             src/capture/coreaudio_unit.mm)
+endif()
+
+if(EMSCRIPTEN)
+    list(REMOVE_ITEM AURIS_SOURCES
+            src/worker/worker_thread.cpp
+            src/capture/backend_factory.cpp
+            src/capture/miniaudio_backend.cpp
+            src/capture/miniaudio_impl.c)
+    list(APPEND AURIS_SOURCES
+            src/worker/worker_inline.cpp
+            src/capture/backend_factory_host_only.cpp
+            src/web/web_config.cpp
+            src/web/web_event.cpp
+            src/web/web_packet.cpp
+            src/web/web_push.cpp
+            src/web/web_stats.cpp)
+    set(AURIS_BUILD_SHARED OFF)
+    set(AURIS_BUILD_STATIC OFF)
+    set(AURIS_ENABLE_EXAMPLES OFF)
 endif()
 
 set(AURIS_INTERNAL_HEADERS
@@ -150,6 +171,7 @@ set(AURIS_INTERNAL_HEADERS
         src/preprocess/resampler.hpp
         src/preroll_ring.hpp
         src/spsc_ring.hpp
+        src/web/web_fields.hpp
         src/worker/detection_pair.hpp
         src/worker/detector_bank.hpp
         src/worker/level.hpp
@@ -158,6 +180,7 @@ set(AURIS_INTERNAL_HEADERS
         src/worker/segmenter.hpp
         src/worker/tunables.hpp
         src/worker/worker.hpp
+        src/worker/worker_driver.hpp
         src/worker/worker_health.hpp)
 
 # Vendored single-header dep. // VERIFY  Pinned to 0.11.25 (downloaded
@@ -279,8 +302,10 @@ function(_auris_configure_target tgt)
                 ${AURIS_RNNOISE_DIR}/src)
     endif()
     target_link_libraries(${tgt} PUBLIC auris_headers)
-    find_package(Threads REQUIRED)
-    target_link_libraries(${tgt} PRIVATE Threads::Threads)
+    if(NOT EMSCRIPTEN)
+        find_package(Threads REQUIRED)
+        target_link_libraries(${tgt} PRIVATE Threads::Threads)
+    endif()
 
     # Platform link surface for miniaudio.
     # // VERIFY  Confirm each framework / lib against the host toolchain when
@@ -296,6 +321,7 @@ function(_auris_configure_target tgt)
         endif()
     elseif(ANDROID)
         target_link_libraries(${tgt} PRIVATE log OpenSLES)
+    elseif(EMSCRIPTEN)
     elseif(UNIX)
         target_link_libraries(${tgt} PRIVATE pthread dl m)
     endif()
@@ -356,6 +382,20 @@ if(AURIS_SOURCES)
         add_library(auris_static STATIC ${_auris_all_sources})
         _auris_configure_target(auris_static)
         set_target_properties(auris_static PROPERTIES OUTPUT_NAME auris)
+    endif()
+
+    if(EMSCRIPTEN)
+        add_executable(auris_wasm ${_auris_all_sources})
+        _auris_configure_target(auris_wasm)
+        set_target_properties(auris_wasm PROPERTIES OUTPUT_NAME auris SUFFIX ".js")
+        file(READ ${CMAKE_CURRENT_SOURCE_DIR}/scripts/wasm_exports.txt _auris_wasm_exports)
+        string(STRIP "${_auris_wasm_exports}" _auris_wasm_exports)
+        target_link_options(auris_wasm PRIVATE
+                -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXPORT_NAME=createAurisModule
+                -sENVIRONMENT=web,worker,node -sALLOW_MEMORY_GROWTH=1
+                -sEXPORTED_FUNCTIONS=${_auris_wasm_exports}
+                -sEXPORTED_RUNTIME_METHODS=HEAPU8,HEAP8,HEAP16,HEAPU16,HEAP32,HEAPU32,HEAPF32,HEAPF64,UTF8ToString
+                -sINITIAL_MEMORY=32MB -sSTACK_SIZE=1MB)
     endif()
 endif()
 

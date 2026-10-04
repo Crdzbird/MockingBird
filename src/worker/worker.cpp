@@ -28,6 +28,10 @@ void Worker::run() {
         if (e_->stop_requested.load(std::memory_order_acquire)) break;
         park();
     }
+    finish();
+}
+
+void Worker::finish() {
     segmenter_.finish(clock_.now());
 }
 

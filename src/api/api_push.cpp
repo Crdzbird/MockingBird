@@ -2,6 +2,7 @@
 #include "auris/auris.h"
 #include "engine.hpp"
 #include "engine_ingest.hpp"
+#include "worker/worker_driver.hpp"
 
 extern "C" {
 
@@ -14,6 +15,7 @@ AURIS_API auris_status_t auris_push_pcm(auris_engine_t* e, const int16_t* sample
     if (frame_count == 0) return AURIS_OK;
     if (frame_count > e->pcm_ring.capacity()) return AURIS_ERR_INVALID_ARG;
     auris::ingest_pcm(e, samples, frame_count, capture_ts_us);
+    auris::driver_pump(e);
     return AURIS_OK;
 }
 

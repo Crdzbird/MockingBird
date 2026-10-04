@@ -16,6 +16,10 @@
 #include <string>
 #include <thread>
 
+namespace auris {
+class Worker;
+}
+
 struct auris_engine {
     auris_config_t cfg;
     std::string    neural_vad_model_path_storage;
@@ -27,7 +31,8 @@ struct auris_engine {
     std::unique_ptr<auris::CaptureBackend> capture_backend;
     std::unique_ptr<auris::Encoder>        encoder;
 
-    std::thread       worker_thread;
+    std::thread                    worker_thread;
+    std::unique_ptr<auris::Worker> inline_worker;
     std::atomic<bool> running{false};
     std::atomic<bool> stop_requested{false};
     std::atomic<bool> worker_fatal{false};
@@ -74,9 +79,6 @@ struct auris_engine {
     auris_engine(const auris_config_t& c,
                  size_t                ring_frames,
                  size_t                pool_capacity,
-                 size_t                max_payload_bytes)
-        : cfg(c),
-          pcm_ring(ring_frames),
-          packets(pool_capacity, max_payload_bytes),
-          live_cfg(c) {}
+                 size_t                max_payload_bytes);
+    ~auris_engine();
 };

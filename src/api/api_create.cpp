@@ -4,6 +4,7 @@
 #include "auris_log.hpp"
 #include "config_validation.hpp"
 #include "engine.hpp"
+#include "worker/worker_driver.hpp"
 
 #include <memory>
 #include <new>
@@ -33,14 +34,12 @@ void make_tap(auris_engine* e, const auris_config_t* cfg) {
 
 void join_worker(auris_engine* e) {
     if (e->capture_backend) e->capture_backend->stop();
-    e->stop_requested.store(true, std::memory_order_release);
-    e->wake_count.fetch_add(1, std::memory_order_release);
-    e->wake_count.notify_one();
-    if (e->worker_thread.joinable()) e->worker_thread.join();
+    auris::driver_stop(e);
     e->running.store(false, std::memory_order_release);
 }
 
 } // namespace
+
 
 extern "C" {
 

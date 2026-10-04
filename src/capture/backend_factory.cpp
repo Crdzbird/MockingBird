@@ -1,5 +1,7 @@
 // Chooses the capture backend for a configured enum value. Tests may install
 // an override factory to inject synthetic or failing backends.
+#ifndef __EMSCRIPTEN__
+
 #include "capture/capture_backend.hpp"
 #include "capture/coreaudio_backend.hpp"
 #include "capture/miniaudio_backend.hpp"
@@ -40,3 +42,5 @@ std::unique_ptr<CaptureBackend> make_backend(auris_backend_t which) {
 }
 
 } // namespace auris
+
+#endif

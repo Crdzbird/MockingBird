@@ -4,18 +4,7 @@
 #include "clock.hpp"
 #include "engine.hpp"
 #include "engine_ingest.hpp"
-#include "worker/worker.hpp"
-
-namespace {
-
-void stop_worker(auris_engine* e) {
-    e->stop_requested.store(true, std::memory_order_release);
-    e->wake_count.fetch_add(1, std::memory_order_release);
-    e->wake_count.notify_one();
-    if (e->worker_thread.joinable()) e->worker_thread.join();
-}
-
-} // namespace
+#include "worker/worker_driver.hpp"
 
 extern "C" {
 
@@ -32,11 +21,11 @@ AURIS_API auris_status_t auris_start(auris_engine_t* e) {
                 e->capture_backend->init(e->cfg, auris::backend_pcm_callback, e);
             if (r != AURIS_OK) return r;
         }
-        e->worker_thread = std::thread(auris::worker_loop, e);
+        auris::driver_start(e);
         if (e->capture_backend) {
             const auris_status_t r = e->capture_backend->start();
             if (r != AURIS_OK) {
-                stop_worker(e);
+                auris::driver_stop(e);
                 return r;
             }
         }
@@ -53,7 +42,7 @@ AURIS_API auris_status_t auris_stop(auris_engine_t* e) {
     if (!e->running.load(std::memory_order_acquire)) return AURIS_ERR_NOT_RUNNING;
     try {
         if (e->capture_backend) e->capture_backend->stop();
-        stop_worker(e);
+        auris::driver_stop(e);
         e->running.store(false, std::memory_order_release);
         return AURIS_OK;
     } catch (...) {
