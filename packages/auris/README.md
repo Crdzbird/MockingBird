@@ -205,19 +205,19 @@ results are in `bench/flutter_compare` of the repository.
 
 | Task | Package and model | Share of one core | Peak RSS |
 |---|---|---|---|
-| Neural voice detection | auris, Silero v6 | 0.68% | 140 MB |
-| | sherpa_onnx, Silero v5 | 0.46% | 146 MB |
-| | vad_plus, Silero v6 | 1.73% | 153 MB |
-| | vad, Silero v5 | 2.06% | 169 MB |
-| Noise suppression | auris, RNNoise 0.2 full model | 1.07% | 126 MB |
-| | flutter_nnnoiseless, RNNoise classic model | 0.72% | 106 MB |
-| | sherpa_onnx, gtcrn | 4.32% | 155 MB |
-| Sound classification, 1 s cadence | auris, YAMNet (521 classes) | 1.76% | 159 MB |
-| | sherpa_onnx, CED tiny fp32 | 1.30% | 157 MB |
-| | sherpa_onnx, CED tiny int8 | 1.13% | 155 MB |
-| Fast voice detection | auris, libfvad | 0.18% | 114 MB |
-| Anomaly gate | auris | 0.07% | 130 MB |
-| Everything on, with Opus | auris | 3.19% | 191 MB |
+| Neural voice detection | auris, Silero v6 | 0.67% | 145 MB |
+| | sherpa_onnx, Silero v5 | 0.43% | 144 MB |
+| | vad_plus, Silero v6 | 1.69% | 152 MB |
+| | vad, Silero v5 | 2.07% | 166 MB |
+| Noise suppression | auris, RNNoise 0.2 full model | 1.12% | 141 MB |
+| | flutter_nnnoiseless, RNNoise classic model | 0.60% | 112 MB |
+| | sherpa_onnx, gtcrn | 4.26% | 154 MB |
+| Sound classification, 1 s cadence | auris, YAMNet (521 classes) | 1.80% | 164 MB |
+| | sherpa_onnx, CED tiny fp32 | 1.28% | 174 MB |
+| | sherpa_onnx, CED tiny int8 | 1.14% | 177 MB |
+| Fast voice detection | auris, libfvad | 0.14% | 114 MB |
+| Anomaly gate | auris | 0.07% | 145 MB |
+| Everything on, with Opus | auris | 3.19% | 193 MB |
 
 The same engine as WebAssembly, run under V8 (the engine inside Chrome) on
 the same input. The web build is single-threaded and has no SIMD, so the
@@ -228,8 +228,18 @@ packet and segment counts match the native run exactly.
 |---|---|---|
 | Fast voice detection | libfvad | 0.02% |
 | Anomaly gate | | 0.02% |
-| Noise suppression | RNNoise 0.2 full model | 2.38% |
-| Everything the web build has: fast VAD, anomaly gate, RNNoise, Opus | | 2.52% |
+| Noise suppression | RNNoise 0.2 full model | 2.71% |
+| Everything the web build has: fast VAD, anomaly gate, RNNoise, Opus | | 2.89% |
+
+Measured on Flutter 3.47.6 with every package at its latest version; the
+earlier run on 3.47.2 differed by at most a few hundredths of a percent, which
+is the run-to-run noise of the harness.
+
+What the Silero v6 upgrade changed is selectivity, not cost. On this fixture,
+which repeats one utterance four times between music and an animal, the
+neural tier now opens 12 speech segments where v5 opened 27 and ships 1,124
+packets where it shipped 1,731, with the same four utterances detected. Less
+false speech means less audio leaving the device.
 
 Reading the numbers fairly:
 
@@ -254,7 +264,7 @@ default assets, against an empty Flutter app built the same way:
 | Package | Bundle | Added over the empty app |
 |---|---|---|
 | empty Flutter app | 32.6 MB | |
-| auris | 120.7 MB | 88.1 MB |
+| auris | 126.3 MB | 93.8 MB |
 | vad_plus | 89.4 MB | 56.8 MB |
 | vad | 93.2 MB | 60.6 MB |
 | sherpa_onnx | 88.3 MB | 55.7 MB |

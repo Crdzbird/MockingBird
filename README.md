@@ -417,13 +417,13 @@ bodies; the structure is meant to carry that information.
 
 | Configuration | Share of one core |
 |---|---|
-| passthrough, fast VAD, anomaly gate | 0.02% |
-| Opus encode, complexity 5 | 0.38% |
-| neural VAD (Silero v6) | 0.48% |
-| RNNoise 0.2, full model, including the 16 to 48 kHz bridge | 2.34% |
-| YAMNet, 1000 ms cadence (default) | 1.71% |
-| everything on, with Opus | 4.86% |
-| everything on, quiet room at -75 dBFS | 0.41% |
+| passthrough, fast VAD, anomaly gate | 0.01% |
+| Opus encode, complexity 5 | 0.36% |
+| neural VAD (Silero v6) | 0.61% |
+| RNNoise 0.2, full model, including the 16 to 48 kHz bridge | 2.52% |
+| YAMNet, 1000 ms cadence (default) | 1.69% |
+| everything on, with Opus | 4.92% |
+| everything on, quiet room at -75 dBFS | 0.44% |
 
 Expect roughly three times these figures on a recent iPhone and five to eight
 times on a mid-range Android phone. The two settings that matter most are
@@ -446,7 +446,7 @@ each in its own release-mode app on the same input, and the WebAssembly build
 under V8 on the same input. The results and how to read them are in
 `packages/auris/README.md`. In short, the web build costs about the same as
 native for the detectors and about twice as much for RNNoise, which has no
-SIMD there: everything the web build has, with Opus, is 2.5% of a core.
+SIMD there: everything the web build has, with Opus, is 2.9% of a core.
 
 Measured and not adopted, with the same harness so the numbers can be rechecked:
 
