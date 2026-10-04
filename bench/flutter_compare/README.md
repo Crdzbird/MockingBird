@@ -11,6 +11,7 @@ ONNX Runtime build.
 | `vad_bench` | `vad` | Silero VAD |
 | `sherpa_bench` | `sherpa_onnx` | Silero VAD, gtcrn denoiser, CED tiny audio tagging |
 | `nnnoiseless_bench` | `flutter_nnnoiseless` | RNNoise denoise |
+| `web_bench.mjs` | `auris_web` (the WebAssembly build, under Node's V8) | fast VAD, anomaly gate, RNNoise, everything the web build has |
 
 ## Method
 
@@ -52,3 +53,14 @@ Then run every app, or one:
 Results land in `results/<package>.jsonl`, one JSON line per scenario, plus
 `results/<app>.size.json` with the bundle size. The `vad` package downloads
 its model from a CDN at runtime, so that app needs network access.
+
+The web build is measured separately, because it has no Flutter app around
+it and processes each chunk inline on the caller's thread:
+
+```bash
+node bench/flutter_compare/web_bench.mjs
+```
+
+It loads `packages/auris_web/assets/auris.js`, builds the same fixture, and
+records the push loop's wall time as the CPU time, into
+`results/auris_web.jsonl`.

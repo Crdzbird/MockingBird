@@ -219,6 +219,18 @@ results are in `bench/flutter_compare` of the repository.
 | Anomaly gate | auris | 0.07% | 130 MB |
 | Everything on, with Opus | auris | 3.19% | 191 MB |
 
+The same engine as WebAssembly, run under V8 (the engine inside Chrome) on
+the same input. The web build is single-threaded and has no SIMD, so the
+neural network in RNNoise costs about twice what it does natively; the
+packet and segment counts match the native run exactly.
+
+| Task | auris_web (WebAssembly) | Share of one core |
+|---|---|---|
+| Fast voice detection | libfvad | 0.02% |
+| Anomaly gate | | 0.02% |
+| Noise suppression | RNNoise 0.2 full model | 2.38% |
+| Everything the web build has: fast VAD, anomaly gate, RNNoise, Opus | | 2.52% |
+
 Reading the numbers fairly:
 
 - The Auris rows include the whole pipeline around the detector: segmentation
@@ -231,6 +243,10 @@ Reading the numbers fairly:
   compare the cost of classifying every second, not the quality of the labels.
 - The `vad` package runs its frame loop in Dart on the main isolate, which is
   where its extra cost comes from.
+- The web rows measure the push loop alone, because the WebAssembly build
+  processes each chunk inline; the Flutter rows also include the Dart poll
+  loop and the FFI copies. The native fast VAD and anomaly rows are at the
+  noise floor of the harness either way.
 
 Release bundle size on macOS, measured as the whole `.app` with the package's
 default assets, against an empty Flutter app built the same way:

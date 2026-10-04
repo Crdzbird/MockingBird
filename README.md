@@ -442,8 +442,11 @@ frames of added latency. `worker_wakeups` in the stats shows the effect.
 
 `bench/flutter_compare` measures the Flutter package against the pub.dev packages
 that cover parts of the same job (vad_plus, vad, sherpa_onnx, flutter_nnnoiseless),
-each in its own release-mode app on the same input. The results and how to read
-them are in `packages/auris/README.md`.
+each in its own release-mode app on the same input, and the WebAssembly build
+under V8 on the same input. The results and how to read them are in
+`packages/auris/README.md`. In short, the web build costs about the same as
+native for the detectors and about twice as much for RNNoise, which has no
+SIMD there: everything the web build has, with Opus, is 2.5% of a core.
 
 Measured and not adopted, with the same harness so the numbers can be rechecked:
 
