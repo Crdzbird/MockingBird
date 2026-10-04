@@ -11,7 +11,7 @@ hot path.
 |---|---|---|
 | Capture | Oboe on Android, Core Audio on iOS and macOS | int16 mono at 8, 16, 32 or 48 kHz |
 | Denoise (optional) | RNNoise 0.2, full model | bridged to its native 48 kHz |
-| Voice detection | libfvad (fast) or Silero v5 (neural) | language-agnostic |
+| Voice detection | libfvad (fast) or Silero v6 (neural) | language-agnostic |
 | Anomaly gate | RMS, spectral flux and centroid z-scores | adaptive rolling background |
 | Sound classification | YAMNet, 521 AudioSet classes | 3 s window, 1 s cadence |
 | Encode | Opus or PCM | per segment, with pre-roll |
@@ -180,7 +180,7 @@ about scope; the second is measured.
 |---|---|---|---|---|---|---|
 | Microphone capture | yes | yes | yes, through `record` | no | no | yes |
 | Push your own PCM | yes | yes | yes | yes | yes | no |
-| Voice detection | libfvad or Silero v5 | Silero v6 | Silero v4 or v5, model fetched from a CDN at runtime | Silero or TEN | RNNoise probability | no |
+| Voice detection | libfvad or Silero v6 | Silero v6 | Silero v4 or v5, model fetched from a CDN at runtime | Silero or TEN | RNNoise probability | no |
 | Noise suppression | RNNoise | no | platform flags via the recorder | gtcrn, dpdfnet | RNNoise | platform flags |
 | Sound classification | YAMNet, 521 classes | no | no | CED and zipformer audio tagging | no | no |
 | Non-speech event gate | yes | no | no | no | no | no |
@@ -205,7 +205,7 @@ results are in `bench/flutter_compare` of the repository.
 
 | Task | Package and model | Share of one core | Peak RSS |
 |---|---|---|---|
-| Neural voice detection | auris, Silero v5 | 0.68% | 140 MB |
+| Neural voice detection | auris, Silero v6 | 0.68% | 140 MB |
 | | sherpa_onnx, Silero v5 | 0.46% | 146 MB |
 | | vad_plus, Silero v6 | 1.73% | 153 MB |
 | | vad, Silero v5 | 2.06% | 169 MB |

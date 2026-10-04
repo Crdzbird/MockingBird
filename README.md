@@ -31,7 +31,7 @@ UndefinedBehaviorSanitizer and ThreadSanitizer.
 |---|---|---|
 | Capture | miniaudio, Oboe (Android), Core Audio (Apple) | int16 mono at 8, 16, 32 or 48 kHz |
 | Preprocess (optional) | RNNoise 0.2, full model | recurrent noise suppression, bridged to its native 48 kHz |
-| Voice detection | libfvad (fast) or Silero v5 through ONNX Runtime (neural) | language-agnostic |
+| Voice detection | libfvad (fast) or Silero v6 through ONNX Runtime (neural) | language-agnostic |
 | Anomaly gate | RMS, spectral flux and centroid z-scores (PFFFT) | adaptive rolling background |
 | Sound classification | YAMNet through ONNX Runtime | all 521 AudioSet classes |
 | Encode | libopus or PCM | per segment |
@@ -243,7 +243,7 @@ cmake --build build-tsan -j && ./build-tsan/test_auris
 
 | Model | File | Size |
 |---|---|---|
-| Silero VAD v5.1.2 | `silero_vad.onnx` | about 2 MB |
+| Silero VAD v6.2 (from the v6.2.3 release) | `silero_vad.onnx` | about 2 MB |
 | YAMNet, 3 s window | `yamnet_3s.onnx` | about 15 MB |
 | RNNoise | compiled into the library | |
 
@@ -419,7 +419,7 @@ bodies; the structure is meant to carry that information.
 |---|---|
 | passthrough, fast VAD, anomaly gate | 0.02% |
 | Opus encode, complexity 5 | 0.38% |
-| neural VAD (Silero) | 0.59% |
+| neural VAD (Silero v6) | 0.48% |
 | RNNoise 0.2, full model, including the 16 to 48 kHz bridge | 2.34% |
 | YAMNet, 1000 ms cadence (default) | 1.71% |
 | everything on, with Opus | 4.86% |

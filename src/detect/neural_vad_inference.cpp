@@ -31,10 +31,14 @@ bool NeuralVadDetector::decide(float p_speech) {
 
 bool NeuralVadDetector::run_inference(const float* window) {
     try {
+        std::copy(context_.begin(), context_.end(), input_.begin());
+        std::copy(window, window + window_, input_.begin() + static_cast<std::ptrdiff_t>(context_.size()));
+        std::copy(input_.end() - static_cast<std::ptrdiff_t>(context_.size()), input_.end(),
+                  context_.begin());
         Ort::MemoryInfo mem = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-        const std::array<int64_t, 2> input_shape{1, static_cast<int64_t>(window_)};
+        const std::array<int64_t, 2> input_shape{1, static_cast<int64_t>(input_.size())};
         Ort::Value input_tensor = Ort::Value::CreateTensor<float>(
-            mem, const_cast<float*>(window), window_, input_shape.data(), input_shape.size());
+            mem, input_.data(), input_.size(), input_shape.data(), input_shape.size());
         int64_t    sr_val    = static_cast<int64_t>(sample_rate_);
         Ort::Value sr_tensor = Ort::Value::CreateTensor<int64_t>(mem, &sr_val, 1, nullptr, 0);
         const std::array<int64_t, 3> state_shape{2, 1, 128};

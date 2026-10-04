@@ -1,6 +1,7 @@
-// Silero VAD v5 through ONNX Runtime. Frames are buffered into the model's
-// window (512 samples at 16 kHz, 256 at 8 kHz); every call returns the
-// cached decision, with hysteresis and a two-window onset confirmation.
+// Silero VAD (v5 and v6) through ONNX Runtime. Frames are buffered into the
+// model's window (512 samples at 16 kHz, 256 at 8 kHz), fed with the previous
+// window's tail as context the way the upstream wrapper does; every call
+// returns the cached decision, with hysteresis and onset confirmation.
 #pragma once
 
 #include "detect/detector.hpp"
@@ -32,6 +33,8 @@ private:
     std::unique_ptr<Ort::Session> session_;
     std::vector<float>            buf_;
     std::vector<float>            state_;
+    std::vector<float>            context_;
+    std::vector<float>            input_;
     uint32_t                      sample_rate_   = 0;
     uint32_t                      frame_samples_ = 0;
     size_t                        window_        = 512;

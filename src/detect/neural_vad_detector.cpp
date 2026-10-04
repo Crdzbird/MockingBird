@@ -43,6 +43,8 @@ auris_status_t NeuralVadDetector::init(const auris_config_t& cfg) {
     window_        = cfg.sample_rate_hz == 16000 ? size_t{512} : size_t{256};
     buf_.reserve(window_ + frame_samples_);
     state_.assign(2 * 1 * 128, 0.0f);
+    context_.assign(window_ / 8, 0.0f);
+    input_.assign(context_.size() + window_, 0.0f);
     apply_thresholds(cfg);
     onset_needed_  = 2;
     onset_count_   = 0;
