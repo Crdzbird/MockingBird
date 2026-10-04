@@ -370,7 +370,7 @@ src/
   config_validation.*       config checks and derived sizes
 third_party/                vendored, permissive-only dependencies
 tests/                      118 doctest cases and the audio and model fixtures
-bench/                      the throughput benchmark
+bench/                      the throughput benchmark and the package comparison
 packages/                   Flutter federated plugin and the example app
 bindings/go/                cgo binding, example and tests
 bindings/python/            ctypes binding, example and tests
@@ -410,6 +410,11 @@ timing, which would make faster-than-real-time offline runs non-deterministic.
 `worker_batch_frames` wakes the worker only once that many frames are queued.
 The CPU work is the same, in fewer thread wakeups, at the cost of up to N-1
 frames of added latency. `worker_wakeups` in the stats shows the effect.
+
+`bench/flutter_compare` measures the Flutter package against the pub.dev packages
+that cover parts of the same job (vad_plus, vad, sherpa_onnx, flutter_nnnoiseless),
+each in its own release-mode app on the same input. The results and how to read
+them are in `packages/auris/README.md`.
 
 Measured and not adopted, with the same harness so the numbers can be rechecked:
 

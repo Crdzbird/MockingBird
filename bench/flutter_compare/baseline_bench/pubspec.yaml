@@ -1,0 +1,14 @@
+name: baseline_bench
+description: Empty app that gives the bundle size baseline for the comparison.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  uses-material-design: false

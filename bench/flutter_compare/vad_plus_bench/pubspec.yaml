@@ -1,0 +1,17 @@
+name: vad_plus_bench
+description: vad_plus side of the package comparison benchmark.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  harness:
+    path: ../harness
+  vad_plus: ^0.3.1
+
+flutter:
+  uses-material-design: false

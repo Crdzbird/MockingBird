@@ -1,0 +1,17 @@
+name: sherpa_bench
+description: sherpa_onnx side of the package comparison benchmark.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  harness:
+    path: ../harness
+  sherpa_onnx: ^1.13.8
+
+flutter:
+  uses-material-design: false

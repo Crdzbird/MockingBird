@@ -1,0 +1,6 @@
+analyzer:
+  errors:
+    include_file_not_found: ignore
+  exclude:
+    - build/**
+    - macos/**

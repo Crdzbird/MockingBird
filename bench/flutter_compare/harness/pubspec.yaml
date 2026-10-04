@@ -1,0 +1,13 @@
+name: harness
+description: Shared measurement code for the Auris package comparison benchmark.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  ffi: ^2.1.0
+
+dev_dependencies:
+  lints: ^6.0.0

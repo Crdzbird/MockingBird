@@ -1,14 +1,38 @@
 # auris_platform_interface
 
-[![style: very good analysis][very_good_analysis_badge]][very_good_analysis_link]
+The platform interface for the [auris](https://pub.dev/packages/auris) plugin.
+It holds the `dart:ffi` bindings generated from the engine's C header and the
+`AurisPlatform` base class that each platform package registers.
 
-A common platform interface for the `auris` plugin.
+App code does not depend on this package. Depend on `auris`, which pulls in the
+platform packages for Android, iOS and macOS.
 
-This interface allows platform-specific implementations of the `auris` plugin, as well as the plugin itself, to ensure they are supporting the same interface.
+## What a platform package provides
 
-# Usage
+`AurisPlatform` has one abstract member:
 
-To implement a new platform-specific implementation of `auris`, extend `AurisPlatform` with an implementation that performs the platform-specific behavior.
+```dart
+abstract class AurisPlatform extends PlatformInterface {
+  ffi.DynamicLibrary get nativeLibrary;
+  AurisBindings get bindings;
+}
+```
 
-[very_good_analysis_badge]: https://img.shields.io/badge/style-very_good_analysis-B22C89.svg
-[very_good_analysis_link]: https://pub.dev/packages/very_good_analysis
+A platform package returns the library that contains the C ABI: the process
+itself on Apple platforms, where the engine is linked statically into the app,
+or `libauris.so` on Android. `bindings` wraps that library once and is shared
+by every engine the app creates.
+
+To add a platform, extend `AurisPlatform`, return the right `DynamicLibrary`,
+and set `AurisPlatform.instance` in the plugin's `registerWith`.
+
+## Regenerating the bindings
+
+The bindings are generated from `include/auris/auris.h` in the engine
+repository with `ffigen`:
+
+```bash
+dart run ffigen --config ffigen.yaml
+```
+
+Run it after any change to the header, then re-run the tests of `auris`.

@@ -1,0 +1,22 @@
+PODS:
+  - flutter_nnnoiseless (1.4.0):
+    - FlutterMacOS
+  - FlutterMacOS (1.0.0)
+
+DEPENDENCIES:
+  - flutter_nnnoiseless (from `Flutter/ephemeral/.symlinks/plugins/flutter_nnnoiseless/macos`)
+  - FlutterMacOS (from `Flutter/ephemeral`)
+
+EXTERNAL SOURCES:
+  flutter_nnnoiseless:
+    :path: Flutter/ephemeral/.symlinks/plugins/flutter_nnnoiseless/macos
+  FlutterMacOS:
+    :path: Flutter/ephemeral
+
+SPEC CHECKSUMS:
+  flutter_nnnoiseless: a71f669f9f03f5816c31792cbd954186916310b3
+  FlutterMacOS: c232990155153907050900a2e175c7773903ba4e
+
+PODFILE CHECKSUM: d16f5e5d196d1ca9863d7a71d5885cad7ffa7d2d
+
+COCOAPODS: 1.16.2
