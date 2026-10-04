@@ -14,14 +14,14 @@ final class AurisWorkerHealth {
   });
 
   /// Reads the worker fields of a native `auris_stats_t`.
-  factory AurisWorkerHealth.fromNative(auris_stats_t s) => AurisWorkerHealth(
-    busyPpm: s.worker_busy_ppm,
-    maxFrameUs: s.worker_max_frame_us,
-    wakeups: s.worker_wakeups,
-    soundClassInferences: s.sound_class_inferences,
-    soundClassInferencesSkipped: s.sound_class_inferences_skipped,
-    preprocFramesSkipped: s.preproc_frames_skipped,
-    degradationLevel: s.degradation_level,
+  factory AurisWorkerHealth.fromNative(AurisNativeStats s) => AurisWorkerHealth(
+    busyPpm: s.workerBusyPpm,
+    maxFrameUs: s.workerMaxFrameUs,
+    wakeups: s.workerWakeups,
+    soundClassInferences: s.soundClassInferences,
+    soundClassInferencesSkipped: s.soundClassInferencesSkipped,
+    preprocFramesSkipped: s.preprocFramesSkipped,
+    degradationLevel: s.degradationLevel,
   );
 
   /// Share of wall time spent processing over the last ~1 s, in parts per

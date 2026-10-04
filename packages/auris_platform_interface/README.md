@@ -1,30 +1,58 @@
 # auris_platform_interface
 
-The platform interface for the [auris](https://pub.dev/packages/auris) plugin.
-It holds the `dart:ffi` bindings generated from the engine's C header and the
-`AurisPlatform` base class that each platform package registers.
+The platform interface for the [auris](https://pub.dev/packages/auris) plugin:
+the `AurisPlatform` contract every platform package implements, the plain
+data records that cross it, and a shared `dart:ffi` implementation for the
+platforms that link the engine natively.
 
 App code does not depend on this package. Depend on `auris`, which pulls in the
-platform packages for Android, iOS and macOS.
+platform packages for Android, iOS, macOS and web.
 
-## What a platform package provides
+## The contract
 
-`AurisPlatform` has one abstract member:
+`AurisPlatform` exposes the engine's operations with plain Dart types and the
+C ABI's status codes as integers; the `auris` package turns codes into
+exceptions and records into its typed API:
 
 ```dart
 abstract class AurisPlatform extends PlatformInterface {
-  ffi.DynamicLibrary get nativeLibrary;
-  AurisBindings get bindings;
+  Future<void> initialize();
+  String version();
+  String statusName(int status);
+  AurisCreateResult create(AurisNativeConfig config);
+  void destroy(AurisEngineHandle handle);
+  int start(AurisEngineHandle handle);
+  int stop(AurisEngineHandle handle);
+  int pushPcm(AurisEngineHandle handle, Int16List samples, int captureTsUs);
+  AurisPcmResult readPcm(AurisEngineHandle handle, int maxSamples);
+  AurisEventResult pollEvent(AurisEngineHandle handle);
+  AurisPacketResult drainPacket(AurisEngineHandle handle);
+  AurisStatsResult stats(AurisEngineHandle handle);
+  int updateConfig(AurisEngineHandle handle, AurisNativeConfig config);
 }
 ```
 
-A platform package returns the library that contains the C ABI: the process
-itself on Apple platforms, where the engine is linked statically into the app,
-or `libauris.so` on Android. `bindings` wraps that library once and is shared
-by every engine the app creates.
+`AurisNativeConfig`, `AurisNativeEvent`, `AurisNativePacket` and
+`AurisNativeStats` mirror the C structs field for field, with no `dart:ffi`
+types, so the main library compiles on every platform including the web.
 
-To add a platform, extend `AurisPlatform`, return the right `DynamicLibrary`,
-and set `AurisPlatform.instance` in the plugin's `registerWith`.
+## The FFI implementation
+
+`package:auris_platform_interface/ffi.dart` holds `AurisFfiPlatform`, a
+complete implementation over the generated bindings. A platform package that
+links the engine natively only supplies the library:
+
+```dart
+class AurisMacOS extends AurisFfiPlatform {
+  static void registerWith() => AurisPlatform.instance = AurisMacOS();
+
+  @override
+  ffi.DynamicLibrary get nativeLibrary => ffi.DynamicLibrary.process();
+}
+```
+
+The web package implements `AurisPlatform` directly over a WebAssembly
+module. Import `ffi.dart` only from code that never runs on the web.
 
 ## Regenerating the bindings
 

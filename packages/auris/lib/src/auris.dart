@@ -1,23 +1,18 @@
-import 'dart:ffi' as ffi;
-
 import 'package:auris/src/auris_status.dart';
 import 'package:auris_platform_interface/auris_platform_interface.dart';
-import 'package:ffi/ffi.dart';
 
-/// Facts about the linked native engine.
+/// Facts about the linked engine.
 final class Auris {
   const Auris._();
 
-  /// The `X.Y.Z` version of the native engine. Reading it also proves the
-  /// native library is linked and reachable through `dart:ffi`.
-  static String get version => _string(_bindings.auris_version_string());
+  /// Prepares the engine for use. Required on the web, where it loads the
+  /// WebAssembly module; a no-op elsewhere, so apps can always call it.
+  static Future<void> initialize() => AurisPlatform.instance.initialize();
 
-  /// The engine's own name for a [status].
+  /// The engine version, `X.Y.Z`.
+  static String get version => AurisPlatform.instance.version();
+
+  /// The engine's own name for [status].
   static String statusName(AurisStatus status) =>
-      _string(_bindings.auris_status_str(status.nativeValue));
-
-  static AurisBindings get _bindings => AurisPlatform.instance.bindings;
-
-  static String _string(ffi.Pointer<ffi.Char> ptr) =>
-      ptr == ffi.nullptr ? '' : ptr.cast<Utf8>().toDartString();
+      AurisPlatform.instance.statusName(status.nativeValue);
 }

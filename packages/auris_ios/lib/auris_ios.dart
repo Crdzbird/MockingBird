@@ -1,24 +1,17 @@
-/// iOS implementation of AurisPlatform.
-///
-/// libauris is compiled into the host app statically via the podspec, so the
-/// C symbols live in the running process. We reach them with
-/// `DynamicLibrary.process()` rather than `DynamicLibrary.open(...)`.
+/// The ios implementation of the auris plugin.
 library;
 
 import 'dart:ffi' as ffi;
 
 import 'package:auris_platform_interface/auris_platform_interface.dart';
+import 'package:auris_platform_interface/ffi.dart';
 
-/// {@template auris_ios}
-/// The iOS implementation of [AurisPlatform].
-/// {@endtemplate}
-class AurisIOS extends AurisPlatform {
-  /// {@macro auris_ios}
+/// Registers the FFI platform over the library this platform links.
+class AurisIOS extends AurisFfiPlatform {
+  /// Creates the platform; [registerWith] installs it.
   AurisIOS();
 
-  /// Registers this class as the default instance of [AurisPlatform].
-  ///
-  /// Called automatically by Flutter's plugin registry on iOS.
+  /// Called by the Flutter plugin registrant.
   static void registerWith() {
     AurisPlatform.instance = AurisIOS();
   }
@@ -26,6 +19,5 @@ class AurisIOS extends AurisPlatform {
   ffi.DynamicLibrary? _library;
 
   @override
-  ffi.DynamicLibrary get nativeLibrary =>
-      _library ??= ffi.DynamicLibrary.process();
+  ffi.DynamicLibrary get nativeLibrary => _library ??= ffi.DynamicLibrary.process();
 }

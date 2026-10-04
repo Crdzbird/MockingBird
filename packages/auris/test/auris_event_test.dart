@@ -1,24 +1,17 @@
-import 'dart:ffi' as ffi;
-
 import 'package:auris/auris.dart';
 import 'package:auris_platform_interface/auris_platform_interface.dart';
-import 'package:ffi/ffi.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-AurisEvent decode(int type, {int reason = 0, double confidence = 0}) {
-  final p = calloc.allocate<auris_event_t>(ffi.sizeOf<auris_event_t>());
-  try {
-    p.ref
-      ..typeAsInt = type
-      ..segment_id = 7
-      ..timestamp_us = 123456
-      ..reason_mask = reason
-      ..confidence = confidence;
-    return AurisEvent.fromNative(p.ref);
-  } finally {
-    calloc.free(p);
-  }
-}
+AurisEvent decode(int type, {int reason = 0, double confidence = 0}) =>
+    AurisEvent.fromNative(
+      AurisNativeEvent(
+        type: type,
+        segmentId: 7,
+        timestampUs: 123456,
+        reasonMask: reason,
+        confidence: confidence,
+      ),
+    );
 
 void main() {
   test('every native type decodes to its sealed subtype', () {

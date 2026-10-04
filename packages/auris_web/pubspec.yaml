@@ -1,0 +1,34 @@
+name: auris_web
+description: The web implementation of the auris plugin, running the engine as WebAssembly with Web Audio capture.
+version: 0.1.0+1
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+  flutter: ">=3.27.0"
+
+flutter:
+  plugin:
+    implements: auris
+    platforms:
+      web:
+        pluginClass: AurisWeb
+        fileName: auris_web.dart
+  assets:
+    - assets/auris.js
+    - assets/auris.wasm
+    - assets/auris_capture_worklet.js
+
+dependencies:
+  auris_platform_interface:
+    path: ../auris_platform_interface
+  flutter:
+    sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
+  web: ^1.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^11.0.0

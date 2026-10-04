@@ -15,6 +15,8 @@ flutter:
         default_package: auris_ios
       macos:
         default_package: auris_macos
+      web:
+        default_package: auris_web
   # ONNX models bundled with the plugin so the demo (or any consumer)
   # gets Neural VAD + YAMNet sound classification with no extra setup.
   assets:
@@ -23,7 +25,6 @@ flutter:
     - assets/yamnet_class_map.txt
 
 dependencies:
-  ffi: ^2.1.4
   flutter:
     sdk: flutter
   path_provider: ^2.1.6
@@ -35,6 +36,8 @@ dependencies:
     path: ../auris_macos
   auris_platform_interface:
     path: ../auris_platform_interface
+  auris_web:
+    path: ../auris_web
 
 dev_dependencies:
   flutter_test:

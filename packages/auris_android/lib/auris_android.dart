@@ -1,24 +1,17 @@
-/// Android implementation of AurisPlatform.
-///
-/// libauris.so is shipped inside the AAR (built by gradle's
-/// externalNativeBuild → CMakeLists.txt at android/src/main/cpp). At runtime
-/// we open it from the app's native library path via DynamicLibrary.open.
+/// The android implementation of the auris plugin.
 library;
 
 import 'dart:ffi' as ffi;
 
 import 'package:auris_platform_interface/auris_platform_interface.dart';
+import 'package:auris_platform_interface/ffi.dart';
 
-/// {@template auris_android}
-/// Android implementation of [AurisPlatform].
-/// {@endtemplate}
-class AurisAndroid extends AurisPlatform {
-  /// {@macro auris_android}
+/// Registers the FFI platform over the library this platform links.
+class AurisAndroid extends AurisFfiPlatform {
+  /// Creates the platform; [registerWith] installs it.
   AurisAndroid();
 
-  /// Registers this class as the default instance of [AurisPlatform].
-  ///
-  /// Called automatically by Flutter's plugin registry on Android.
+  /// Called by the Flutter plugin registrant.
   static void registerWith() {
     AurisPlatform.instance = AurisAndroid();
   }
@@ -26,6 +19,5 @@ class AurisAndroid extends AurisPlatform {
   ffi.DynamicLibrary? _library;
 
   @override
-  ffi.DynamicLibrary get nativeLibrary =>
-      _library ??= ffi.DynamicLibrary.open('libauris.so');
+  ffi.DynamicLibrary get nativeLibrary => _library ??= ffi.DynamicLibrary.open('libauris.so');
 }

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ffi' as ffi;
 import 'dart:typed_data';
 
 import 'package:auris/src/auris_exception.dart';
@@ -7,11 +6,9 @@ import 'package:auris/src/auris_packet.dart';
 import 'package:auris/src/auris_stats.dart';
 import 'package:auris/src/config/auris_config.dart';
 import 'package:auris/src/events/auris_event.dart';
-import 'package:auris/src/native/native_config.dart';
-import 'package:auris/src/native/native_pcm.dart';
-import 'package:auris/src/native/native_poller.dart';
+import 'package:auris/src/native/engine_poller.dart';
+import 'package:auris/src/native/native_config_mapper.dart';
 import 'package:auris_platform_interface/auris_platform_interface.dart';
-import 'package:ffi/ffi.dart';
 
 part 'auris_engine_lifecycle.dart';
 part 'auris_engine_pcm.dart';
@@ -20,33 +17,24 @@ part 'auris_engine_tuning.dart';
 /// One native engine. Create it, [start] it, listen to [events], [packets]
 /// and [stats], then [dispose] it.
 final class AurisEngine {
-  AurisEngine._(this._bindings, this._engine, this._config);
+  AurisEngine._(this._platform, this._handle, this._config);
 
   /// Creates an engine for [config]; throws [AurisException] if rejected.
   factory AurisEngine.create(AurisConfig config) {
-    final bindings = AurisPlatform.instance.bindings;
-    final native = NativeConfig.from(bindings, config);
-    final out = calloc<ffi.Pointer<auris_engine_t>>();
-    try {
-      AurisException.check(
-        bindings.auris_create(native.pointer, out),
-        'auris_create',
-      );
-      return AurisEngine._(bindings, out.value, config);
-    } finally {
-      native.free();
-      calloc.free(out);
-    }
+    final platform = AurisPlatform.instance;
+    final r = platform.create(const NativeConfigMapper().map(config));
+    AurisException.check(r.status, 'auris_create');
+    return AurisEngine._(platform, r.handle!, config);
   }
 
-  final AurisBindings _bindings;
-  final ffi.Pointer<auris_engine_t> _engine;
+  final AurisPlatform _platform;
+  final AurisEngineHandle _handle;
   final _events = StreamController<AurisEvent>.broadcast();
   final _packets = StreamController<AurisPacket>.broadcast();
   final _stats = StreamController<AurisStats>.broadcast();
-  late final _poller = NativePoller(
-    _bindings,
-    _engine,
+  late final _poller = EnginePoller(
+    _platform,
+    _handle,
     onEvent: _events.add,
     onPacket: _packets.add,
     onStats: _stats.add,
@@ -75,8 +63,7 @@ final class AurisEngine {
     if (_disposed) return;
     if (isRunning) stop();
     _disposed = true;
-    _poller.dispose();
-    _bindings.auris_destroy(_engine);
+    _platform.destroy(_handle);
     await _events.close();
     await _packets.close();
     await _stats.close();

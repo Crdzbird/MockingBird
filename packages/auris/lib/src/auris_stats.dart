@@ -20,18 +20,18 @@ final class AurisStats {
   });
 
   /// Reads a native `auris_stats_t`.
-  factory AurisStats.fromNative(auris_stats_t s) => AurisStats(
-    framesCaptured: s.frames_captured,
-    framesDroppedCapture: s.frames_dropped_capture,
-    packetsEmitted: s.packets_emitted,
-    packetsDropped: s.packets_dropped,
-    segmentsOpened: s.segments_opened,
-    segmentsClosed: s.segments_closed,
-    pcmRingFillFrames: s.pcm_ring_fill_frames,
-    packetQueueFill: s.packet_queue_fill,
-    inputRmsDbfs: s.input_rms_dbfs,
-    inputPeakDbfs: s.input_peak_dbfs,
-    tapSamplesDropped: s.tap_samples_dropped,
+  factory AurisStats.fromNative(AurisNativeStats s) => AurisStats(
+    framesCaptured: s.framesCaptured,
+    framesDroppedCapture: s.framesDroppedCapture,
+    packetsEmitted: s.packetsEmitted,
+    packetsDropped: s.packetsDropped,
+    segmentsOpened: s.segmentsOpened,
+    segmentsClosed: s.segmentsClosed,
+    pcmRingFillFrames: s.pcmRingFillFrames,
+    packetQueueFill: s.packetQueueFill,
+    inputRmsDbfs: s.inputRmsDbfs,
+    inputPeakDbfs: s.inputPeakDbfs,
+    tapSamplesDropped: s.tapSamplesDropped,
     worker: AurisWorkerHealth.fromNative(s),
   );
 

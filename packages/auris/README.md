@@ -16,7 +16,9 @@ hot path.
 | Sound classification | YAMNet, 521 AudioSet classes | 3 s window, 1 s cadence |
 | Encode | Opus or PCM | per segment, with pre-roll |
 
-Supported platforms: Android, iOS, macOS.
+Supported platforms: Android, iOS, macOS and web. The web build runs the
+engine as WebAssembly with fast VAD, the anomaly gate, RNNoise and Opus; the
+neural detectors need ONNX Runtime and are not available there.
 
 ## Install
 
@@ -28,16 +30,29 @@ Then grant the microphone on each platform you ship to. The platform packages
 document the exact keys:
 [auris_android](https://pub.dev/packages/auris_android),
 [auris_ios](https://pub.dev/packages/auris_ios),
-[auris_macos](https://pub.dev/packages/auris_macos). In short: the
-`RECORD_AUDIO` permission on Android, `NSMicrophoneUsageDescription` on iOS
-and macOS, and the audio-input entitlement on macOS. Engines that only receive
-pushed PCM need none of it.
+[auris_macos](https://pub.dev/packages/auris_macos),
+[auris_web](https://pub.dev/packages/auris_web). In short: the `RECORD_AUDIO`
+permission on Android, `NSMicrophoneUsageDescription` on iOS and macOS, the
+audio-input entitlement on macOS, and a secure context on the web. Engines
+that only receive pushed PCM need none of it.
 
 | Platform | Minimum |
 |---|---|
 | Android | API 21, NDK r28 (16 KB pages) |
 | iOS | 15.0 |
 | macOS | 12.0 with CocoaPods, 14.0 with Swift Package Manager |
+| Web | a browser with AudioWorklet and ES modules; no cross-origin isolation needed |
+
+Call `Auris.initialize()` once at startup. It loads the WebAssembly module on
+the web and returns immediately elsewhere:
+
+```dart
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Auris.initialize();
+  runApp(const MyApp());
+}
+```
 
 ## Quick start
 
@@ -173,7 +188,7 @@ about scope; the second is measured.
 | Retune while running | yes | no | no | no | no | no |
 | Silence gate and adaptive load shedding | yes | no | no | no | no | no |
 | Native path | `dart:ffi` | `dart:ffi` | `dart:ffi`, JS on web | `dart:ffi` | Rust bridge | platform channels |
-| Platforms | Android, iOS, macOS | Android, iOS, macOS | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS, Windows, Linux, web |
+| Platforms | Android, iOS, macOS, web | Android, iOS, macOS | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS, Windows, Linux, web |
 | License | see repository | MIT | MIT | Apache-2.0 | LGPL-3.0 | BSD-3-Clause |
 
 sherpa_onnx also ships speech recognition, synthesis, keyword spotting and
@@ -250,12 +265,23 @@ first run.
 Expect roughly three times the desktop figures above on a recent iPhone and
 five to eight times on a mid-range Android phone.
 
+## Web
+
+The web build is the same engine compiled to WebAssembly, running
+single-threaded in the page and fed by an AudioWorklet. Fast VAD, the anomaly
+gate, RNNoise, Opus and every API above work; the neural tier and YAMNet are
+rejected with `unsupported` because ONNX Runtime is not part of the build, and
+`AurisModels` throws since there is no file system. The three assets add about
+6 MB to the app. See [auris_web](https://pub.dev/packages/auris_web) for the
+details and for hosting the files on a CDN.
+
 ## Example app
 
 The [example](example) is a complete demo on `flutter_bloc`: presets switch
 detector recipes, a slider retunes the running engine, an RNNoise toggle, a
 level meter, the latest recognised sound and the full stats card. It runs on
-macOS, iOS and Android.
+macOS, iOS, Android and the web, where the presets that need the neural
+detectors fall back to the fast tier.
 
 ## Engine
 

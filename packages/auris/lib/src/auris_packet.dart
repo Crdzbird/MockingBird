@@ -1,4 +1,3 @@
-import 'dart:ffi' as ffi;
 import 'dart:typed_data';
 
 import 'package:auris/src/auris_codec.dart';
@@ -17,15 +16,13 @@ final class AurisPacket {
   });
 
   /// Copies a native `auris_packet_t` out of the engine's pool.
-  factory AurisPacket.fromNative(auris_packet_t p) => AurisPacket(
-    segmentId: p.segment_id,
-    ptsUs: p.pts_us,
-    captureTsUs: p.capture_ts_us,
+  factory AurisPacket.fromNative(AurisNativePacket p) => AurisPacket(
+    segmentId: p.segmentId,
+    ptsUs: p.ptsUs,
+    captureTsUs: p.captureTsUs,
     flags: p.flags,
-    codec: AurisCodec.fromNative(p.codecAsInt),
-    data: p.size > 0 && p.data != ffi.nullptr
-        ? Uint8List.fromList(p.data.asTypedList(p.size))
-        : Uint8List(0),
+    codec: AurisCodec.fromNative(p.codec),
+    data: p.data,
   );
 
   /// The segment this packet belongs to; monotonic per engine.

@@ -6,4 +6,6 @@ First release.
 - Fast VAD (libfvad) and neural VAD (Silero v5), anomaly gate, YAMNet sound classification.
 - Optional RNNoise denoising, Opus or PCM packets, segment pre-roll and hangover.
 - One sensitivity dial, live retuning, silence gate, adaptive degradation, worker health stats.
-- Events, packets and stats as Dart streams over `dart:ffi`; no platform channels.
+- Events, packets and stats as Dart streams; no platform channels.
+- Web support through `auris_web`: the engine as WebAssembly with Web Audio capture.
+- `Auris.initialize()` to call once at startup.

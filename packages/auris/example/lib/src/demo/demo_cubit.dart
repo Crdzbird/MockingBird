@@ -4,6 +4,7 @@ import 'package:auris_example/src/demo/detection_summary.dart';
 import 'package:auris_example/src/demo/engine_session.dart';
 import 'package:auris_example/src/demo/event_formatter.dart';
 import 'package:auris_example/src/demo/mic_permission.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Drives one engine session from the screen's controls.
@@ -21,9 +22,7 @@ final class DemoCubit extends Cubit<DemoState> {
       emit(state.copyWith(error: () => denied));
       return;
     }
-    _formatter = EventFormatter(await AurisModels.yamnetLabels());
-    _neuralVadModelPath = await AurisModels.neuralVadPath();
-    _soundClassModelPath = await AurisModels.soundClassPath();
+    if (!kIsWeb) await _loadModels();
     try {
       _session = await EngineSession.open(
         _config(state.sensitivity),
@@ -75,6 +74,12 @@ final class DemoCubit extends Cubit<DemoState> {
   Future<void> close() async {
     await stop();
     await super.close();
+  }
+
+  Future<void> _loadModels() async {
+    _formatter = EventFormatter(await AurisModels.yamnetLabels());
+    _neuralVadModelPath = await AurisModels.neuralVadPath();
+    _soundClassModelPath = await AurisModels.soundClassPath();
   }
 
   AurisConfig _config(double sensitivity) => state.preset.config(

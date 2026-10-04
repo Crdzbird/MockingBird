@@ -1,7 +1,8 @@
 import 'package:auris_example/src/demo/demo_presets.dart';
 import 'package:flutter/material.dart';
 
-/// One chip per preset; tapping recreates the engine with that recipe.
+/// One chip per preset; tapping recreates the engine with that recipe. A
+/// preset the platform cannot run is shown disabled.
 class PresetChips extends StatelessWidget {
   const PresetChips({
     required this.selected,
@@ -22,7 +23,7 @@ class PresetChips extends StatelessWidget {
           avatar: Icon(preset.icon, size: 18),
           label: Text(preset.label),
           selected: selected == i,
-          onSelected: (_) => onSelected(i),
+          onSelected: preset.availableHere ? (_) => onSelected(i) : null,
         ),
     ],
   );

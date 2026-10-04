@@ -1,5 +1,6 @@
 import 'dart:io' show File;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:path_provider/path_provider.dart';
 
@@ -40,6 +41,12 @@ final class AurisModels {
   ];
 
   static Future<String> _extract(String asset, String filename) async {
+    if (kIsWeb) {
+      throw UnsupportedError(
+        'The neural detectors are not available on the web; use the fast '
+        'VAD tier and the anomaly gate.',
+      );
+    }
     final dir = await getApplicationSupportDirectory();
     final file = File('${dir.path}/$filename');
     if (file.existsSync() && file.lengthSync() > 0) return file.path;

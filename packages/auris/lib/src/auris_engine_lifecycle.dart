@@ -6,7 +6,7 @@ extension AurisEngineLifecycle on AurisEngine {
   void start({Duration pollInterval = const Duration(milliseconds: 50)}) {
     _ensureLive();
     if (isRunning) return;
-    AurisException.check(_bindings.auris_start(_engine), 'auris_start');
+    AurisException.check(_platform.start(_handle), 'auris_start');
     _timer = Timer.periodic(pollInterval, (_) => _poll());
   }
 
@@ -16,7 +16,7 @@ extension AurisEngineLifecycle on AurisEngine {
     if (!isRunning) return;
     _timer?.cancel();
     _timer = null;
-    AurisException.check(_bindings.auris_stop(_engine), 'auris_stop');
+    AurisException.check(_platform.stop(_handle), 'auris_stop');
     _poll();
   }
 }

@@ -1,0 +1,1 @@
+../../assets/auris_capture_worklet.js

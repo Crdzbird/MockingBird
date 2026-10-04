@@ -1,21 +1,21 @@
 import 'package:auris/src/auris_status.dart';
 import 'package:auris_platform_interface/auris_platform_interface.dart';
 
-/// Thrown when a native call returns anything but [AurisStatus.ok].
+/// A native call returned a status other than [AurisStatus.ok].
 final class AurisException implements Exception {
   /// Creates an exception for [call] that returned [status].
   const AurisException(this.call, this.status);
 
-  /// The native function that failed.
+  /// The C ABI function that failed.
   final String call;
 
   /// The status it returned.
   final AurisStatus status;
 
-  /// Throws an [AurisException] unless [status] is OK.
-  static void check(auris_status status, String call) {
-    if (status != auris_status.AURIS_OK) {
-      throw AurisException(call, AurisStatus.fromNative(status.value));
+  /// Throws unless [status] is `AURIS_OK`.
+  static void check(int status, String call) {
+    if (status != AurisStatusCode.ok) {
+      throw AurisException(call, AurisStatus.fromNative(status));
     }
   }
 

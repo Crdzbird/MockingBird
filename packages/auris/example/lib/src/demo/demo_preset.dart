@@ -1,4 +1,5 @@
 import 'package:auris/auris.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 /// A named detector recipe. The same engine does very different jobs
@@ -24,7 +25,14 @@ final class DemoPreset {
   final bool soundClass;
   final bool denoise;
 
+  /// Whether the preset still detects something on the running platform.
+  /// The web build has no neural detectors, so a classifier-only preset
+  /// would do nothing there.
+  bool get availableHere => !kIsWeb || vad || anomaly;
+
   /// The engine configuration for this preset on the live microphone.
+  /// On the web the neural tier falls back to the fast one and the sound
+  /// classifier stays off.
   AurisConfig config({
     required double sensitivity,
     required bool denoise,
@@ -35,11 +43,11 @@ final class DemoPreset {
     backend: AurisBackend.platformDefault,
     denoise: denoise || this.denoise,
     vad: vad,
-    vadTier: neural ? .neural : .fast,
-    neuralVadModelPath: neuralVadModelPath,
+    vadTier: neural && !kIsWeb ? .neural : .fast,
+    neuralVadModelPath: kIsWeb ? null : neuralVadModelPath,
     anomaly: anomaly,
-    soundClass: soundClass,
-    soundClassModelPath: soundClassModelPath,
+    soundClass: soundClass && !kIsWeb,
+    soundClassModelPath: kIsWeb ? null : soundClassModelPath,
     performance: const AurisPerformanceConfig.mobile(),
   );
 }

@@ -7,7 +7,7 @@ out as encoded packets. The same engine is used from Dart/Flutter, Go and
 Python through the bindings in this repository, and from any other language
 that can call C.
 
-The pipeline runs live on Android, iOS and macOS. The core is fuzzed,
+The pipeline runs live on Android, iOS, macOS and, as WebAssembly, in the browser. The core is fuzzed,
 stress-tested, fault-injected, and clean under AddressSanitizer,
 UndefinedBehaviorSanitizer and ThreadSanitizer.
 
@@ -261,6 +261,32 @@ The engine resolves a model path in this order:
 The YAMNet class names are in `tests/fixtures/yamnet_class_map.txt` and, for
 Flutter, through `AurisModels.yamnetLabels()`.
 
+## Building for the web
+
+The engine compiles to WebAssembly with Emscripten. The worker then runs
+inline on the caller's thread, so a page needs no cross-origin isolation, and
+the build leaves out the capture backends and the ONNX detectors; the Flutter
+web package captures through Web Audio and pushes PCM in.
+
+```bash
+scripts/build_wasm.sh                 # writes packages/auris_web/assets/auris.{js,wasm}
+node tests/wasm/smoke.mjs             # pushes the speech fixture through the build
+```
+
+The web package's own tests run the module in Chrome with a synthetic
+microphone:
+
+```bash
+cd packages/auris_web
+CHROME_EXECUTABLE=../../scripts/chrome_fake_mic.sh flutter test --platform chrome
+```
+
+`src/web/` holds the shim the JavaScript side calls: config fields, event,
+packet and stats records are reached by numbered accessors, so no struct
+layout is duplicated outside C++. Those files, the inline worker driver and
+the host-only backend factory are guarded by `__EMSCRIPTEN__`, which keeps
+the podspec and Swift package globs safe.
+
 ## Running the Flutter demo on a device
 
 The example app in `packages/auris/example` is a live demo with presets
@@ -277,6 +303,7 @@ flutter devices                      # list targets
 flutter run -d macos
 flutter run -d <iphone-or-simulator-id>
 flutter run -d <android-device-id>
+flutter run -d chrome
 ```
 
 The integration tests exercise the native library on the chosen device,
@@ -364,6 +391,7 @@ src/
                             segmenter, packet emitter, health window
   detect/                   libfvad VAD, Silero VAD, anomaly gate, YAMNet
   capture/                  backend factory, miniaudio, Core Audio, Oboe
+  web/                      the WebAssembly shim (Emscripten builds only)
   preprocess/               RNNoise and the integer-ratio resamplers
   encode/                   Opus and PCM encoders
   engine.hpp                the engine state behind the opaque handle
@@ -371,7 +399,8 @@ src/
 third_party/                vendored, permissive-only dependencies
 tests/                      118 doctest cases and the audio and model fixtures
 bench/                      the throughput benchmark and the package comparison
-packages/                   Flutter federated plugin and the example app
+packages/                   Flutter federated plugin (auris, platform interface,
+                            android, ios, macos, web) and the example app
 bindings/go/                cgo binding, example and tests
 bindings/python/            ctypes binding, example and tests
 examples/conformance/       Go, Dart and Python byte-parity harness
@@ -543,7 +572,16 @@ cd packages/auris_platform_interface && dart run ffigen --config ffigen.yaml
 
 Add it to `AURIS_SOURCES` in the root `CMakeLists.txt` and to the Android
 plugin's `packages/auris_android/android/src/main/cpp/CMakeLists.txt`. The
-podspecs and Swift packages glob the tree and pick it up on their own.
+podspecs and Swift packages glob the tree and pick it up on their own. A file
+meant for one build only must be guarded (`#ifdef __EMSCRIPTEN__` or its
+negation) for the same reason.
+
+### Adding a C ABI entry point
+
+Declare it in `include/auris/auris.h`, name it in the Swift anchor of both
+Apple plugins so the static linker keeps its object, add it to
+`scripts/wasm_exports.txt`, regenerate the Dart bindings, and give the web
+package a `dart:js_interop` member for it.
 
 ## Licensing
 

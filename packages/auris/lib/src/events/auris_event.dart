@@ -21,19 +21,19 @@ sealed class AurisEvent {
   const AurisEvent({required this.segmentId, required this.timestampUs});
 
   /// Decodes one native `auris_event_t`.
-  factory AurisEvent.fromNative(auris_event_t e) {
-    final id = e.segment_id;
-    final ts = e.timestamp_us;
-    return switch (e.typeAsInt) {
+  factory AurisEvent.fromNative(AurisNativeEvent e) {
+    final id = e.segmentId;
+    final ts = e.timestampUs;
+    return switch (e.type) {
       1 => AurisSpeechBeginEvent._(id, ts, e.confidence),
       2 => AurisSpeechEndEvent._(id, ts),
-      3 => AurisAnomalyEvent._(id, ts, e.reason_mask, e.confidence),
+      3 => AurisAnomalyEvent._(id, ts, e.reasonMask, e.confidence),
       4 => AurisSegmentBeginEvent._(id, ts, e.confidence),
       5 => AurisSegmentEndEvent._(id, ts),
       6 => AurisOverrunEvent._(id, ts),
-      7 => AurisBackendErrorEvent._(id, ts, e.reason_mask.toSigned(32)),
-      8 => AurisSoundClassEvent._(id, ts, e.reason_mask, e.confidence),
-      9 => AurisDegradationEvent._(id, ts, e.reason_mask, e.confidence),
+      7 => AurisBackendErrorEvent._(id, ts, e.reasonMask.toSigned(32)),
+      8 => AurisSoundClassEvent._(id, ts, e.reasonMask, e.confidence),
+      9 => AurisDegradationEvent._(id, ts, e.reasonMask, e.confidence),
       final other => AurisUnknownEvent._(id, ts, other),
     };
   }

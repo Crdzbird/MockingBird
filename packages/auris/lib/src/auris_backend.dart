@@ -1,20 +1,20 @@
-import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 
-/// Where the engine takes audio from.
+/// Where audio comes from.
 enum AurisBackend {
-  /// Let the engine pick the best native backend for the platform.
+  /// The best capture backend for the platform.
   auto(0),
 
-  /// Cross-platform miniaudio capture.
+  /// miniaudio, the portable backend.
   miniaudio(1),
 
-  /// Google Oboe: low-latency Android capture.
+  /// Oboe on Android.
   oboe(2),
 
-  /// CoreAudio with hardware timestamps (iOS, macOS).
+  /// Core Audio on iOS and macOS.
   coreAudio(3),
 
-  /// No microphone: the app feeds PCM through `AurisEngine.pushPcm`.
+  /// No capture; the app pushes PCM with `pushPcm`.
   hostPcm(4);
 
   const AurisBackend(this.nativeValue);
@@ -22,10 +22,13 @@ enum AurisBackend {
   /// The `auris_backend_t` value.
   final int nativeValue;
 
-  /// The native microphone backend for the platform this code runs on.
-  static AurisBackend get platformDefault => switch (Platform.operatingSystem) {
-    'ios' || 'macos' => coreAudio,
-    'android' => oboe,
-    _ => miniaudio,
-  };
+  /// The backend [auto] resolves to on the running platform.
+  static AurisBackend get platformDefault {
+    if (kIsWeb) return hostPcm;
+    return switch (defaultTargetPlatform) {
+      TargetPlatform.iOS || TargetPlatform.macOS => coreAudio,
+      TargetPlatform.android => oboe,
+      _ => miniaudio,
+    };
+  }
 }
