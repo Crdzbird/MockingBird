@@ -1,9 +1,10 @@
-// Public surface of auris_platform_interface.
-//
-// Each platform implementation (auris_ios, auris_macos, auris_android) extends
-// [AurisPlatform] and supplies the [DynamicLibrary] that exposes libauris.
-// Higher-level code in the `auris` package reaches the C ABI through
-// `AurisPlatform.instance.bindings`.
+/// Public surface of auris_platform_interface.
+///
+/// Each platform implementation (auris_ios, auris_macos, auris_android) extends
+/// [AurisPlatform] and supplies the `DynamicLibrary` that exposes libauris.
+/// Higher-level code in the `auris` package reaches the C ABI through
+/// `AurisPlatform.instance.bindings`.
+library;
 
 import 'dart:ffi' as ffi;
 

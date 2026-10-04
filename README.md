@@ -111,7 +111,7 @@ explicit release (guarded by a generation cookie against stale double-release).
 include/auris/auris.h     the C ABI (the contract — bindings generate from this)
 src/                      engine, detectors, encoders, capture backends, preprocess
 third_party/              vendored, permissive-only deps (see Licensing)
-tests/                    115 doctest cases incl. fuzz / stress / fault-injection
+tests/                    118 doctest cases incl. fuzz / stress / fault-injection
 packages/                 Flutter federated plugin (auris + per-platform + example app)
 bindings/go/              cgo binding (idiomatic Go API + example + tests)
 bindings/python/          ctypes binding (no build step + example + tests)
@@ -126,7 +126,7 @@ examples/conformance/     Go ⇄ Dart byte-parity harness (run.sh)
 cmake -S . -B build -DAURIS_ENABLE_TESTS=ON \
       -DAURIS_ENABLE_NEURAL_VAD=ON          # Silero + YAMNet (needs ONNX Runtime)
 cmake --build build -j
-./build/test_auris                          # 115 cases
+./build/test_auris                          # 118 cases
 ./build/bench_auris 20                      # CPU cost per feature, 20 s of audio
 ```
 
@@ -236,13 +236,22 @@ a `HOST_PCM` engine. See [`packages/auris/README.md`](packages/auris/README.md) 
 everything, anomaly-watch, denoised-voice…), a sensitivity dial, and encoded-bytes meter.
 
 ```dart
-final engine = AurisEngine.create(AurisConfig.sensitive(
-  0.6,                                          // one 0..1 dial drives every detector
-  vadTier: auris_vad_tier.AURIS_VAD_NEURAL,     // multilingual
-  neuralVadModelPath: sileroPath,
-  soundClassModelPath: yamnetPath,
-  enableRnnoise: true,
-));
+final engine = AurisEngine.create(
+  AurisConfig.sensitive(
+    0.6,                                                   // one dial drives every detector
+    neuralVadModelPath: await AurisModels.neuralVadPath(), // multilingual Silero VAD
+    soundClassModelPath: await AurisModels.soundClassPath(),
+    denoise: true,
+    performance: const AurisPerformanceConfig.mobile(),
+  ),
+)..start();
+
+engine.events.listen((event) => switch (event) {
+      AurisSpeechBeginEvent() => print('voice'),
+      AurisSoundClassEvent(:final category, :final confidence) =>
+        print('$category ${(confidence * 100).round()}%'),
+      _ => null,
+    });
 ```
 
 ## Go

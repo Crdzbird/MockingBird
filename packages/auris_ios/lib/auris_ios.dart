@@ -1,8 +1,9 @@
-// iOS implementation of AurisPlatform.
-//
-// libauris is compiled into the host app statically via the podspec, so the
-// C symbols live in the running process. We reach them with
-// `DynamicLibrary.process()` rather than `DynamicLibrary.open(...)`.
+/// iOS implementation of AurisPlatform.
+///
+/// libauris is compiled into the host app statically via the podspec, so the
+/// C symbols live in the running process. We reach them with
+/// `DynamicLibrary.process()` rather than `DynamicLibrary.open(...)`.
+library;
 
 import 'dart:ffi' as ffi;
 
@@ -25,5 +26,6 @@ class AurisIOS extends AurisPlatform {
   ffi.DynamicLibrary? _library;
 
   @override
-  ffi.DynamicLibrary get nativeLibrary => _library ??= ffi.DynamicLibrary.process();
+  ffi.DynamicLibrary get nativeLibrary =>
+      _library ??= ffi.DynamicLibrary.process();
 }

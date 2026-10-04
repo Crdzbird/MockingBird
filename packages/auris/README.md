@@ -10,111 +10,107 @@ YAMNet sound classification → encoded packets, delivered as Dart streams over
 ```dart
 import 'package:auris/auris.dart';
 
-final engine = AurisEngine.create(const AurisConfig()); // default mic, fast VAD + anomaly
-engine.events.listen((e) {
-  switch (e.type) {
-    case auris_event_type.AURIS_EVT_SPEECH_BEGIN:
+final engine = AurisEngine.create(const AurisConfig())..start();
+
+engine.events.listen((event) {
+  switch (event) {
+    case AurisSpeechBeginEvent():
       print('voice detected');
-    case auris_event_type.AURIS_EVT_SOUND_CLASS:
-      print('sound: ${Auris.categoryForYamnetClass(e.reasonMask)}');
+    case AurisSoundClassEvent(:final category):
+      print('sound: $category');
     default:
       break;
   }
 });
-engine.start();
+
 // ... later ...
-engine.stop();
 await engine.dispose();
 ```
 
+The default `AurisConfig` captures from the platform's microphone with fast VAD
+and the anomaly gate. Everything else is grouped by concern:
+
+| Group | Knobs |
+|---|---|
+| `vad` | `AurisVadConfig` — tier (`fast` / `neural`), thresholds, hangover, model path |
+| `anomaly` | `AurisAnomalyConfig` — z-score triggers, background window |
+| `soundClass` | `AurisSoundClassConfig` — YAMNet threshold, cadence, model path |
+| `segments` | `AurisSegmentConfig` — pre-roll, post-roll, max length |
+| `encoder` | `AurisEncoderConfig` — `pcm16` or `opus` (`.opus()` preset) |
+| `queues` | `AurisQueueConfig` — ring sizes and the ungated PCM tap |
+| `performance` | `AurisPerformanceConfig` — silence gate, adaptive degradation, wake batching (`.mobile()` preset) |
+
 ### One sensitivity dial
 
-`AurisConfig.sensitive` maps a single `0..1` value onto every detector, defaulting
-to multilingual neural (Silero) VAD:
+`AurisConfig.sensitive` maps one `0..1` value onto every detector and defaults to
+multilingual neural (Silero) VAD. The bundled models are materialised on disk by
+`AurisModels`, idempotently:
 
 ```dart
-final cfg = AurisConfig.sensitive(
+final config = AurisConfig.sensitive(
   0.6,
-  vadTier: auris_vad_tier.AURIS_VAD_NEURAL,
-  neuralVadModelPath: await Auris.extractBundledNeuralVadModel(),
-  soundClassModelPath: await Auris.extractBundledSoundClassModel(),
-  enableRnnoise: true,
+  neuralVadModelPath: await AurisModels.neuralVadPath(),
+  soundClassModelPath: await AurisModels.soundClassPath(),
+  denoise: true,
+  performance: const AurisPerformanceConfig.mobile(),
 );
-final engine = AurisEngine.create(cfg);
 ```
-
-The Silero VAD and YAMNet models ship as bundled assets; extract them to disk once
-with `Auris.extractBundledNeuralVadModel()` / `extractBundledSoundClassModel()`
-and pass the returned paths.
 
 ## Streams
 
 | Stream | Yields |
 |---|---|
-| `engine.events` | `AurisEventRecord` — speech / anomaly / segment / sound-class / overrun / backend-error |
-| `engine.packets` | `AurisPacket` — encoded audio; `data` is a Dart-owned `Uint8List` copy |
-| `engine.stats` | `AurisStatsSnapshot` — observability counters, sampled per poll |
+| `engine.events` | `AurisEvent` — a sealed hierarchy: `AurisSpeechBeginEvent`, `AurisSpeechEndEvent`, `AurisAnomalyEvent`, `AurisSegmentBeginEvent`, `AurisSegmentEndEvent`, `AurisSoundClassEvent`, `AurisOverrunEvent`, `AurisBackendErrorEvent`, `AurisDegradationEvent` |
+| `engine.packets` | `AurisPacket` — encoded audio; `data` is a Dart-owned `Uint8List` copy, with `isPreroll` / `isPostroll` / `isKeyframe` / `isLast` |
+| `engine.stats` | `AurisStats` — counters, input level, and `worker` health |
+
+Because `AurisEvent` is sealed, a `switch` over it is exhaustive: the compiler
+tells you when a new event type arrives. Each subtype carries a typed payload —
+`AurisSoundClassEvent.category`, `AurisAnomalyEvent.reasons`,
+`AurisDegradationEvent.level` — so there is no reason mask to decode.
 
 ```dart
-engine.packets.listen((p) {
-  // p.data is safe to keep/forward — the native borrow is already released.
-  socket.add(p.data); // e.g. stream the encoded Opus somewhere
-});
+engine.packets.listen((p) => socket.add(p.data)); // safe to keep or forward
 ```
 
-Events are **polled** off the engine's queues on a timer (default 50 ms), not
-delivered via a C→Dart callback: the pull queue holds engine-owned copies, which
-is the safe path for a garbage-collected async runtime. A native error inside the
-poll is forwarded onto the streams (`addError`) rather than lost.
+Events are **polled** off the engine's own queues on a timer (50 ms by default),
+not delivered through a C→Dart callback: the queue holds engine-owned copies,
+the only safe path for a garbage-collected async runtime. A native error inside
+a poll surfaces as an `AurisException` on `engine.events`.
+
+## Live retuning
+
+```dart
+engine.updateConfig(AurisConfig.sensitive(0.8, /* same structure */));
+```
+
+Detector state survives, so an utterance in progress is not cut. Structural
+fields (backend, rate, codec, queue sizes) must match the creating config.
+
+## Feeding your own audio
+
+```dart
+final engine = AurisEngine.create(const AurisConfig(backend: .hostPcm))..start();
+engine.pushPcm(samples, captureTsUs: ts); // Int16List, mono, at sampleRateHz
+```
 
 ## Interpreting sound classes
 
 ```dart
-final labels = await Auris.loadYamnetLabels(); // 521 AudioSet names
-engine.events
-    .where((e) => e.type == auris_event_type.AURIS_EVT_SOUND_CLASS)
-    .listen((e) {
-  final cls = e.reasonMask;                            // YAMNet class index
-  final category = Auris.categoryForYamnetClass(cls);  // speech / animal / music / …
-  final isVoice = Auris.isHumanVoice(cls);             // language-agnostic
-  print('${labels[cls]} → $category (voice=$isVoice)');
+final labels = await AurisModels.yamnetLabels(); // 521 AudioSet names
+engine.events.listen((e) {
+  if (e case AurisSoundClassEvent(:final classId, :final isHumanVoice)) {
+    print('${labels[classId]} voice=$isHumanVoice'); // language-agnostic
+  }
 });
 ```
 
-## Host-pushed PCM
+`AurisSoundCategory.of(classId)` folds the 521 classes into speech / humanOther /
+animal / music / nature / other; AudioSet is English-biased, and non-English
+speech often lands on "Conversation" or "Narration" — both map to `speech`.
 
-For a HOST_PCM engine (no internal capture — you supply the audio):
+## Example app
 
-```dart
-final engine = AurisEngine.create(const AurisConfig(
-  backend: auris_backend.AURIS_BACKEND_HOST_PCM,
-));
-engine.start();
-engine.pushPcm(int16Samples, captureTsUs: tsUs); // 16-bit mono
-```
-
-## Lifecycle & threading
-
-- **`dispose()` is mandatory** — it stops, destroys the native handle, and closes
-  the streams. Idempotent.
-- Drive one engine from the main isolate. Packet bytes are copied into Dart before
-  the native borrow is released, so they're safe to keep.
-- `AURIS_EVT_BACKEND_ERROR` carries an `auris_status_t` in `reasonMask`; reinterpret
-  the bits as a signed `int32` to recover the negative code.
-
-## Config parity
-
-`AurisConfig` surfaces the full `auris_config_t`: detector toggles + thresholds,
-`preRollMs`/`postRollMs`/`segmentMaxMs`, the Opus knobs
-(`opusBitrateBps`/`opusVbr`/`opusComplexity`), and the `pcmRingFrames` /
-`packetQueueCapacity` queue sizes — matching the C ABI and the Go binding.
-
-## Platform notes
-
-iOS/macOS link libauris statically and reach it via `DynamicLibrary.process()`;
-see the platform plugins (`auris_ios`, `auris_macos`, `auris_android`) and the
-[repo README](../../README.md) for microphone-permission and linking details.
-
----
-
-Federated plugin scaffolding originally generated by the Very Good CLI.
+[`example/`](example) is a complete demo on `flutter_bloc`: a `DemoCubit` owns an
+`EngineSession`, presets switch detector recipes, a slider retunes live, and every
+widget lives in its own file.

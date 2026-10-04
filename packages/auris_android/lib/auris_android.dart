@@ -1,8 +1,9 @@
-// Android implementation of AurisPlatform.
-//
-// libauris.so is shipped inside the AAR (built by gradle's
-// externalNativeBuild → CMakeLists.txt at android/src/main/cpp). At runtime
-// we open it from the app's native library path via DynamicLibrary.open.
+/// Android implementation of AurisPlatform.
+///
+/// libauris.so is shipped inside the AAR (built by gradle's
+/// externalNativeBuild → CMakeLists.txt at android/src/main/cpp). At runtime
+/// we open it from the app's native library path via DynamicLibrary.open.
+library;
 
 import 'dart:ffi' as ffi;
 
