@@ -1,16 +1,5 @@
-// src/preroll_ring.hpp
-//
-// Fixed-capacity circular buffer of recent captured frames. Lives entirely
-// on the worker thread (T2); no synchronization needed.
-//
-// Detectors fire AFTER speech / anomaly onset, so the first ~100..300 ms of
-// every segment would otherwise be lost. The worker pushes every captured
-// frame here while no segment is open; on a rising edge it flushes the ring
-// into the new segment as PREROLL-flagged packets, then clears.
-//
-// Memory: K frames * frame_samples * 2 bytes. At defaults (300 ms / 20 ms
-// frames at 16 kHz mono) that's 15 * 320 * 2 = 9.6 KB. Negligible.
-
+// Fixed-capacity ring of recent frames, kept while no segment is open so a
+// detection can be emitted with the audio that preceded its trigger.
 #pragma once
 
 #include <cstdint>
@@ -26,8 +15,6 @@ public:
         uint64_t             capture_ts_us = 0;
     };
 
-    // capacity_frames may be 0 (preroll disabled). frame_samples is the size
-    // of every push() and the expected buffer length on read.
     void init(size_t capacity_frames, size_t frame_samples) {
         ring_.clear();
         ring_.resize(capacity_frames);
@@ -37,8 +24,8 @@ public:
         filled_ = 0;
     }
 
-    bool empty()   const noexcept { return filled_ == 0; }
-    size_t size()  const noexcept { return filled_; }
+    bool   empty() const noexcept { return filled_ == 0; }
+    size_t size() const noexcept { return filled_; }
     size_t capacity() const noexcept { return ring_.size(); }
 
     void clear() noexcept {
@@ -46,8 +33,6 @@ public:
         filled_ = 0;
     }
 
-    // Overwrite the oldest slot with this frame. Safe to call when capacity
-    // is zero (becomes a no-op).
     void push(const int16_t* samples, uint64_t capture_ts_us) noexcept {
         if (ring_.empty() || frame_samples_ == 0) return;
         auto& slot = ring_[head_];
@@ -57,25 +42,16 @@ public:
         if (filled_ < ring_.size()) ++filled_;
     }
 
-    // Iterate from oldest to newest. Invokes f(const Frame&) for each.
-    // Caller is expected to consume each frame (typically emit as a packet).
     template <typename F>
     void for_each_oldest_first(F&& f) const {
         if (filled_ == 0) return;
-        const size_t start =
-            (head_ + ring_.size() - filled_) % ring_.size();
-        for (size_t i = 0; i < filled_; ++i) {
-            const size_t idx = (start + i) % ring_.size();
-            f(ring_[idx]);
-        }
+        const size_t start = (head_ + ring_.size() - filled_) % ring_.size();
+        for (size_t i = 0; i < filled_; ++i) f(ring_[(start + i) % ring_.size()]);
     }
 
-    // Timestamp of the oldest stored frame, or 0 if empty.
     uint64_t oldest_ts_us() const noexcept {
         if (filled_ == 0) return 0;
-        const size_t start =
-            (head_ + ring_.size() - filled_) % ring_.size();
-        return ring_[start].capture_ts_us;
+        return ring_[(head_ + ring_.size() - filled_) % ring_.size()].capture_ts_us;
     }
 
 private:

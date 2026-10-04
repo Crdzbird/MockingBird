@@ -25,15 +25,38 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(AURIS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../..)
 
 set(AURIS_SOURCES
-        ${AURIS_ROOT}/src/engine.cpp
+        ${AURIS_ROOT}/src/api/api_create.cpp
+        ${AURIS_ROOT}/src/api/api_defaults.cpp
+        ${AURIS_ROOT}/src/api/api_push.cpp
+        ${AURIS_ROOT}/src/api/api_queues.cpp
+        ${AURIS_ROOT}/src/api/api_run.cpp
+        ${AURIS_ROOT}/src/api/api_stats.cpp
+        ${AURIS_ROOT}/src/api/api_tuning.cpp
+        ${AURIS_ROOT}/src/config_support.cpp
+        ${AURIS_ROOT}/src/config_validation.cpp
+        ${AURIS_ROOT}/src/engine_events.cpp
+        ${AURIS_ROOT}/src/engine_ingest.cpp
         ${AURIS_ROOT}/src/packet_pool.cpp
         ${AURIS_ROOT}/src/status.cpp
+        ${AURIS_ROOT}/src/worker/detector_bank.cpp
+        ${AURIS_ROOT}/src/worker/packet_emitter.cpp
+        ${AURIS_ROOT}/src/worker/segmenter.cpp
+        ${AURIS_ROOT}/src/worker/segmenter_frame.cpp
+        ${AURIS_ROOT}/src/worker/tunables.cpp
+        ${AURIS_ROOT}/src/worker/worker.cpp
+        ${AURIS_ROOT}/src/worker/worker_frame.cpp
+        ${AURIS_ROOT}/src/worker/worker_health.cpp
+        ${AURIS_ROOT}/src/capture/backend_factory.cpp
         ${AURIS_ROOT}/src/capture/miniaudio_backend.cpp
         ${AURIS_ROOT}/src/capture/miniaudio_impl.c
         ${AURIS_ROOT}/src/detect/vad_detector.cpp
-        ${AURIS_ROOT}/src/detect/anomaly_detector.cpp
         ${AURIS_ROOT}/src/detect/neural_vad_detector.cpp
-        ${AURIS_ROOT}/src/detect/sound_classifier.cpp
+        ${AURIS_ROOT}/src/detect/neural_vad_inference.cpp
+        ${AURIS_ROOT}/src/detect/anomaly_detector.cpp
+        ${AURIS_ROOT}/src/detect/anomaly_detector_process.cpp
+        ${AURIS_ROOT}/src/detect/yamnet_classifier.cpp
+        ${AURIS_ROOT}/src/detect/yamnet_classifier_feed.cpp
+        ${AURIS_ROOT}/src/detect/yamnet_classifier_inference.cpp
         ${AURIS_ROOT}/src/encode/factory.cpp
         ${AURIS_ROOT}/src/encode/pcm_encoder.cpp
         ${AURIS_ROOT}/src/encode/opus_encoder.cpp

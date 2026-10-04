@@ -1,7 +1,4 @@
-// src/status.cpp
-//
-// Pure utility entry points: no allocation, thread-safe, never throw.
-
+// Pure entry points: no allocation, no state, never throw.
 #include "auris/auris.h"
 
 extern "C" {
@@ -23,8 +20,6 @@ AURIS_API const char* auris_status_str(int s) {
     return "AURIS_UNKNOWN";
 }
 
-AURIS_API const char* auris_version_string(void) {
-    return "0.1.0";
-}
+AURIS_API const char* auris_version_string(void) { return "0.1.0"; }
 
 } // extern "C"

@@ -1,10 +1,5 @@
-// src/encode/pcm_encoder.cpp
-//
-// Plain passthrough: copy the int16 LE bytes as-is. The default codec for
-// any host that wants to encode further itself (e.g. the Flutter demo
-// streaming raw PCM to a file).
-
-#include "encoder.hpp"
+// Passthrough encoder: copies int16 little-endian samples unchanged.
+#include "encode/encoder.hpp"
 
 #include <cstring>
 
@@ -21,12 +16,10 @@ public:
     }
 
     auris_codec_t codec() const override { return AURIS_CODEC_PCM_S16LE; }
-    size_t        max_packet_bytes() const override { return max_bytes_; }
+    size_t max_packet_bytes() const override { return max_bytes_; }
 
-    int encode(const int16_t* in_samples,
-               uint32_t       n,
-               uint8_t*       out_buf,
-               uint32_t       out_cap) override {
+    int encode(const int16_t* in_samples, uint32_t n, uint8_t* out_buf,
+               uint32_t out_cap) override {
         if (n != frame_samples_) return -1;
         const uint32_t bytes = n * static_cast<uint32_t>(sizeof(int16_t));
         if (out_cap < bytes) return -1;

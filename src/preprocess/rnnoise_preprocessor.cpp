@@ -1,15 +1,6 @@
-// src/preprocess/rnnoise_preprocessor.cpp
-//
-// RNNoise (Xiph, BSD-3) recurrent noise suppression. RNNoise is fixed at
-// 48 kHz with 480-sample (10 ms) frames, while the Auris pipeline runs at
-// 8 k / 16 k. We bridge it frame-locally: upsample the int16 frame to 48 kHz,
-// denoise in 480-sample chunks, then downsample back. The working signal is
-// band-limited to its own Nyquist, so RNNoise's upper 48 kHz bands are inert
-// and only the in-band noise is cleaned.
-//
-// One DenoiseState spans the whole stream (RNNoise is recurrent), and the
-// resamplers carry FIR history, so block-by-block processing stays continuous.
-
+// RNNoise runs at 48 kHz on 480-sample frames, so each engine frame is
+// upsampled, denoised in 480-sample chunks and downsampled again. One
+// DenoiseState and both resamplers persist across frames.
 #include "preprocess/preprocessor.hpp"
 
 #ifdef AURIS_HAVE_RNNOISE
@@ -29,7 +20,7 @@ namespace auris {
 namespace {
 
 constexpr int    kRnnoiseRate  = 48000;
-constexpr size_t kRnnoiseFrame = 480;   // 10 ms @ 48 kHz
+constexpr size_t kRnnoiseFrame = 480;
 
 class RnnoisePreprocessor final : public Preprocessor {
 public:
@@ -39,55 +30,42 @@ public:
 
     auris_status_t init(const auris_config_t& cfg) override {
         if (st_ != nullptr) return AURIS_ERR_INVALID_STATE;
-        // Need an integer 48 kHz <-> working-rate ratio (8 k, 16 k, 48 k).
-        if (cfg.sample_rate_hz == 0 ||
-            (kRnnoiseRate % cfg.sample_rate_hz) != 0) {
+        if (cfg.sample_rate_hz == 0 || (kRnnoiseRate % cfg.sample_rate_hz) != 0) {
             return AURIS_ERR_UNSUPPORTED;
         }
-        factor_ = static_cast<int>(kRnnoiseRate / cfg.sample_rate_hz);
-        up_.configure(factor_);
-        down_.configure(factor_);
-
-        st_ = rnnoise_create(nullptr);   // built-in model
-        if (st_ == nullptr) return AURIS_ERR_NO_MEMORY;
-        return AURIS_OK;
+        const int factor = static_cast<int>(kRnnoiseRate / cfg.sample_rate_hz);
+        up_.configure(factor);
+        down_.configure(factor);
+        st_ = rnnoise_create(nullptr);
+        return st_ == nullptr ? AURIS_ERR_NO_MEMORY : AURIS_OK;
     }
 
     void process(int16_t* frame, uint32_t n) override {
         if (st_ == nullptr || frame == nullptr || n == 0) return;
 
-        // int16 -> int16-range float (RNNoise works in counts, not [-1, 1]).
         in_.resize(n);
-        for (uint32_t i = 0; i < n; ++i) {
-            in_[i] = static_cast<float>(frame[i]);
-        }
+        for (uint32_t i = 0; i < n; ++i) in_[i] = static_cast<float>(frame[i]);
 
         up_buf_.clear();
-        up_.process(in_.data(), n, up_buf_);     // n * factor samples @ 48 kHz
-        // Frame lengths are chosen so this is always a whole number of
-        // RNNoise frames (frame_ms * 48 is a multiple of 480). Guard anyway.
+        up_.process(in_.data(), n, up_buf_);
         if (up_buf_.empty() || (up_buf_.size() % kRnnoiseFrame) != 0) return;
 
-        for (size_t off = 0; off + kRnnoiseFrame <= up_buf_.size();
-             off += kRnnoiseFrame) {
-            // In-place: RNNoise consumes `in` before writing `out`.
+        for (size_t off = 0; off + kRnnoiseFrame <= up_buf_.size(); off += kRnnoiseFrame) {
             rnnoise_process_frame(st_, up_buf_.data() + off, up_buf_.data() + off);
         }
 
         down_buf_.clear();
-        down_.process(up_buf_.data(), up_buf_.size(), down_buf_);  // back to n
+        down_.process(up_buf_.data(), up_buf_.size(), down_buf_);
 
         const size_t m = std::min<size_t>(down_buf_.size(), n);
         for (size_t i = 0; i < m; ++i) {
-            float v = down_buf_[i];
-            v = std::min(32767.0f, std::max(-32768.0f, v));
+            const float v = std::clamp(down_buf_[i], -32768.0f, 32767.0f);
             frame[i] = static_cast<int16_t>(std::lround(v));
         }
     }
 
 private:
-    DenoiseState*      st_     = nullptr;
-    int                factor_ = 1;
+    DenoiseState*      st_ = nullptr;
     Interpolator       up_;
     Decimator          down_;
     std::vector<float> in_;
@@ -103,7 +81,7 @@ std::unique_ptr<Preprocessor> make_rnnoise_preprocessor() {
 
 } // namespace auris
 
-#else   // !AURIS_HAVE_RNNOISE
+#else
 
 namespace auris {
 std::unique_ptr<Preprocessor> make_rnnoise_preprocessor() { return nullptr; }

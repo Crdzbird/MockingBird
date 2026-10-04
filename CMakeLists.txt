@@ -61,44 +61,104 @@ option(AURIS_ENABLE_TESTS    "Build tests/ targets"                         OFF)
 option(AURIS_ENABLE_LOG      "Emit internal diagnostic logging"             OFF)
 
 # ----------------------------------------------------------------------------
-# Sources (placeholder; populated as the skeleton lands per build order step 1).
+# Sources
 # ----------------------------------------------------------------------------
 set(AURIS_PUBLIC_HEADERS
         include/auris/auris.h)
 
 set(AURIS_SOURCES
-        src/engine.cpp
+        src/api/api_create.cpp
+        src/api/api_defaults.cpp
+        src/api/api_push.cpp
+        src/api/api_queues.cpp
+        src/api/api_run.cpp
+        src/api/api_stats.cpp
+        src/api/api_tuning.cpp
+        src/config_support.cpp
+        src/config_validation.cpp
+        src/engine_events.cpp
+        src/engine_ingest.cpp
         src/packet_pool.cpp
         src/status.cpp
+        src/worker/detector_bank.cpp
+        src/worker/packet_emitter.cpp
+        src/worker/segmenter.cpp
+        src/worker/segmenter_frame.cpp
+        src/worker/tunables.cpp
+        src/worker/worker.cpp
+        src/worker/worker_frame.cpp
+        src/worker/worker_health.cpp
+        src/capture/backend_factory.cpp
         src/capture/miniaudio_backend.cpp
         src/capture/miniaudio_impl.c
         src/detect/vad_detector.cpp
         src/detect/neural_vad_detector.cpp
+        src/detect/neural_vad_inference.cpp
         src/detect/anomaly_detector.cpp
-        src/detect/sound_classifier.cpp
+        src/detect/anomaly_detector_process.cpp
+        src/detect/yamnet_classifier.cpp
+        src/detect/yamnet_classifier_feed.cpp
+        src/detect/yamnet_classifier_inference.cpp
         src/encode/factory.cpp
         src/encode/pcm_encoder.cpp
         src/encode/opus_encoder.cpp
         src/preprocess/rnnoise_preprocessor.cpp)
 
-# Apple-only native Core Audio backend. The .mm extension makes Apple's
-# clang compile this TU as Objective-C++ so AVFoundation / AVAudioSession
-# can join in a later step without re-jigging the file list.
 if(APPLE)
-    list(APPEND AURIS_SOURCES src/capture/coreaudio_backend.mm)
+    list(APPEND AURIS_SOURCES
+            src/capture/coreaudio_backend.mm
+            src/capture/coreaudio_backend_init.mm
+            src/capture/coreaudio_render.mm
+            src/capture/coreaudio_unit.mm)
 endif()
 
 set(AURIS_INTERNAL_HEADERS
-        src/engine.hpp
-        src/packet_pool.hpp
-        src/spsc_ring.hpp
-        src/preroll_ring.hpp
+        src/auris_log.hpp
         src/capture/capture_backend.hpp
+        src/capture/chunk_timestamp.hpp
+        src/capture/coreaudio_backend.hpp
+        src/capture/coreaudio_impl.hpp
+        src/capture/mach_timebase.hpp
         src/capture/miniaudio_backend.hpp
+        src/capture/oboe_backend.hpp
+        src/clock.hpp
+        src/config_validation.hpp
+        src/degrade.hpp
+        src/detect/anomaly_detector.hpp
+        src/detect/classification_result.hpp
+        src/detect/detection_result.hpp
         src/detect/detector.hpp
+        src/detect/feed_hints.hpp
+        src/detect/model_path.hpp
+        src/detect/neural_vad_detector.hpp
+        src/detect/ort_env.hpp
+        src/detect/ort_headers.hpp
+        src/detect/rolling_stats.hpp
+        src/detect/sound_classifier.hpp
+        src/detect/spectral_metrics.hpp
+        src/detect/yamnet_classifier.hpp
         src/encode/encoder.hpp
+        src/engine.hpp
+        src/engine_events.hpp
+        src/engine_ingest.hpp
+        src/frame_clock.hpp
+        src/packet_pool.hpp
+        src/preprocess/decimator.hpp
+        src/preprocess/interpolator.hpp
+        src/preprocess/lowpass_design.hpp
         src/preprocess/preprocessor.hpp
-        src/preprocess/resampler.hpp)
+        src/preprocess/resampler.hpp
+        src/preroll_ring.hpp
+        src/spsc_ring.hpp
+        src/worker/detection_pair.hpp
+        src/worker/detector_bank.hpp
+        src/worker/level.hpp
+        src/worker/level_meter.hpp
+        src/worker/packet_emitter.hpp
+        src/worker/segmenter.hpp
+        src/worker/tunables.hpp
+        src/worker/worker.hpp
+        src/worker/worker_health.hpp)
 
 # Vendored single-header dep. // VERIFY  Pinned to 0.11.25 (downloaded
 # 2026-06-08 from github.com/mackron/miniaudio). Public domain / MIT-0.
