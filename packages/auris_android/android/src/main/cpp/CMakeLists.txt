@@ -22,7 +22,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # Walk up to the repo root. The plugin's android/src/main/cpp/ is 6 levels
 # below /Users/.../mockingbird (cpp → main → src → android → auris_android →
 # packages → mockingbird).
-set(AURIS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../..)
+set(AURIS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../native)
 
 set(AURIS_SOURCES
         ${AURIS_ROOT}/src/api/api_create.cpp

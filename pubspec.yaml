@@ -1,0 +1,15 @@
+name: auris_workspace
+description: Pub workspace for local development of the auris packages.
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+
+workspace:
+  - packages/auris_platform_interface
+  - packages/auris_android
+  - packages/auris_ios
+  - packages/auris_macos
+  - packages/auris_web
+  - packages/auris
+  - packages/auris/example

@@ -1,10 +1,20 @@
 name: auris
-description: Native audio capture with VAD and anomaly detection.
-version: 0.1.0+1
-publish_to: none
+description: >-
+  Native audio capture with multilingual voice detection, an anomaly gate, YAMNet sound classification, RNNoise and Opus packets over dart:ffi, on Android, iOS, macOS and web.
+version: 0.1.0
+repository: https://github.com/Crdzbird/MockingBird/tree/main/packages/auris
+issue_tracker: https://github.com/Crdzbird/MockingBird/issues
+topics:
+  - audio
+  - voice-activity-detection
+  - vad
+  - ffi
+  - speech
+resolution: workspace
 
 environment:
   sdk: ^3.11.0
+  flutter: ">=3.44.0"
 
 flutter:
   plugin:
@@ -28,16 +38,11 @@ dependencies:
   flutter:
     sdk: flutter
   path_provider: ^2.1.6
-  auris_android:
-    path: ../auris_android
-  auris_ios:
-    path: ../auris_ios
-  auris_macos:
-    path: ../auris_macos
-  auris_platform_interface:
-    path: ../auris_platform_interface
-  auris_web:
-    path: ../auris_web
+  auris_android: ^0.1.0
+  auris_ios: ^0.1.0
+  auris_macos: ^0.1.0
+  auris_platform_interface: ^0.1.0
+  auris_web: ^0.1.0
 
 dev_dependencies:
   flutter_test:

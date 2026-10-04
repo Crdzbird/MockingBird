@@ -29,13 +29,13 @@ Pod::Spec.new do |s|
     set -euo pipefail
     rm -rf Sources
     mkdir -p Sources/include Sources/src Sources/third_party
-    cp -R ../../../include/auris        Sources/include/
-    cp -R ../../../src/                  Sources/src/auris/
-    cp -R ../../../third_party/miniaudio Sources/third_party/
-    cp -R ../../../third_party/libfvad   Sources/third_party/
-    cp -R ../../../third_party/pffft     Sources/third_party/
-    cp -R ../../../third_party/rnnoise   Sources/third_party/
-    cp -R ../../../third_party/opus      Sources/third_party/
+    cp -R auris_ios/Sources/auris_native/include/auris        Sources/include/
+    cp -R auris_ios/Sources/auris_native/src/                  Sources/src/auris/
+    cp -R auris_ios/Sources/auris_native/third_party/miniaudio Sources/third_party/
+    cp -R auris_ios/Sources/auris_native/third_party/libfvad   Sources/third_party/
+    cp -R auris_ios/Sources/auris_native/third_party/pffft     Sources/third_party/
+    cp -R auris_ios/Sources/auris_native/third_party/rnnoise   Sources/third_party/
+    cp -R auris_ios/Sources/auris_native/third_party/opus      Sources/third_party/
     # Trim opus SIMD / fixed-point / DNN subdirs we explicitly do not use
     # so CocoaPods does not try to compile them.
     rm -rf Sources/third_party/opus/celt/{x86,arm,tests,dump_modes}

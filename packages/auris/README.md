@@ -189,7 +189,7 @@ about scope; the second is measured.
 | Silence gate and adaptive load shedding | yes | no | no | no | no | no |
 | Native path | `dart:ffi` | `dart:ffi` | `dart:ffi`, JS on web | `dart:ffi` | Rust bridge | platform channels |
 | Platforms | Android, iOS, macOS, web | Android, iOS, macOS | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS, Windows, Linux, web |
-| License | see repository | MIT | MIT | Apache-2.0 | LGPL-3.0 | BSD-3-Clause |
+| License | MIT | MIT | MIT | Apache-2.0 | LGPL-3.0 | BSD-3-Clause |
 
 sherpa_onnx also ships speech recognition, synthesis, keyword spotting and
 speaker identification, which Auris does not attempt.
@@ -314,4 +314,5 @@ detectors fall back to the fast tier.
 The engine is the Auris C++ library, with a pure C ABI, bindings for Go and
 Python, and a conformance harness that checks the three language surfaces
 produce byte-identical output. Its repository has the build, the tests, the
-benchmark and the design notes.
+benchmark and the design notes. Everything is MIT licensed; the vendored
+dependencies are BSD, MIT or public domain.

@@ -579,6 +579,32 @@ podspecs and Swift packages glob the tree and pick it up on their own. A file
 meant for one build only must be guarded (`#ifdef __EMSCRIPTEN__` or its
 negation) for the same reason.
 
+### The native copies inside the platform packages
+
+A pub.dev package must be self-contained, so `auris_android`, `auris_ios` and
+`auris_macos` each carry a copy of `include/`, `src/` and the vendored
+third-party sources, and their build files point at that copy. The repository
+root stays the only place to edit. After any change there, run:
+
+```bash
+scripts/sync_native.sh
+```
+
+and commit the result; CI fails when the copies drift.
+
+### The Flutter packages and pub.dev
+
+The six packages form a pub workspace (the `pubspec.yaml` at the repository
+root), so `flutter pub get` anywhere in it resolves them against each other
+while their pubspecs declare the hosted versions pub.dev needs. A project
+outside the workspace that uses the unpublished packages, such as the
+comparison benchmark, adds `dependency_overrides` with paths.
+
+Before publishing, run `dart pub publish --dry-run` in each package. Publish
+in dependency order: `auris_platform_interface`, then `auris_android`,
+`auris_ios`, `auris_macos` and `auris_web`, then `auris`. The engine's
+WebAssembly build and the native copies must be synced first.
+
 ### Adding a C ABI entry point
 
 Declare it in `include/auris/auris.h`, name it in the Swift anchor of both
@@ -588,7 +614,8 @@ package a `dart:js_interop` member for it.
 
 ## Licensing
 
-Auris is permissive-only, with no GPL or LGPL code. Vendored dependencies:
+Auris is released under the MIT license (see `LICENSE`). Its dependencies are
+permissive-only, with no GPL or LGPL code:
 
 | Dependency | Version | License |
 |---|---|---|

@@ -16,3 +16,15 @@ dependencies:
 
 flutter:
   uses-material-design: false
+
+dependency_overrides:
+  auris_platform_interface:
+    path: ../../../packages/auris_platform_interface
+  auris_android:
+    path: ../../../packages/auris_android
+  auris_ios:
+    path: ../../../packages/auris_ios
+  auris_macos:
+    path: ../../../packages/auris_macos
+  auris_web:
+    path: ../../../packages/auris_web

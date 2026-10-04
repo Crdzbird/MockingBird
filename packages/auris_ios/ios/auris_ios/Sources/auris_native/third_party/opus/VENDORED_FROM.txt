@@ -1,0 +1,10 @@
+opus 1.6.1 — release tarball https://downloads.xiph.org/releases/opus/opus-1.6.1.tar.gz
+(previously an unversioned git snapshot, which is why CMake reported "Opus project version: 0")
+
+Trimmed on vendoring, no functional effect on Auris:
+  - dnn/*_data.c / *_data.h  (22 MB of DRED / OSCE / Deep-PLC weights; Auris builds
+    with OPUS_DRED=OFF OPUS_OSCE=OFF so they are never compiled)
+  - autotools output (configure, Makefile.in, aclocal.m4, ltmain.sh, config.*,
+    compile, depcomp, install-sh, missing, test-driver, INSTALL) — Auris uses
+    opus' CMakeLists.txt; package_version is kept because CMake reads it.
+Everything else is byte-identical to the release.

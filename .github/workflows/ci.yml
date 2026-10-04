@@ -30,6 +30,8 @@ jobs:
         run: cmake --build build -j
       - name: Test
         run: ./build/test_auris --no-intro
+      - name: Native copies in the platform packages match the root
+        run: scripts/sync_native.sh && git diff --exit-code --stat -- packages
 
   # ---------------------------------------------------------------------------
   # Sanitizers — lock in the hardening so it cannot regress.

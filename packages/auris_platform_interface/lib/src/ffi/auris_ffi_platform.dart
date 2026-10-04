@@ -23,7 +23,8 @@ abstract class AurisFfiPlatform extends AurisPlatform {
   late final FfiPcm _pcm = FfiPcm(bindings);
 
   @override
-  String version() => bindings.auris_version_string().cast<Utf8>().toDartString();
+  String version() =>
+      bindings.auris_version_string().cast<Utf8>().toDartString();
 
   @override
   String statusName(int status) =>

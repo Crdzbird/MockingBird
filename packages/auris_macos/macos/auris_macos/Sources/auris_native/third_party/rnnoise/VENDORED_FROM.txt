@@ -1,0 +1,20 @@
+rnnoise 0.2 — release tarball https://downloads.xiph.org/releases/rnnoise/rnnoise-0.2.tar.gz
+model  0b50c45 (full) — https://media.xiph.org/rnnoise/models/rnnoise_data-0b50c45.tar.gz
+       (src/rnnoise_data.c + rnnoise_data.h from that archive; the "little" variant,
+        rnnoise_data_little.c, is a drop-in replacement: ~half the CPU and binary size,
+        lower quality — measured 1.35% vs 2.45% of an M3 Max core, 3.1 vs 6.0 MB)
+
+Previously: commit bad0a75, the last "classic" revision with the 2018 model baked in
+(0.4 MB, 1.02% of a core). Replaced 2026-09-24 after measuring both 0.2 models.
+
+Vendored subset: the library sources listed in RNNOISE_SOURCES of the release's
+Makefile.am plus their headers, and src/x86/*.h (headers only; the x86 run-time
+dispatch .c files are not built because RNN_ENABLE_X86_RTCD is never defined — every
+target uses the portable path, or vec_neon.h on arm64 automatically). Tools with
+their own main() (dump_features.c, dump_rnnoise_tables.c, write_weights.c) and the
+training scripts are not vendored.
+
+src/os_support.h is an AURIS SHIM, not part of the release: vec.h / vec_neon.h
+include it and use OPUS_CLEAR, but the 0.2 tarball ships no such header (x86 builds
+take the vec_avx.h branch and never notice). It carries opus' celt/os_support.h
+definitions.

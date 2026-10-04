@@ -1,11 +1,19 @@
 name: auris_web
-description: The web implementation of the auris plugin, running the engine as WebAssembly with Web Audio capture.
-version: 0.1.0+1
-publish_to: none
+description: >-
+  The web implementation of the auris plugin: the Auris engine as WebAssembly with Web Audio microphone capture.
+version: 0.1.0
+repository: https://github.com/Crdzbird/MockingBird/tree/main/packages/auris_web
+issue_tracker: https://github.com/Crdzbird/MockingBird/issues
+topics:
+  - audio
+  - vad
+  - web
+  - wasm
+resolution: workspace
 
 environment:
   sdk: ^3.11.0
-  flutter: ">=3.27.0"
+  flutter: ">=3.44.0"
 
 flutter:
   plugin:
@@ -20,8 +28,7 @@ flutter:
     - assets/auris_capture_worklet.js
 
 dependencies:
-  auris_platform_interface:
-    path: ../auris_platform_interface
+  auris_platform_interface: ^0.1.0
   flutter:
     sdk: flutter
   flutter_web_plugins:
