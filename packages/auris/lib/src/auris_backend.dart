@@ -22,9 +22,10 @@ enum AurisBackend {
   /// The `auris_backend_t` value.
   final int nativeValue;
 
-  /// The backend [auto] resolves to on the running platform.
+  /// The capture backend for the running platform. On the web the platform
+  /// package captures through Web Audio itself, so [auto] is the choice.
   static AurisBackend get platformDefault {
-    if (kIsWeb) return hostPcm;
+    if (kIsWeb) return auto;
     return switch (defaultTargetPlatform) {
       TargetPlatform.iOS || TargetPlatform.macOS => coreAudio,
       TargetPlatform.android => oboe,

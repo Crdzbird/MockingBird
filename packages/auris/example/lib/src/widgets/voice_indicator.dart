@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 /// The language-agnostic "human voice" lamp.
@@ -40,7 +41,9 @@ class VoiceIndicator extends StatelessWidget {
                     ),
                   ),
                   const Text(
-                    'Multilingual (Silero VAD) — any language',
+                    kIsWeb
+                        ? 'Fast VAD (libfvad), any language'
+                        : 'Multilingual (Silero VAD), any language',
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                 ],
