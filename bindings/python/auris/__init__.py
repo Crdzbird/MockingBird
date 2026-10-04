@@ -1,81 +1,74 @@
-"""Auris — native audio capture, denoise, voice/anomaly detection, and sound
-classification, driven from Python through the library's C ABI.
+"""Native audio capture, voice and anomaly detection, and sound classification
+for Python, over the Auris C ABI.
 
 Quick start::
 
     import auris
 
-    with auris.Engine(auris.Config()) as engine:   # default mic, fast VAD + anomaly
+    with auris.Engine(auris.Config()) as engine:
         engine.start()
         for event in engine.events(timeout=10):
-            if event.type is auris.EventType.SPEECH_BEGIN:
-                print("voice detected")
+            match event:
+                case auris.Event(type=auris.EventType.SPEECH_BEGIN):
+                    print("voice")
 
-One dial tunes every detector::
+One dial drives every detector::
 
     cfg = auris.sensitive(0.6, neural_vad_model_path="silero_vad.onnx")
 
-Offline / file processing (no microphone) via the HOST_PCM backend::
-
-    cfg = auris.Config(backend=auris.Backend.HOST_PCM)
-    with auris.Engine(cfg) as engine:
-        engine.start()
-        engine.push_pcm(samples)          # int16 mono
-        print(engine.poll_events())
-
-The library is located automatically in a repo checkout (``build/libauris.*``);
-elsewhere set ``AURIS_LIBRARY_PATH`` or call :func:`load_library`.
+The library is found automatically in a repository checkout; elsewhere set
+``AURIS_LIBRARY_PATH`` or call :func:`load_library`.
 """
 
-from ._engine import Engine, load_library, status_name, version
-from ._types import (
-    ANOMALY_CENTROID,
-    ANOMALY_RMS,
-    ANOMALY_SPECTRAL_FLUX,
-    PACKET_FLAG_KEYFRAME,
-    PACKET_FLAG_LAST,
-    PACKET_FLAG_POSTROLL,
-    PACKET_FLAG_PREROLL,
-    AurisError,
-    Backend,
-    Codec,
-    Config,
-    Event,
-    EventType,
-    Packet,
-    SoundCategory,
-    Stats,
-    Status,
-    VadTier,
-    category_for_yamnet_class,
-    is_human_voice,
-    is_speech_class,
-    sensitive,
-)
+from auris._library import load_library, status_name, version
+from auris.anomaly_config import AnomalyConfig
+from auris.anomaly_reason import AnomalyReason
+from auris.backend import Backend
+from auris.codec import Codec
+from auris.config import Config, sensitive
+from auris.encoder_config import EncoderConfig
+from auris.engine import Engine
+from auris.error import AurisError
+from auris.event import Event
+from auris.event_type import EventType
+from auris.packet import Packet
+from auris.packet_flag import PacketFlag
+from auris.performance_config import PerformanceConfig
+from auris.queue_config import QueueConfig
+from auris.segment_config import SegmentConfig
+from auris.sensitivity import Sensitivity
+from auris.sound_category import SoundCategory
+from auris.sound_class_config import SoundClassConfig
+from auris.stats import Stats
+from auris.status import Status
+from auris.vad_config import VadConfig
+from auris.vad_tier import VadTier
+from auris.worker_health import WorkerHealth
 
 __all__ = [
-    "ANOMALY_CENTROID",
-    "ANOMALY_RMS",
-    "ANOMALY_SPECTRAL_FLUX",
-    "PACKET_FLAG_KEYFRAME",
-    "PACKET_FLAG_LAST",
-    "PACKET_FLAG_POSTROLL",
-    "PACKET_FLAG_PREROLL",
+    "AnomalyConfig",
+    "AnomalyReason",
     "AurisError",
     "Backend",
     "Codec",
     "Config",
+    "EncoderConfig",
     "Engine",
     "Event",
     "EventType",
     "Packet",
+    "PacketFlag",
+    "PerformanceConfig",
+    "QueueConfig",
+    "SegmentConfig",
+    "Sensitivity",
     "SoundCategory",
+    "SoundClassConfig",
     "Stats",
     "Status",
+    "VadConfig",
     "VadTier",
-    "category_for_yamnet_class",
-    "is_human_voice",
-    "is_speech_class",
+    "WorkerHealth",
     "load_library",
     "sensitive",
     "status_name",

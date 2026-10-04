@@ -107,15 +107,9 @@ class Result:
 def process(pcm: array.array, debug: bool = False) -> Result:
     cfg = auris.Config(
         backend=auris.Backend.HOST_PCM,
-        codec=auris.Codec.OPUS,
-        enable_vad=True,
-        vad_tier=auris.VadTier.FAST,
-        vad_aggressiveness=2,
-        enable_anomaly=True,
-        enable_sound_class=False,
-        enable_rnnoise=False,
-        pcm_ring_frames=1 << 17,
-        packet_queue_capacity=4096,
+        vad=auris.VadConfig(tier=auris.VadTier.FAST, aggressiveness=2),
+        encoder=auris.EncoderConfig.opus(),
+        queues=auris.QueueConfig(pcm_ring_frames=1 << 17, packet_queue_capacity=4096),
     )
 
     packets: list[auris.Packet] = []

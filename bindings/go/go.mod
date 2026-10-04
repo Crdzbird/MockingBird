@@ -1,3 +1,3 @@
 module github.com/auris-audio/auris
 
-go 1.24
+go 1.25

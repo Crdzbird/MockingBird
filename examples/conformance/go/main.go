@@ -111,15 +111,11 @@ func (a *hasher) u64(v uint64) {
 func process(pcm []int16) (result, error) {
 	cfg := auris.DefaultConfig()
 	cfg.Backend = auris.BackendHostPCM
-	cfg.Codec = auris.CodecOpus
-	cfg.EnableVAD = true
-	cfg.VadTier = auris.VadFast
-	cfg.VadAggressiveness = 2
-	cfg.EnableAnomaly = true
-	cfg.EnableSoundClass = false
-	cfg.EnableRNNoise = false
-	cfg.PcmRingFrames = 1 << 17
-	cfg.PacketQueueCapacity = 4096
+	cfg.Encoder = auris.OpusEncoder()
+	cfg.VAD.Tier = auris.VadFast
+	cfg.VAD.Aggressiveness = 2
+	cfg.Queues.PCMRingFrames = 1 << 17
+	cfg.Queues.PacketQueueCapacity = 4096
 
 	e, err := auris.New(cfg)
 	if err != nil {
@@ -184,7 +180,7 @@ func process(pcm []int16) (result, error) {
 		h.u64(p.SegmentID)
 		h.u64(p.PtsUs)
 		h.u64(p.CaptureTsUs)
-		h.u32(p.Flags)
+		h.u32(uint32(p.Flags))
 		h.u32(uint32(p.Codec))
 		h.u32(uint32(len(p.Data)))
 		h.bytes(p.Data)

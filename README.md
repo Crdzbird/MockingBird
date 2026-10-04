@@ -263,7 +263,8 @@ detections and packets arrive on Go channels. Build `libauris` (CMake) once, the
 ```go
 e, _ := auris.New(auris.Sensitive(0.6,
     auris.WithNeuralVADModel("silero_vad.onnx"),
-    auris.WithSoundClassModel("yamnet_3s.onnx")))
+    auris.WithSoundClassModel("yamnet_3s.onnx"),
+    auris.WithPerformance(auris.MobilePerformance())))
 e.Start()
 for ev := range e.Events() {
     if ev.Type == auris.EventSpeechBegin { /* voice, any language */ }
@@ -286,8 +287,9 @@ import auris
 with auris.Engine(auris.sensitive(0.6)) as engine:
     engine.start()
     for event in engine.events(timeout=10):
-        if event.type is auris.EventType.SPEECH_BEGIN:
-            print("voice, any language")
+        match event:
+            case auris.Event(type=auris.EventType.SPEECH_BEGIN):
+                print("voice, any language")
 ```
 
 `push_pcm` takes anything buffer-like (`bytes`, `array('h')`, numpy `int16`), so
