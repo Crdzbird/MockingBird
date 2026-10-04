@@ -19,8 +19,9 @@ over `dart:ffi`. There are no platform channels.
 | Setting | Value |
 |---|---|
 | minSdk | 21 |
-| compileSdk | 36 |
-| NDK | r28 or newer |
+| compileSdk | 37 |
+| NDK | r28 or newer; the plugin pins r30 |
+| Android Gradle plugin | 9.1 or newer, with or without built-in Kotlin |
 | ABIs | arm64-v8a, x86_64 |
 
 Add the microphone permission to your app's manifest and request it at runtime

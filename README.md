@@ -294,8 +294,8 @@ The example app in `packages/auris/example` is a live demo with presets
 slider that retunes the running engine, an RNNoise toggle, a level meter and
 the full stats card.
 
-Toolchain used for the current release: Flutter 3.47, Dart 3.11, Xcode 27,
-Android NDK r28c, compileSdk 36, minSdk 21.
+Toolchain used for the current release: Flutter 3.47.6, Dart 3.11, Xcode 27,
+Android NDK r30, compileSdk 37, minSdk 21.
 
 ```bash
 cd packages/auris/example
@@ -467,8 +467,8 @@ correctly on each platform. They are already encoded in the build files under
 
 ### Android (`packages/auris_android`)
 
-- NDK r28 or newer with `-Wl,-z,max-page-size=16384` for the 16 KB page
-  alignment Android 15 requires. Oboe 1.10 and ONNX Runtime 1.26 and later ship
+- NDK r28 or newer (the plugin pins r30) with `-Wl,-z,max-page-size=16384`
+  for the 16 KB page alignment Android 15 requires. Oboe 1.10 and ONNX Runtime 1.26 and later ship
   aligned libraries.
 - Oboe comes through Prefab. ONNX Runtime comes from the AAR through a glob of
   the Gradle transform cache and a `SHARED IMPORTED` target, because the AAR has
@@ -600,5 +600,7 @@ Auris is permissive-only, with no GPL or LGPL code. Vendored dependencies:
 | ONNX Runtime | Homebrew 1.30, Android `onnxruntime-android:1.30.0`, SwiftPM 1.24.2, CocoaPods `onnxruntime-c ~> 1.20` | MIT, linked rather than vendored |
 | doctest | 2.5.3 | MIT, tests only |
 
-Android builds against Oboe 1.11.0, compileSdk 36 and NDK r28c. The example app
-uses Gradle 9.3.1, AGP 8.13.2 and Kotlin 2.4.0.
+Android builds against Oboe 1.11.0, compileSdk 37 and NDK r30. The example app
+uses Gradle 9.8.0, Android Gradle plugin 9.1.0 and Kotlin 2.4.20, the newest
+versions inside Flutter 3.47's tested envelope; the plugin is migrated to the
+built-in Kotlin that AGP 9 provides.

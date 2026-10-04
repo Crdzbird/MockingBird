@@ -38,7 +38,7 @@ that only receive pushed PCM need none of it.
 
 | Platform | Minimum |
 |---|---|
-| Android | API 21, NDK r28 (16 KB pages) |
+| Android | API 21, compileSdk 37, NDK r28 or newer (16 KB pages) |
 | iOS | 15.0 |
 | macOS | 12.0 with CocoaPods, 14.0 with Swift Package Manager |
 | Web | a browser with AudioWorklet and ES modules; no cross-origin isolation needed |
