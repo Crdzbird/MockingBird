@@ -1,219 +1,94 @@
 # Auris
 
-A native C++ audio capture + detection engine with a pure **C ABI**, designed to be
-embedded from many languages (Dart/Flutter, Kotlin, Swift, Go, .NET, Python, Rust,
-Node, WASM). Auris captures microphone audio, optionally denoises it, detects
-**human voice** (multilingual) and **non-speech acoustic events**, classifies what it
-hears, and streams only the relevant audio out as encoded packets.
+Auris is a native audio engine with a plain C ABI. It captures microphone audio,
+optionally denoises it, detects human voice in any language and non-speech
+acoustic events, classifies what it hears, and streams only the relevant audio
+out as encoded packets. The same engine is used from Dart/Flutter, Go and
+Python through the bindings in this repository, and from any other language
+that can call C.
 
-> Status: capture → preprocess → detect → encode runs **live and verified on
-> Android, iOS, and macOS**. Core is fuzzed, stress-tested, fault-injected, and
-> clean under AddressSanitizer / UndefinedBehaviorSanitizer / ThreadSanitizer.
+The pipeline runs live on Android, iOS and macOS. The core is fuzzed,
+stress-tested, fault-injected, and clean under AddressSanitizer,
+UndefinedBehaviorSanitizer and ThreadSanitizer.
 
----
+## Contents
+
+- [What it does](#what-it-does)
+- [Quick start](#quick-start)
+- [Building the core](#building-the-core)
+- [Models](#models)
+- [Running the Flutter demo on a device](#running-the-flutter-demo-on-a-device)
+- [How it works](#how-it-works)
+- [Repository layout](#repository-layout)
+- [Performance](#performance)
+- [Platform integration notes](#platform-integration-notes)
+- [Contributing](#contributing)
+- [Licensing](#licensing)
 
 ## What it does
 
 | Stage | Component | Notes |
 |---|---|---|
-| Capture | miniaudio / Oboe (Android) / CoreAudio (Apple) | int16 mono, 8/16/32/48 kHz |
-| Preprocess *(optional)* | **RNNoise 0.2** (full model) | recurrent noise suppression; bridged to its native 48 kHz |
-| Voice detection | **libfvad** (fast) or **Silero v5** via ONNX Runtime (neural) | language-agnostic |
-| Anomaly gate | RMS + spectral-flux + centroid z-scores (PFFFT) | adaptive rolling background |
-| Sound classification | **YAMNet** via ONNX Runtime | all 521 AudioSet classes |
-| Encode | **libopus** / PCM (FLAC planned) | per-segment |
+| Capture | miniaudio, Oboe (Android), Core Audio (Apple) | int16 mono at 8, 16, 32 or 48 kHz |
+| Preprocess (optional) | RNNoise 0.2, full model | recurrent noise suppression, bridged to its native 48 kHz |
+| Voice detection | libfvad (fast) or Silero v5 through ONNX Runtime (neural) | language-agnostic |
+| Anomaly gate | RMS, spectral flux and centroid z-scores (PFFFT) | adaptive rolling background |
+| Sound classification | YAMNet through ONNX Runtime | all 521 AudioSet classes |
+| Encode | libopus or PCM | per segment |
 
-Detection is one OR'd trigger: VAD or anomaly opens a *segment*; packets flow only
-while a segment is open, so the host receives speech/events, not the silence between.
+A segment opens when the voice detector or the anomaly gate triggers. Packets
+flow only while a segment is open, so the host receives speech and events, not
+the silence in between.
 
-## Highlights
+Other things the engine provides:
 
-- **Multilingual voice** — two VAD tiers: `libfvad` (fast, zero-dependency) and Silero v5
-  (neural). Both are language-agnostic; the neural tier catches faint/borderline speech.
-- **One dial tunes everything** — `Sensitive(0..1)` maps a single value onto every
-  detector's thresholds, or set each knob individually.
-- **Knows what it hears** — YAMNet's 521 AudioSet classes, plus helpers that fold them into
-  broad categories (speech / human / animal / music / nature) and a language-agnostic
-  "is this a human voice?" check.
-- **Mix and match** — enable any combination of RNNoise denoise, fast/neural VAD, anomaly
-  gate, and sound classification, at any of 8/16/32/48 kHz, encoding to Opus or PCM.
-- **Retune live** — `auris_update_config` changes detector thresholds on a running engine
-  with no teardown, no model reload, and no loss of detector state.
-- **Meter and tap** — per-frame input level (`input_rms_dbfs` / `input_peak_dbfs`) plus an
-  optional *ungated* PCM tap, so a host can draw a waveform or archive the whole stream
-  while still receiving segment-gated packets.
-- **Cheap when nothing is happening** — a silence gate skips RNNoise and YAMNet on quiet
-  input (VAD/anomaly stay live; audio always flows), so a quiet room costs ~0.4% of a core
-  with *every* feature on. Per-window worker health (`worker_busy_ppm`, wakeups, max
-  frame) is in the stats, and opt-in **adaptive degradation** sheds YAMNet work under
-  load and restores it when calm — emitting `AURIS_EVT_DEGRADATION` so the host knows.
-- **Deterministic** — packet/event timestamps depend only on frame position, not timing;
-  a cross-binding conformance harness proves the Go and Flutter surfaces produce
-  **byte-identical** output over the shared engine.
-- **Hardened** — bounded lock-free queues, generation-guarded zero-copy packets, no
-  exception crosses the ABI, and the worker can't crash the host; fuzzed, stress- and
-  fault-injection-tested, clean under ASan / UBSan / TSan.
-- **Live or offline** — capture from the mic (Android / iOS / macOS) or push your own PCM
-  (`HOST_PCM`) to run files, network audio, or test vectors through the same pipeline.
+- One sensitivity dial. A single value in `0..1` maps onto every detector's
+  thresholds; each threshold can also be set individually.
+- Live retuning. `auris_update_config` changes thresholds on a running engine
+  with no teardown, no model reload and no loss of detector state.
+- Level meter and PCM tap. Per-frame input level in dBFS, plus an optional
+  ungated PCM stream for waveforms or full archives alongside the gated packets.
+- A silence gate. Quiet input skips RNNoise and YAMNet while VAD and the anomaly
+  gate stay live, so a quiet room with every feature on costs about 0.4% of a
+  core. Worker health counters are in the stats, and opt-in adaptive degradation
+  sheds YAMNet work under load and restores it when calm.
+- Deterministic output. Packet and event timestamps depend only on frame
+  position, never on wall-clock time. A conformance harness checks that the Go,
+  Dart and Python bindings produce byte-identical output over the shared engine.
+- Live or offline. Capture from the microphone, or push your own PCM to run
+  files, network audio or test vectors through the same pipeline.
 
-## How it works
+## Quick start
 
-Three threads, two lock-free queues. Audio flows one way; the two queues are the
-**only** coupling between real-time work and the host.
-
-```mermaid
-flowchart TB
-    MIC["🎙 Microphone<br/>miniaudio · Oboe · CoreAudio"] --> RING
-    HOST["📥 Host PCM<br/>auris_push_pcm / pushPcm"] --> RING
-    RING(["SPSC PCM ring<br/>lock-free · drop-newest on full"])
-
-    subgraph WORKER["T2 · worker thread"]
-        direction TB
-        RING --> LVL["Level meter · silence gate<br/>quiet frames skip RNNoise / YAMNet"]
-        LVL --> RN["RNNoise denoise<br/>optional · 48 kHz bridge"]
-        RN --> VAD["Voice · libfvad / Silero<br/>multilingual"]
-        RN --> ANO["Anomaly · RMS / flux / centroid z-score"]
-        RN --> YAM["YAMNet · 521 AudioSet classes"]
-        VAD --> SEG["Segmenter<br/>pre/post-roll · hangover"]
-        ANO --> SEG
-        SEG --> ENC["Encode · Opus / PCM"]
-    end
-
-    ENC --> POOL(["Packet pool<br/>bounded · drop-oldest → OVERRUN"])
-    SEG --> EVQ(["Event queue"])
-    YAM --> EVQ
-
-    POOL --> DRAIN["auris_drain"]
-    EVQ --> POLL["auris_poll_event"]
-
-    subgraph HOSTAPP["T3 · host — Go channels · Dart streams · …"]
-        DRAIN --> PKT["📦 packets<br/>zero-copy → copied on release"]
-        POLL --> EV["🔔 events<br/>speech · anomaly · sound-class · segment"]
-        STATS["auris_get_stats"] --> ST["📊 stats"]
-    end
-```
-
-- **T1** (RT capture) is alloc-free and never blocks — it only pushes samples into the ring.
-- **T2** (worker) preprocesses, runs all three detectors per frame, segments, and encodes.
-  A segment opens on a VAD *or* anomaly trigger, so packets flow only while something is
-  happening. Packet/event **timestamps are a deterministic function of frame position**,
-  not wall-clock, so identical input yields identical output.
-- **T3** (host) drains at any pace. A slow host just drains slower; T1/T2 never feel
-  backpressure (the pool drops oldest and raises `AURIS_EVT_OVERRUN`).
-
-The C ABI (`include/auris/auris.h`) is the contract: opaque handle, POD structs, status
-codes, **no C++/exceptions/STL across the boundary**, zero-copy borrowed packets with an
-explicit release (guarded by a generation cookie against stale double-release).
-
-## Repo layout
-
-```
-include/auris/auris.h     the C ABI (the contract — bindings generate from this)
-src/                      engine, detectors, encoders, capture backends, preprocess
-third_party/              vendored, permissive-only deps (see Licensing)
-tests/                    118 doctest cases incl. fuzz / stress / fault-injection
-packages/                 Flutter federated plugin (auris + per-platform + example app)
-bindings/go/              cgo binding (idiomatic Go API + example + tests)
-bindings/python/          ctypes binding (no build step + example + tests)
-examples/conformance/     Go ⇄ Dart byte-parity harness (run.sh)
-```
-
----
-
-## Building the core (CMake)
+Every binding needs the native library built once. From the repository root:
 
 ```bash
-cmake -S . -B build -DAURIS_ENABLE_TESTS=ON \
-      -DAURIS_ENABLE_NEURAL_VAD=ON          # Silero + YAMNet (needs ONNX Runtime)
+cmake -S . -B build -DAURIS_ENABLE_NEURAL_VAD=ON
 cmake --build build -j
-./build/test_auris                          # 118 cases
-./build/bench_auris 20                      # CPU cost per feature, 20 s of audio
 ```
 
-Useful options (all default to a sane value):
+The Go and Python bindings look for the library in `build/` by default, so keep
+that directory name. See [Building the core](#building-the-core) for the
+prerequisites and options.
 
-| Option | Default | Effect |
-|---|---|---|
-| `AURIS_ENABLE_TESTS` | OFF | build the doctest suite |
-| `AURIS_ENABLE_NEURAL_VAD` | OFF | compile Silero VAD + YAMNet (ONNX Runtime) |
-| `AURIS_ENABLE_RNNOISE` | OFF | compile RNNoise preprocessing |
-| `AURIS_ENABLE_OPUS` | ON | compile the Opus encoder |
-| **`AURIS_ENABLE_LOG`** | **OFF** | emit internal diagnostics to stderr/logcat. **Release builds are silent by default** — turn this on only to debug. |
-
-### Performance
-
-`bench/throughput.cpp` (built with the tests) pushes synthetic audio through `HOST_PCM`
-faster than real time so the worker is the bottleneck, and reports the real-time factor
-per feature. Release build, Apple M3 Max, one core:
-
-| Configuration | Share of one core | Notes |
-|---|---|---|
-| passthrough · fast VAD · anomaly | 0.02% | the engine core is at the noise floor |
-| Opus encode (complexity 5) | 0.40% | |
-| neural VAD (Silero) | 0.50% | |
-| RNNoise 0.2, full model | 2.45% | includes the 16→48→16 kHz bridge; the little model is ~1.35%, the retired classic model was 1.02% |
-| YAMNet, 1000 ms cadence (default) | 1.67% | 500 ms cadence: ~2× |
-| **everything + Opus** | **4.95%** | |
-| everything + Opus, **quiet room** (−75 dBFS) | **0.47%** | silence gate sheds RNNoise + YAMNet |
-
-Expect roughly 3× on a recent iPhone and 5–8× on mid-range Android. The two levers that
-matter are both algorithmic: YAMNet's cadence (`sound_class_interval_ms`) and the silence
-gate (`silence_gate_dbfs`, default −60; raise to about −50 to also shed quiet-room tone).
-For constrained devices, `enable_adaptive_degradation` lets the engine step YAMNet's
-cadence down (×2, ×4, then suspend) whenever the worker's busy share exceeds
-`degrade_busy_ppm` or the capture ring drops frames, and step it back after ~3 calm
-seconds. It is **off by default** because it reacts to wall-clock timing, which would make
-faster-than-real-time offline runs (and the conformance harness) non-deterministic.
-
-`worker_batch_frames` (default 0) wakes the worker only once N frames are queued: the same
-CPU work in N× fewer thread wakeups — the metric that actually maps to battery on phones —
-for up to N−1 frames of added detection latency. `worker_wakeups` in the stats shows the
-effect.
-
-Measured and **rejected** (numbers from the same harness, so they can be re-checked):
-
-- **CoreML execution provider** for the ONNX detectors: YAMNet 1.5% → 26% of wall time
-  (81 of 82 nodes offload, so this is per-inference dispatch overhead, not fallback);
-  Silero 0.6% → 2.4% with unsupported-dimension errors. Set `AURIS_ORT_EP=coreml` to
-  re-measure with a newer ONNX Runtime; the CPU provider stays the default.
-- **Opus NEON intrinsics vs the portable path**: 0.37–0.40% either way, inside run-to-run
-  noise, so the Apple SPM/CocoaPods builds keep `OPUS_DISABLE_INTRINSICS`.
-- **RNNoise 0.2 and the arm64 dot-product extension**: macOS compiles with
-  `__ARM_FEATURE_DOTPROD`, iOS/Android defaults do not. Measured with `-march=armv8-a`:
-  2.42–2.45% vs 2.14–2.44% — no difference outside noise, so the 2.45% figure is
-  representative of the plain NEON path phones run; no runtime dispatch is warranted.
-
-### Sanitizers
-
-```bash
-cmake -S . -B build-asan -DAURIS_ENABLE_TESTS=ON \
-      -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g" \
-      -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g"
-cmake --build build-asan -j && ./build-asan/test_auris
-
-cmake -S . -B build-tsan -DAURIS_ENABLE_TESTS=ON \
-      -DCMAKE_CXX_FLAGS="-fsanitize=thread -fno-omit-frame-pointer -g" \
-      -DCMAKE_C_FLAGS="-fsanitize=thread -fno-omit-frame-pointer -g"
-cmake --build build-tsan -j && ./build-tsan/test_auris
-```
-
-## Minimal C usage
+### C
 
 ```c
+#include <auris/auris.h>
+
 auris_config_t cfg;
 auris_config_defaults(&cfg);
-cfg.backend = AURIS_BACKEND_HOST_PCM;   // or AUTO to use the OS mic
+cfg.backend = AURIS_BACKEND_HOST_PCM;   /* or AURIS_BACKEND_AUTO for the microphone */
 cfg.enable_vad = 1;
 
 auris_engine_t* e = NULL;
 if (auris_create(&cfg, &e) != AURIS_OK) { /* handle */ }
 auris_start(e);
 
-/* drain loop (your thread) */
 auris_packet_t pkt;
 while (auris_drain(e, &pkt) == AURIS_OK) {
-    /* forward pkt.data[0..pkt.size) ... then: */
-    auris_release(e, &pkt);             // borrowed — release promptly
+    /* use pkt.data[0..pkt.size), then release the borrowed slot */
+    auris_release(e, &pkt);
 }
 auris_event_t ev;
 while (auris_poll_event(e, &ev) == AURIS_OK) { /* SPEECH_BEGIN, ANOMALY, ... */ }
@@ -222,24 +97,23 @@ auris_stop(e);
 auris_destroy(e);
 ```
 
-Ownership rules are enforced and tested: every `auris_create` pairs with one
-`auris_destroy`; packet `data` is borrowed until the matching `auris_release`; no C++
-exception ever crosses the ABI; invalid input returns a status, never crashes.
+Rules the ABI enforces: one `auris_destroy` per `auris_create`; packet data is
+borrowed until the matching `auris_release`; no C++ exception crosses the
+boundary; invalid input returns a status code and never crashes.
 
-## Flutter
+### Flutter
 
-The `packages/` directory is a federated plugin (flat VGV-style layout). The Dart side
-reaches the C ABI directly via `dart:ffi`; there are no platform channels on the hot
-path. Detections, encoded **packets**, and stats arrive as Dart streams; `pushPcm` feeds
-a `HOST_PCM` engine. See [`packages/auris/README.md`](packages/auris/README.md) and the
-[example app](packages/auris/example) — a live demo with **feature presets** (voice-only,
-everything, anomaly-watch, denoised-voice…), a sensitivity dial, and encoded-bytes meter.
+`packages/` is a federated plugin. Dart reaches the C ABI through `dart:ffi`
+with no platform channels on the hot path. Events, packets and stats arrive as
+streams.
 
 ```dart
+import 'package:auris/auris.dart';
+
 final engine = AurisEngine.create(
   AurisConfig.sensitive(
-    0.6,                                                   // one dial drives every detector
-    neuralVadModelPath: await AurisModels.neuralVadPath(), // multilingual Silero VAD
+    0.6,
+    neuralVadModelPath: await AurisModels.neuralVadPath(),
     soundClassModelPath: await AurisModels.soundClassPath(),
     denoise: true,
     performance: const AurisPerformanceConfig.mobile(),
@@ -254,11 +128,15 @@ engine.events.listen((event) => switch (event) {
     });
 ```
 
-## Go
+Full API notes are in [packages/auris/README.md](packages/auris/README.md).
 
-`bindings/go` is a cgo binding over the same C ABI, with an idiomatic API:
-detections and packets arrive on Go channels. Build `libauris` (CMake) once, then
-`go test`. See [`bindings/go/README.md`](bindings/go/README.md).
+### Go
+
+```bash
+cd bindings/go
+go test ./...
+go run ./example -preset everything -file ../../tests/fixtures/hello.wav
+```
 
 ```go
 e, _ := auris.New(auris.Sensitive(0.6,
@@ -271,15 +149,21 @@ for ev := range e.Events() {
 }
 ```
 
-The [example](bindings/go/example) is a flag-driven CLI that runs any combination of
-backend (mic / file via `HOST_PCM`), VAD tier, detectors, RNNoise, and codec — plus
-named `-preset`s (`voice`, `everything`, `anomaly`, `denoised-voice`, `music`) that show
-common recipes.
+The example accepts `-preset` (`voice`, `everything`, `anomaly`,
+`denoised-voice`, `music`), `-file` for a 16-bit mono WAV, and per-feature
+flags: `-vad`, `-anomaly`, `-soundclass`, `-rnnoise`, `-codec`,
+`-sensitivity`, `-gate`, `-seconds`. Details in
+[bindings/go/README.md](bindings/go/README.md).
 
-## Python
+### Python
 
-`bindings/python` is a pure-**ctypes** binding — no compiler, no build step, no
-third-party runtime dependency. See [`bindings/python/README.md`](bindings/python/README.md).
+Pure ctypes, no build step, CPython 3.10 or newer.
+
+```bash
+cd bindings/python
+python3 -m unittest discover -s tests -v
+python3 example.py --preset everything --file ../../tests/fixtures/hello.wav --tap
+```
 
 ```python
 import auris
@@ -292,108 +176,383 @@ with auris.Engine(auris.sensitive(0.6)) as engine:
                 print("voice, any language")
 ```
 
-`push_pcm` takes anything buffer-like (`bytes`, `array('h')`, numpy `int16`), so
-running files or datasets through the same pipeline is a few lines.
+`push_pcm` accepts `bytes`, `array('h')`, `memoryview` and numpy `int16`
+arrays. Details in [bindings/python/README.md](bindings/python/README.md).
 
-## Cross-binding conformance
+## Building the core
 
-[`examples/conformance`](examples/conformance) is a bidirectional differential
-test across **every pair** of bindings (Go ⇄ Dart ⇄ Python): each peer feeds
-deterministic audio to the other, processes it through its own binding over the
-shared engine, and verifies the two produce **byte-identical** encoded packets,
-events, and timestamps — proving all three language surfaces stay in sync.
+### Prerequisites
+
+| Tool | Version | Notes |
+|---|---|---|
+| CMake | 3.24 or newer | |
+| C++ compiler | Clang 17 or newer | C++20, C11 |
+| ONNX Runtime | 1.20 or newer | only for neural VAD and YAMNet; `brew install onnxruntime` on macOS |
+
+Everything else is vendored under `third_party/`: miniaudio, libfvad, PFFFT,
+libopus and RNNoise are compiled into the library on every build.
+
+### Build, test, benchmark
 
 ```bash
-cd examples/conformance && ./run.sh
-# → ✅ conformance passed — every binding pair is byte-identical
+cmake -S . -B build -DAURIS_ENABLE_TESTS=ON -DAURIS_ENABLE_NEURAL_VAD=ON
+cmake --build build -j
+./build/test_auris
+./build/bench_auris 20
 ```
 
----
+`test_auris` runs 118 doctest cases, including fuzz, stress and fault-injection
+cases. `bench_auris` pushes synthetic audio through the engine faster than real
+time and prints the CPU share per feature; the optional argument is the number
+of seconds of audio per configuration (default 30). `AURIS_BENCH_ONLY=<text>`
+runs only the configurations whose name contains that text.
+
+### Options
+
+| Option | Default | Effect |
+|---|---|---|
+| `AURIS_BUILD_SHARED` | ON | build `libauris.dylib` / `libauris.so` (the bindings need this) |
+| `AURIS_BUILD_STATIC` | ON | build `libauris.a` (the tests link this) |
+| `AURIS_ENABLE_NEURAL_VAD` | OFF | compile Silero VAD and YAMNet; needs ONNX Runtime on the system |
+| `AURIS_ENABLE_TESTS` | OFF | build `test_auris` and `bench_auris` |
+| `AURIS_ENABLE_EXAMPLES` | ON | build `examples/smoke.cpp` |
+| `AURIS_ENABLE_LOG` | OFF | print init, model and backend diagnostics to stderr or logcat; release builds are silent without it |
+
+If `AURIS_ENABLE_NEURAL_VAD` is on but ONNX Runtime is not found, CMake prints a
+warning and builds without the neural detectors. On macOS the Homebrew install
+is found automatically; elsewhere make sure `onnxruntime_cxx_api.h` and the
+library are under `/usr/local`.
+
+### Sanitizers
+
+```bash
+cmake -S . -B build-asan -DAURIS_ENABLE_TESTS=ON \
+      -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g" \
+      -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g"
+cmake --build build-asan -j && ./build-asan/test_auris
+```
+
+```bash
+cmake -S . -B build-tsan -DAURIS_ENABLE_TESTS=ON \
+      -DCMAKE_CXX_FLAGS="-fsanitize=thread -fno-omit-frame-pointer -g" \
+      -DCMAKE_C_FLAGS="-fsanitize=thread -fno-omit-frame-pointer -g"
+cmake --build build-tsan -j && ./build-tsan/test_auris
+```
+
+## Models
+
+| Model | File | Size |
+|---|---|---|
+| Silero VAD v5.1.2 | `silero_vad.onnx` | about 2 MB |
+| YAMNet, 3 s window | `yamnet_3s.onnx` | about 15 MB |
+| RNNoise | compiled into the library | |
+
+Copies live in `tests/fixtures/` for the core tests and the Go and Python
+examples, and in `packages/auris/assets/` as Flutter assets. The Flutter
+package extracts them to an app-writable path at runtime through
+`AurisModels`.
+
+The engine resolves a model path in this order:
+
+1. The path in the config (`neural_vad_model_path`, `sound_class_model_path`).
+2. The environment variable `AURIS_NEURAL_VAD_MODEL` or `AURIS_SOUND_CLASS_MODEL`.
+3. A file named `silero_vad.onnx` or `yamnet_3s.onnx` in the working directory.
+
+The YAMNet class names are in `tests/fixtures/yamnet_class_map.txt` and, for
+Flutter, through `AurisModels.yamnetLabels()`.
+
+## Running the Flutter demo on a device
+
+The example app in `packages/auris/example` is a live demo with presets
+(Balanced, Voice only, Everything, Anomaly watch, Sound ID), a sensitivity
+slider that retunes the running engine, an RNNoise toggle, a level meter and
+the full stats card.
+
+Toolchain used for the current release: Flutter 3.47, Dart 3.11, Xcode 27,
+Android NDK r28c, compileSdk 36, minSdk 21.
+
+```bash
+cd packages/auris/example
+flutter devices                      # list targets
+flutter run -d macos
+flutter run -d <iphone-or-simulator-id>
+flutter run -d <android-device-id>
+```
+
+The integration tests exercise the native library on the chosen device,
+including the Silero and YAMNet loads through ONNX Runtime:
+
+```bash
+flutter test integration_test -d <device-id>
+```
+
+Notes for Android devices:
+
+- A debug APK carries every ABI plus debug assets and is about 270 MB. Android
+  refuses an install without roughly twice that free. For a phone that is low
+  on space, build `flutter build apk --release --split-per-abi` and install
+  `build/app/outputs/flutter-apk/app-arm64-v8a-release.apk` (about 70 MB).
+- Grant the microphone before launching if you want to skip the prompt:
+  `adb shell pm grant io.auris.example android.permission.RECORD_AUDIO`.
+
+Unit tests and analysis for the Dart package:
+
+```bash
+cd packages/auris
+flutter analyze
+flutter test
+```
+
+## How it works
+
+Three threads and two lock-free queues. Audio flows one way, and the two queues
+are the only coupling between real-time work and the host.
+
+```mermaid
+flowchart TB
+    MIC["Microphone<br/>miniaudio / Oboe / Core Audio"] --> RING
+    HOST["Host PCM<br/>auris_push_pcm"] --> RING
+    RING(["SPSC PCM ring<br/>lock-free, drops newest when full"])
+
+    subgraph WORKER["T2: worker thread"]
+        direction TB
+        RING --> LVL["Level meter and silence gate"]
+        LVL --> RN["RNNoise (optional)"]
+        RN --> VAD["Voice: libfvad or Silero"]
+        RN --> ANO["Anomaly: RMS / flux / centroid z-scores"]
+        RN --> YAM["YAMNet: 521 AudioSet classes"]
+        VAD --> SEG["Segmenter<br/>pre-roll, hangover"]
+        ANO --> SEG
+        SEG --> ENC["Encoder: Opus or PCM"]
+    end
+
+    ENC --> POOL(["Packet pool<br/>bounded, drops oldest and reports OVERRUN"])
+    SEG --> EVQ(["Event queue"])
+    YAM --> EVQ
+
+    POOL --> DRAIN["auris_drain"]
+    EVQ --> POLL["auris_poll_event"]
+
+    subgraph HOSTAPP["T3: host (Go channels, Dart streams, Python iterators)"]
+        DRAIN --> PKT["packets, zero-copy until release"]
+        POLL --> EV["events"]
+        STATS["auris_get_stats"] --> ST["stats"]
+    end
+```
+
+- T1, the capture thread, is allocation-free and never blocks. It only pushes
+  samples into the ring.
+- T2, the worker, runs every frame through the same fixed order: retune, level
+  meter, denoise, PCM tap, detectors, classifier, segmenter, health accounting.
+  Timestamps are computed from the frame index and the first capture time, so
+  identical input gives identical output on every run.
+- T3, the host, drains at its own pace. A slow host never applies backpressure
+  to T1 or T2; the packet pool drops the oldest packet and raises
+  `AURIS_EVT_OVERRUN`.
+
+The C ABI in `include/auris/auris.h` is the contract: an opaque handle, plain
+structs, status codes, no C++ types or exceptions across the boundary, and
+borrowed packets guarded by a generation cookie against stale or double release.
+
+## Repository layout
+
+```
+include/auris/auris.h       the C ABI; the bindings are generated from it
+src/
+  api/                      one translation unit per C entry point group
+  worker/                   the worker thread: drain loop, detector bank, tunables,
+                            segmenter, packet emitter, health window
+  detect/                   libfvad VAD, Silero VAD, anomaly gate, YAMNet
+  capture/                  backend factory, miniaudio, Core Audio, Oboe
+  preprocess/               RNNoise and the integer-ratio resamplers
+  encode/                   Opus and PCM encoders
+  engine.hpp                the engine state behind the opaque handle
+  config_validation.*       config checks and derived sizes
+third_party/                vendored, permissive-only dependencies
+tests/                      118 doctest cases and the audio and model fixtures
+bench/                      the throughput benchmark
+packages/                   Flutter federated plugin and the example app
+bindings/go/                cgo binding, example and tests
+bindings/python/            ctypes binding, example and tests
+examples/conformance/       Go, Dart and Python byte-parity harness
+examples/smoke.cpp          minimal C++ passthrough check
+```
+
+Every source file holds one type, stays under 100 lines, and starts with a
+short comment saying what it is for. There are no comments inside function
+bodies; the structure is meant to carry that information.
+
+## Performance
+
+`bench_auris` on a Release build, Apple M3 Max, one core, 16 kHz input:
+
+| Configuration | Share of one core |
+|---|---|
+| passthrough, fast VAD, anomaly gate | 0.02% |
+| Opus encode, complexity 5 | 0.38% |
+| neural VAD (Silero) | 0.59% |
+| RNNoise 0.2, full model, including the 16 to 48 kHz bridge | 2.34% |
+| YAMNet, 1000 ms cadence (default) | 1.71% |
+| everything on, with Opus | 4.86% |
+| everything on, quiet room at -75 dBFS | 0.41% |
+
+Expect roughly three times these figures on a recent iPhone and five to eight
+times on a mid-range Android phone. The two settings that matter most are
+YAMNet's cadence (`sound_class_interval_ms`) and the silence gate
+(`silence_gate_dbfs`, default -60; about -50 also sheds quiet room tone).
+
+`enable_adaptive_degradation` lets the engine step YAMNet's cadence down by two,
+then four, then suspend it whenever the worker's busy share exceeds
+`degrade_busy_ppm` or the capture ring drops frames, and step it back after
+about three calm seconds. It is off by default because it reacts to wall-clock
+timing, which would make faster-than-real-time offline runs non-deterministic.
+
+`worker_batch_frames` wakes the worker only once that many frames are queued.
+The CPU work is the same, in fewer thread wakeups, at the cost of up to N-1
+frames of added latency. `worker_wakeups` in the stats shows the effect.
+
+Measured and not adopted, with the same harness so the numbers can be rechecked:
+
+- The CoreML execution provider for the ONNX detectors. YAMNet went from 1.5%
+  to 26% of wall time from per-inference dispatch overhead, and Silero from
+  0.6% to 2.4% with unsupported-dimension errors. `AURIS_ORT_EP=coreml`
+  re-measures with a newer ONNX Runtime; the CPU provider stays the default.
+- Opus NEON intrinsics against the portable path: 0.37% to 0.40% either way,
+  within run-to-run noise, so the Apple builds keep `OPUS_DISABLE_INTRINSICS`.
+- The arm64 dot-product extension for RNNoise: no difference outside noise, so
+  there is no runtime dispatch.
 
 ## Platform integration notes
 
-These are the non-obvious requirements that make the native library link and capture
-correctly on each platform. They are encoded in the build files under `packages/` —
-this section explains *why*, so they don't get accidentally removed.
+These are the requirements that make the native library link and capture
+correctly on each platform. They are already encoded in the build files under
+`packages/`; this section explains why they are there.
 
 ### Android (`packages/auris_android`)
-- **NDK r28+** and `-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384` — 16 KB
-  page alignment required by Android 15+. Oboe ≥ 1.10 and ONNX Runtime ≥ 1.26 ship
-  16 KB-aligned `.so`s.
-- **Oboe** via Prefab (`find_package(oboe CONFIG)`); **ONNX Runtime** via a glob of the
-  Gradle transform cache + `SHARED IMPORTED` (the AAR has no Prefab metadata).
+
+- NDK r28 or newer with `-Wl,-z,max-page-size=16384` for the 16 KB page
+  alignment Android 15 requires. Oboe 1.10 and ONNX Runtime 1.26 and later ship
+  aligned libraries.
+- Oboe comes through Prefab. ONNX Runtime comes from the AAR through a glob of
+  the Gradle transform cache and a `SHARED IMPORTED` target, because the AAR has
+  no Prefab metadata.
 - `abiFilters arm64-v8a, x86_64`.
-- The shared C/C++ lives at the repo root and is reached via `AURIS_ROOT`. AGP marks the
-  native build `upToDateWhen=false`, so out-of-tree edits *are* picked up by a plain
-  `flutter build` (no cache clear needed) — see the note in `android/build.gradle`.
+- The shared C and C++ sources live at the repository root and are reached
+  through `AURIS_ROOT`. The plugin's CMake file lists them explicitly, so a new
+  source file must be added there as well as to the root `CMakeLists.txt`.
 
-### iOS & macOS (`packages/auris_ios`, `packages/auris_macos`)
-- A podspec `prepare_command` rsyncs the repo's C/C++ tree into the pod, and
-  `source_files` globs compile it inline so symbols land in the host app.
-- **Static linkage**: `use_frameworks! :linkage => :static` (ONNX ships a static
-  xcframework that CocoaPods otherwise rejects).
-- **FFI symbol export (critical).** `DynamicLibrary.process()` searches the executable's
-  *dynamic symbol table*. With static linkage the linker keeps only link-time-referenced
-  objects, and the C ABI is only referenced at runtime from Dart — so without help the
-  symbols are dropped and lookups fail with *"symbol not found"*. Two pieces fix it:
-  1. `AurisPlugin.register()` (always called by Flutter) references the ABI under a
-     never-true guard, anchoring its transitive closure into the binary.
-  2. The podspec adds `-Wl,-export_dynamic` to the **consumer** target, publishing those
-     default-visibility symbols into the dynamic table.
-- **Swift Package Manager.** `auris_ios` and `auris_macos` each ship a `Package.swift`
-  alongside their podspec and build under either integration (Flutter supports both).
-  SwiftPM requires a target's sources to live inside the package, so
-  `<plugin>/Sources/auris_native/` holds **symlinks** to the shared tree rather than
-  copies — the package cannot drift from the source of truth, and git stores ~10 links
-  instead of 10 MB each. Three things are load-bearing:
-  - `rnnoise/src` must **not** be on the header search path. RNNoise vendors a fork of
-    celt (`arch.h`, `pitch.h`, `kiss_fft.h`, `celt_lpc.h`) that *shadows* opus' headers
-    of the same name and silently miscompiles opus (mismatched `celt_inner_prod`
-    signatures, missing `celt_sig_assert`/`opus_fft`). Both podspecs carried the same
-    latent hazard; it is now gone from all four build files.
-  - Under SwiftPM the C engine is a separate module, so `AurisPlugin.swift` does
-    `#if canImport(auris_native) import auris_native` — the CocoaPods build puts
-    everything in one target and needs no import.
-  - **Full feature parity**, including Silero neural VAD and YAMNet: the packages depend
-    on Microsoft's
+### iOS and macOS (`packages/auris_ios`, `packages/auris_macos`)
+
+- CocoaPods: the podspec copies the C and C++ tree into the pod and compiles it
+  inline, so the symbols land in the host app. Linkage is static
+  (`use_frameworks! :linkage => :static`) because ONNX Runtime ships a static
+  xcframework.
+- FFI symbol export. `DynamicLibrary.process()` searches the executable's
+  dynamic symbol table. With static linkage the linker keeps only objects
+  referenced at link time, and the C ABI is only referenced at runtime from
+  Dart. Two pieces keep the symbols: `AurisPlugin.register()` references the
+  ABI under a never-true guard, and the podspec adds `-Wl,-export_dynamic` to
+  the consumer target.
+- Swift Package Manager. Each plugin ships a `Package.swift` next to its
+  podspec. SwiftPM needs a target's sources inside the package, so
+  `Sources/auris_native/` holds symlinks to the shared tree. Three details are
+  load-bearing:
+  - `rnnoise/src` must not be on the header search path. RNNoise vendors a fork
+    of celt whose headers shadow those of opus and miscompile it silently.
+  - Under SwiftPM the C engine is its own module, so `AurisPlugin.swift` does
+    `#if canImport(auris_native) import auris_native`.
+  - Neural VAD and YAMNet come from Microsoft's
     [onnxruntime-swift-package-manager](https://github.com/microsoft/onnxruntime-swift-package-manager)
-    (pinned to 1.24.2), whose `onnxruntime` binary target wraps
-    `pod-archive-onnxruntime-c` — the *same* artifact the `onnxruntime-c` pod uses. Its
-    headers arrive framework-style, hence the extra
-    `__has_include(<onnxruntime/onnxruntime_cxx_api.h>)` arm in the detectors.
-    That dependency sets the SPM floor at **iOS 15 / macOS 14**; the podspecs keep their
-    lower minimums (iOS 15 / macOS 12 — the floors Xcode 27's SDKs accept), so CocoaPods
-    users are not forced up to macOS 14.
-- **Microphone permission & capture:**
-  - **iOS** RemoteIO can't capture until an `AVAudioSession` (record category) is
-    configured and activated — done in the capture backend. `permission_handler` needs
-    `PERMISSION_MICROPHONE=1` in the app Podfile, or it reports `denied` unconditionally.
-  - **macOS** a `HALOutput` unit must be bound to the default *input* device
-    (`kAudioOutputUnitProperty_CurrentDevice`), or it captures silence. miniaudio's path
-    doesn't request authorization, so the demo calls `AVCaptureDevice.requestAccess`
-    up front (the app carries the audio-input entitlement + usage string).
+    pinned to 1.24.2, which wraps the same artifact as the `onnxruntime-c` pod.
+    That dependency sets the SwiftPM floor at iOS 15 and macOS 14. The podspecs
+    keep iOS 15 and macOS 12.
+- Microphone capture. On iOS a RemoteIO unit cannot capture until an
+  `AVAudioSession` with the record category is active; the Core Audio backend
+  does this. `permission_handler` needs `PERMISSION_MICROPHONE=1` in the app
+  Podfile or it reports denied. On macOS a HALOutput unit must be bound to the
+  default input device or it captures silence; the backend does this too. The
+  demo requests authorization through `AVCaptureDevice.requestAccess`, and the
+  app carries the audio-input entitlement and usage string.
 
-### Bundled models
-`silero_vad.onnx` (v5.1.2, ~2 MB), `yamnet_3s.onnx` (~15 MB), and RNNoise's model
-(baked into `rnn_data.c`). The Silero/YAMNet models ship as Flutter assets and are
-extracted to an app-writable path at runtime.
+## Contributing
 
----
+### Code rules
+
+These apply to C++, Dart, Go and Python alike:
+
+- One type per file. A file holds one class, struct or enum and the free
+  functions that belong to it. Nested private helpers are fine.
+- At most 100 lines per file. Split by concern, not by line count: a class
+  whose implementation needs more goes into one file per method group.
+- No comments inside function bodies. A file starts with one to three lines
+  saying what it is for and why it exists; everything else is carried by names
+  and structure.
+- Dart follows `very_good_analysis` with warnings as errors, uses modern
+  language features (sealed classes, patterns, extension types), and never
+  uses `unawaited`. Awaiting is the rule.
+- Go passes `golangci-lint` with the repository configuration. Python keeps to
+  the standard library.
+- Includes in `src/` are root-relative (`"detect/detector.hpp"`,
+  `"worker/worker.hpp"`).
+
+### Commit messages
+
+Write them as a changelog entry a colleague would write: what changed, why, and
+what was verified. No attribution trailers, no emoji, no generated-by lines.
+
+### Before you push
+
+Run what your change touches. The full set the maintainers run before a core
+change is:
+
+```bash
+cmake --build build --target auris test_auris bench_auris -j && ./build/test_auris
+./build-asan/test_auris
+./build-tsan/test_auris
+./build/bench_auris
+examples/conformance/run.sh
+```
+
+The conformance harness must report the same digest before and after a core
+change; the reference for the bundled fixture is `0x88587912845f408a`. A change
+that moves it has altered the engine's output and needs a deliberate decision.
+
+For a binding change, also run that binding's tests, and for the Flutter
+package run `flutter analyze`, `flutter test`, and the integration tests on at
+least one device.
+
+CI runs the same set on every push and pull request: the C++ tests, the
+sanitizer build, Go with the race detector, Python, Dart analysis and tests,
+and the conformance harness.
+
+### Regenerating the Dart FFI bindings
+
+The Dart binding is generated from `include/auris/auris.h`. After changing the
+header:
+
+```bash
+cd packages/auris_platform_interface && dart run ffigen --config ffigen.yaml
+```
+
+### Adding a C++ source file
+
+Add it to `AURIS_SOURCES` in the root `CMakeLists.txt` and to the Android
+plugin's `packages/auris_android/android/src/main/cpp/CMakeLists.txt`. The
+podspecs and Swift packages glob the tree and pick it up on their own.
 
 ## Licensing
 
-Auris is permissive-only — **no GPL/LGPL**. Vendored dependencies:
+Auris is permissive-only, with no GPL or LGPL code. Vendored dependencies:
 
-| Dep | Version | License |
+| Dependency | Version | License |
 |---|---|---|
 | miniaudio | 0.11.25 | public domain / MIT-0 |
-| libfvad | 1.0 | BSD-3-Clause (WebRTC) + MIT |
-| PFFFT | 2013 original (J. Pommier; unversioned) | BSD-like (FFTPACK-derived) |
-| libopus | 1.6.1 release (DRED/OSCE weights and autotools output trimmed — see `third_party/opus/VENDORED_FROM.txt`) | BSD-3-Clause |
-| RNNoise | 0.2 release + full model `0b50c45` compiled in (`third_party/rnnoise/VENDORED_FROM.txt` documents the little-model alternative and the `os_support.h` shim) | BSD-3-Clause (Xiph) |
-| ONNX Runtime | Homebrew 1.30 · Android `onnxruntime-android:1.30.0` · SwiftPM 1.24.2 (newest tag of Microsoft's Swift package) · CocoaPods `onnxruntime-c ~> 1.20` | MIT (linked, not vendored) |
-| doctest | 2.5.3 | MIT (test only) |
+| libfvad | 1.0 | BSD-3-Clause (WebRTC) and MIT |
+| PFFFT | 2013 original by J. Pommier | BSD-like (FFTPACK-derived) |
+| libopus | 1.6.1 release, DRED/OSCE weights and autotools output trimmed; see `third_party/opus/VENDORED_FROM.txt` | BSD-3-Clause |
+| RNNoise | 0.2 release with the full `0b50c45` model; see `third_party/rnnoise/VENDORED_FROM.txt` | BSD-3-Clause (Xiph) |
+| ONNX Runtime | Homebrew 1.30, Android `onnxruntime-android:1.30.0`, SwiftPM 1.24.2, CocoaPods `onnxruntime-c ~> 1.20` | MIT, linked rather than vendored |
+| doctest | 2.5.3 | MIT, tests only |
 
-Android builds against Oboe 1.11.0, compileSdk 36, NDK r28c (LTS); the example app uses
-Gradle 9.3.1 / AGP 8.13.2 / Kotlin 2.4.0 — the newest versions inside Flutter 3.47's
-tested envelope.
+Android builds against Oboe 1.11.0, compileSdk 36 and NDK r28c. The example app
+uses Gradle 9.3.1, AGP 8.13.2 and Kotlin 2.4.0.
