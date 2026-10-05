@@ -1,6 +1,6 @@
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mockingbird/mockingbird.dart';
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
-import 'package:flutter_test/flutter_test.dart';
 
 AurisEvent decode(int type, {int reason = 0, double confidence = 0}) =>
     AurisEvent.fromNative(

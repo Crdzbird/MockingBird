@@ -1,6 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:mockingbird/mockingbird.dart';
 import 'package:mockingbird_example/src/demo/detection_summary.dart';
-import 'package:flutter/material.dart';
 
 /// The latest recognised sound, colour-coded by its broad category.
 class LastSoundCard extends StatelessWidget {

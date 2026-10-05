@@ -14,10 +14,13 @@ final class AurisNativePacket {
 
   /// Segment the packet belongs to.
   final int segmentId;
+
   /// Presentation timestamp in microseconds.
   final int ptsUs;
+
   /// Capture timestamp of the first sample.
   final int captureTsUs;
+
   /// `auris_packet_flags_t` bits.
   final int flags;
 

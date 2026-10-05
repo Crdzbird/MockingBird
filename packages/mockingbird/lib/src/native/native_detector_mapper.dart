@@ -3,6 +3,7 @@ import 'package:mockingbird_platform_interface/mockingbird_platform_interface.da
 
 /// Flattens the detector groups of an [AurisConfig].
 final class NativeDetectorMapper {
+  /// Creates the mapper.
   const NativeDetectorMapper();
 
   /// The detector mirror of [c].

@@ -1,9 +1,9 @@
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:mockingbird/mockingbird.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:mockingbird/mockingbird.dart';
 
 Int16List frame({int amplitude = 0}) {
   final f = Int16List(320);

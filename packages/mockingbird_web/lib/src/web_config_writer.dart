@@ -1,5 +1,6 @@
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
 import 'package:mockingbird_web/src/auris_module.dart';
+import 'package:mockingbird_web/src/auris_record_api.dart';
 import 'package:mockingbird_web/src/web_config_field.dart';
 
 /// Writes an [AurisNativeConfig] into a native config through the shim.
@@ -7,6 +8,7 @@ import 'package:mockingbird_web/src/web_config_field.dart';
 /// Capture is always host-pushed in the WebAssembly build; the platform
 /// drives the microphone itself when the caller asked for a capture backend.
 final class WebConfigWriter {
+  /// Wraps the loaded module.
   const WebConfigWriter(this._m);
 
   static const _hostPcm = 4;
@@ -17,7 +19,7 @@ final class WebConfigWriter {
   int write(AurisNativeConfig c) {
     final d = c.detectors;
     final o = c.output;
-    final cfg = _m.auris_web_config_new();
+    final cfg = AurisRecordApi(_m).configNew();
     final values = <WebConfigField, num>{
       WebConfigField.backend: _hostPcm,
       WebConfigField.sampleRateHz: c.sampleRateHz,
@@ -47,13 +49,14 @@ final class WebConfigWriter {
       WebConfigField.enablePcmTap: _flag(o.enablePcmTap),
       WebConfigField.pcmTapFrames: o.pcmTapFrames,
       WebConfigField.silenceGateDbfs: o.silenceGateDbfs,
-      WebConfigField.enableAdaptiveDegradation:
-          _flag(o.enableAdaptiveDegradation),
+      WebConfigField.enableAdaptiveDegradation: _flag(
+        o.enableAdaptiveDegradation,
+      ),
       WebConfigField.degradeBusyPpm: o.degradeBusyPpm,
       WebConfigField.workerBatchFrames: o.workerBatchFrames,
     };
     for (final MapEntry(:key, :value) in values.entries) {
-      _m.auris_web_config_set(cfg, key.index, value.toDouble());
+      AurisRecordApi(_m).configSet(cfg, key.index, value.toDouble());
     }
     return cfg;
   }

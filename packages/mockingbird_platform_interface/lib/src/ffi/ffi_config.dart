@@ -1,8 +1,8 @@
 import 'dart:ffi' as ffi;
 
+import 'package:ffi/ffi.dart';
 import 'package:mockingbird_platform_interface/src/auris_native_config.dart';
 import 'package:mockingbird_platform_interface/src/bindings.dart';
-import 'package:ffi/ffi.dart';
 
 /// An `auris_config_t` in native memory filled from an [AurisNativeConfig].
 final class FfiConfig {

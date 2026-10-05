@@ -1,11 +1,11 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mockingbird/mockingbird.dart';
 import 'package:mockingbird_example/src/demo/demo_state.dart';
 import 'package:mockingbird_example/src/demo/detection_summary.dart';
 import 'package:mockingbird_example/src/demo/engine_session.dart';
 import 'package:mockingbird_example/src/demo/event_formatter.dart';
 import 'package:mockingbird_example/src/demo/mic_permission.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Drives one engine session from the screen's controls.
 final class DemoCubit extends Cubit<DemoState> {

@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:js_interop';
 import 'dart:typed_data';
 
+import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
 import 'package:mockingbird_web/src/auris_module.dart';
 import 'package:mockingbird_web/src/module_registry.dart';
@@ -12,7 +13,6 @@ import 'package:mockingbird_web/src/web_assets.dart';
 import 'package:mockingbird_web/src/web_engine.dart';
 import 'package:mockingbird_web/src/web_engine_handle.dart';
 import 'package:mockingbird_web/src/web_lifecycle.dart';
-import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 
 /// Runs the engine as WebAssembly in the page and captures through Web Audio.
 class AurisWeb extends AurisPlatform {
@@ -40,11 +40,11 @@ class AurisWeb extends AurisPlatform {
   AurisModule get _ready => ModuleRegistry.module;
 
   @override
-  String version() => _ready.utf8ToString(_ready.auris_version_string()).toDart;
+  String version() => _ready.utf8ToString(_ready.versionString()).toDart;
 
   @override
   String statusName(int status) =>
-      _ready.utf8ToString(_ready.auris_status_str(status)).toDart;
+      _ready.utf8ToString(_ready.statusStr(status)).toDart;
 
   @override
   AurisCreateResult create(AurisNativeConfig config) => _engine.create(config);

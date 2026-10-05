@@ -28,11 +28,11 @@ flutter:
     - assets/auris_capture_worklet.js
 
 dependencies:
-  mockingbird_platform_interface: ^0.1.0
   flutter:
     sdk: flutter
   flutter_web_plugins:
     sdk: flutter
+  mockingbird_platform_interface: ^0.1.0
   web: ^1.1.0
 
 dev_dependencies:

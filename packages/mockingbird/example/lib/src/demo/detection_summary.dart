@@ -1,6 +1,6 @@
+import 'package:equatable/equatable.dart';
 import 'package:mockingbird/mockingbird.dart';
 import 'package:mockingbird_example/src/demo/event_formatter.dart';
-import 'package:equatable/equatable.dart';
 
 /// What the detectors currently say: voice state from Silero VAD, the latest
 /// recognised sound from YAMNet.

@@ -16,7 +16,8 @@ final class AurisModels {
   static const soundClassAsset = 'packages/mockingbird/assets/yamnet_3s.onnx';
 
   /// Asset key of YAMNet's class labels, one `<index> <label>` per line.
-  static const yamnetLabelsAsset = 'packages/mockingbird/assets/yamnet_class_map.txt';
+  static const yamnetLabelsAsset =
+      'packages/mockingbird/assets/yamnet_class_map.txt';
 
   static String? _neuralVadPath;
   static String? _soundClassPath;

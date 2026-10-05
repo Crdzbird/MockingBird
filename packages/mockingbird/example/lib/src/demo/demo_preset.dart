@@ -1,6 +1,6 @@
-import 'package:mockingbird/mockingbird.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:mockingbird/mockingbird.dart';
 
 /// A named detector recipe. The same engine does very different jobs
 /// depending on which detectors a preset switches on.

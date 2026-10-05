@@ -1,10 +1,10 @@
+import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart' show ValueGetter;
 import 'package:mockingbird/mockingbird.dart';
 import 'package:mockingbird_example/src/demo/demo_preset.dart';
 import 'package:mockingbird_example/src/demo/demo_presets.dart';
 import 'package:mockingbird_example/src/demo/detection_summary.dart';
 import 'package:mockingbird_example/src/demo/event_formatter.dart';
-import 'package:equatable/equatable.dart';
-import 'package:flutter/foundation.dart' show ValueGetter;
 
 /// Everything the demo screen renders.
 final class DemoState extends Equatable {

@@ -1,6 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:mockingbird/mockingbird.dart';
 import 'package:mockingbird_example/src/widgets/stat_row.dart';
-import 'package:flutter/material.dart';
 
 /// Engine counters, worker health and what the host actually received.
 class StatsCard extends StatelessWidget {

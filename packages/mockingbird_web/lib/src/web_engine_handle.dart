@@ -1,5 +1,6 @@
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
 import 'package:mockingbird_web/src/auris_module.dart';
+import 'package:mockingbird_web/src/auris_record_api.dart';
 import 'package:mockingbird_web/src/web_capture.dart';
 
 /// A WebAssembly engine pointer plus its scratch records and capture.
@@ -10,9 +11,9 @@ final class WebEngineHandle extends AurisEngineHandle {
     this.pointer, {
     required this.captures,
     required this.sampleRateHz,
-  })  : event = m.auris_web_event_new(),
-        packet = m.auris_web_packet_new(),
-        stats = m.auris_web_stats_new();
+  }) : event = AurisRecordApi(m).eventNew(),
+       packet = AurisRecordApi(m).packetNew(),
+       stats = AurisRecordApi(m).statsNew();
 
   /// The engine in linear memory.
   final int pointer;
@@ -35,11 +36,14 @@ final class WebEngineHandle extends AurisEngineHandle {
   /// The running capture, if any.
   WebCapture? capture;
 
+  /// Completes when [capture] has started or failed.
+  Future<void>? captureStarted;
+
   /// Frees the scratch records.
   void free(AurisModule m) {
-    m
-      ..auris_web_event_free(event)
-      ..auris_web_packet_free(packet)
-      ..auris_web_stats_free(stats);
+    AurisRecordApi(m)
+      ..eventFree(event)
+      ..packetFree(packet)
+      ..statsFree(stats);
   }
 }

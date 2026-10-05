@@ -5,6 +5,7 @@ import 'package:mockingbird_platform_interface/mockingbird_platform_interface.da
 
 /// Flattens an [AurisConfig] into the platform interface's mirror.
 final class NativeConfigMapper {
+  /// Creates the mapper.
   const NativeConfigMapper();
 
   /// The mirror of [config].

@@ -1,13 +1,13 @@
 import 'dart:ffi' as ffi;
 import 'dart:typed_data';
 
+import 'package:ffi/ffi.dart';
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
 import 'package:mockingbird_platform_interface/src/bindings.dart';
 import 'package:mockingbird_platform_interface/src/ffi/ffi_config.dart';
 import 'package:mockingbird_platform_interface/src/ffi/ffi_engine_handle.dart';
 import 'package:mockingbird_platform_interface/src/ffi/ffi_pcm.dart';
 import 'package:mockingbird_platform_interface/src/ffi/ffi_queues.dart';
-import 'package:ffi/ffi.dart';
 
 /// The platform implementation over `dart:ffi`; a platform package supplies
 /// the library that holds the C ABI.
@@ -56,8 +56,7 @@ abstract class AurisFfiPlatform extends AurisPlatform {
       bindings.auris_start(_ptr(handle)).value;
 
   @override
-  int stop(AurisEngineHandle handle) =>
-      bindings.auris_stop(_ptr(handle)).value;
+  int stop(AurisEngineHandle handle) => bindings.auris_stop(_ptr(handle)).value;
 
   @override
   int pushPcm(AurisEngineHandle handle, Int16List samples, int captureTsUs) =>

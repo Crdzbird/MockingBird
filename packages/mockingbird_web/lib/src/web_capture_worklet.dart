@@ -6,6 +6,7 @@ import 'package:web/web.dart' as web;
 
 /// Loads the capture worklet and describes capture failures as events.
 final class WebCaptureWorklet {
+  /// Creates the helper.
   const WebCaptureWorklet();
 
   static const _file = 'auris_capture_worklet.js';
@@ -24,7 +25,9 @@ final class WebCaptureWorklet {
         failure = e;
       }
     }
-    throw StateError('mockingbird_web: could not load the capture worklet ($failure)');
+    throw StateError(
+      'mockingbird_web: could not load the capture worklet ($failure)',
+    );
   }
 
   /// The backend-error event the platform reports when capture fails.

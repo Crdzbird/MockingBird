@@ -1,11 +1,11 @@
 import 'dart:ffi' as ffi;
 import 'dart:typed_data';
 
+import 'package:ffi/ffi.dart';
 import 'package:mockingbird_platform_interface/src/auris_platform.dart';
 import 'package:mockingbird_platform_interface/src/auris_status_code.dart';
 import 'package:mockingbird_platform_interface/src/bindings.dart';
 import 'package:mockingbird_platform_interface/src/ffi/ffi_engine_handle.dart';
-import 'package:ffi/ffi.dart';
 
 /// The PCM push and tap paths over the FFI bindings.
 final class FfiPcm {
@@ -32,8 +32,9 @@ final class FfiPcm {
     final buf = calloc<ffi.Int16>(maxSamples);
     final written = calloc<ffi.Uint32>();
     try {
-      final s =
-          _bindings.auris_read_pcm(h.pointer, buf, maxSamples, written).value;
+      final s = _bindings
+          .auris_read_pcm(h.pointer, buf, maxSamples, written)
+          .value;
       if (s != AurisStatusCode.ok) return (status: s, samples: Int16List(0));
       return (
         status: s,

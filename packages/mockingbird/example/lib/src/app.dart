@@ -1,5 +1,5 @@
-import 'package:mockingbird_example/src/demo/demo_page.dart';
 import 'package:flutter/material.dart';
+import 'package:mockingbird_example/src/demo/demo_page.dart';
 
 /// The Auris demo: start the microphone, pick a preset, watch detections.
 class AurisDemoApp extends StatelessWidget {

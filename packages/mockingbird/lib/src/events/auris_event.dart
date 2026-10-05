@@ -1,8 +1,8 @@
+import 'package:flutter/foundation.dart' show objectRuntimeType;
 import 'package:mockingbird/src/auris_sound_category.dart';
 import 'package:mockingbird/src/auris_status.dart';
 import 'package:mockingbird/src/events/auris_anomaly_reason.dart';
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
-import 'package:flutter/foundation.dart' show objectRuntimeType;
 
 part 'auris_anomaly_event.dart';
 part 'auris_backend_error_event.dart';

@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mockingbird_example/src/demo/demo_cubit.dart';
 import 'package:mockingbird_example/src/demo/demo_state.dart';
 import 'package:mockingbird_example/src/widgets/denoise_switch.dart';
@@ -10,8 +12,6 @@ import 'package:mockingbird_example/src/widgets/sensitivity_slider.dart';
 import 'package:mockingbird_example/src/widgets/start_stop_bar.dart';
 import 'package:mockingbird_example/src/widgets/stats_card.dart';
 import 'package:mockingbird_example/src/widgets/voice_indicator.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// The demo screen. A scrolling list, so nothing overflows on small phones.
 class DemoView extends StatelessWidget {

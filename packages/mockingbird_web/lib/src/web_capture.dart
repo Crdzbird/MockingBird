@@ -31,8 +31,9 @@ final class WebCapture {
         channelCount: 1.toJS,
       ),
     );
-    final stream =
-        await web.window.navigator.mediaDevices.getUserMedia(constraints).toDart;
+    final stream = await web.window.navigator.mediaDevices
+        .getUserMedia(constraints)
+        .toDart;
     final context = web.AudioContext(
       web.AudioContextOptions(sampleRate: sampleRateHz),
     );
@@ -57,7 +58,7 @@ final class WebCapture {
     ..setProperty('chunk'.toJS, (sampleRateHz ~/ 50).toJS);
 
   void _onMessage(web.MessageEvent e) {
-    final pcm = (e.data as JSInt16Array).toDart;
+    final pcm = (e.data! as JSInt16Array).toDart;
     final nowUs = (web.window.performance.now() * 1000).toInt();
     final chunkUs = pcm.length * 1000000 ~/ sampleRateHz;
     onPcm(pcm, nowUs > chunkUs ? nowUs - chunkUs : 0);
@@ -72,5 +73,4 @@ final class WebCapture {
     _stream = null;
     _context = null;
   }
-
 }

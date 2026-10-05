@@ -1,7 +1,7 @@
-import 'package:mockingbird_example/src/demo/demo_cubit.dart';
-import 'package:mockingbird_example/src/demo/demo_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mockingbird_example/src/demo/demo_cubit.dart';
+import 'package:mockingbird_example/src/demo/demo_view.dart';
 
 /// Provides the [DemoCubit] to the screen.
 class DemoPage extends StatelessWidget {

@@ -1,6 +1,6 @@
-import 'package:mockingbird/mockingbird.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mockingbird/mockingbird.dart';
 
 void main() {
   AurisPacket packet(int flags) => AurisPacket(

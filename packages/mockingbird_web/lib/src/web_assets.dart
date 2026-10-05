@@ -7,6 +7,7 @@ import 'dart:ui_web' as ui_web;
 /// package is the root, as in its own tests. [baseUrl] overrides both, for
 /// apps that host `auris.js`, `auris.wasm` and the worklet elsewhere.
 final class WebAssets {
+  /// Creates the resolver.
   const WebAssets();
 
   /// A directory URL that holds the three files, or null for the bundle.
@@ -14,9 +15,14 @@ final class WebAssets {
 
   /// Absolute URLs to try, in order, for the asset called [name].
   List<String> candidates(String name) {
-    if (baseUrl case final base?) return [Uri.parse(base).resolve(name).toString()];
+    if (baseUrl case final base?) {
+      return [Uri.parse(base).resolve(name).toString()];
+    }
     return [
-      for (final key in ['packages/mockingbird_web/assets/$name', 'assets/$name'])
+      for (final key in [
+        'packages/mockingbird_web/assets/$name',
+        'assets/$name',
+      ])
         Uri.base.resolve(ui_web.assetManager.getAssetUrl(key)).toString(),
     ];
   }

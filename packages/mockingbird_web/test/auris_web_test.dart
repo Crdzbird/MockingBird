@@ -4,9 +4,9 @@ library;
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
 import 'package:mockingbird_web/mockingbird_web.dart';
-import 'package:flutter_test/flutter_test.dart';
 
 import 'test_config.dart';
 
@@ -49,14 +49,18 @@ void main() {
       final s = platform.pushPcm(h, Int16List.sublistView(pcm, i, i + 320), ts);
       expect(s, AurisStatusCode.ok);
       pushed += 320;
-      for (var e = platform.pollEvent(h).event;
-          e != null;
-          e = platform.pollEvent(h).event) {
+      for (
+        var e = platform.pollEvent(h).event;
+        e != null;
+        e = platform.pollEvent(h).event
+      ) {
         types.add(e.type);
       }
-      for (var p = platform.drainPacket(h).packet;
-          p != null;
-          p = platform.drainPacket(h).packet) {
+      for (
+        var p = platform.drainPacket(h).packet;
+        p != null;
+        p = platform.drainPacket(h).packet
+      ) {
         packets++;
         expect(p.data, isNotEmpty);
       }

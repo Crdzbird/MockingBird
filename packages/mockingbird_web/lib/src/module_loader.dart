@@ -11,6 +11,7 @@ extension type _EsModule(JSObject _) implements JSObject {
 
 /// Loads `auris.js` from the package assets and instantiates the module.
 final class ModuleLoader {
+  /// Creates the loader.
   const ModuleLoader();
 
   /// Imports the script as an ES module and runs its factory.

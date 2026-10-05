@@ -9,7 +9,8 @@ import 'package:mockingbird_web/src/web_engine_handle.dart';
 /// Start and stop, including the microphone the platform drives itself,
 /// and the events it reports when capture fails.
 final class WebLifecycle {
-  /// Creates the lifecycle over [module], pushing captured PCM via [pushPcm].
+  /// Creates the lifecycle over the module, pushing captured PCM through
+  /// the platform's push.
   WebLifecycle(this._module, this._pushPcm);
 
   final AurisModule Function() _module;
@@ -18,10 +19,15 @@ final class WebLifecycle {
 
   /// Starts the engine and, for a capture engine, the microphone.
   int start(WebEngineHandle h) {
-    final s = _module().auris_start(h.pointer);
+    final s = _module().start(h.pointer);
     if (s == AurisStatusCode.ok && h.captures) {
-      h.capture = WebCapture(h.sampleRateHz, (pcm, ts) => _pushPcm(h, pcm, ts))
-        ..start().catchError(_failed);
+      final capture = WebCapture(
+        h.sampleRateHz,
+        (pcm, ts) => _pushPcm(h, pcm, ts),
+      );
+      h
+        ..capture = capture
+        ..captureStarted = capture.start().catchError(_failed);
     }
     return s;
   }
@@ -30,7 +36,7 @@ final class WebLifecycle {
   int stop(WebEngineHandle h) {
     h.capture?.stop();
     h.capture = null;
-    return _module().auris_stop(h.pointer);
+    return _module().stop(h.pointer);
   }
 
   /// The next capture failure to report, if any.

@@ -3,8 +3,8 @@ library;
 
 import 'dart:ffi' as ffi;
 
-import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
 import 'package:mockingbird_platform_interface/ffi.dart';
+import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
 
 /// Registers the FFI platform over the library this platform links.
 class AurisAndroid extends AurisFfiPlatform {
@@ -19,5 +19,6 @@ class AurisAndroid extends AurisFfiPlatform {
   ffi.DynamicLibrary? _library;
 
   @override
-  ffi.DynamicLibrary get nativeLibrary => _library ??= ffi.DynamicLibrary.open('libauris.so');
+  ffi.DynamicLibrary get nativeLibrary =>
+      _library ??= ffi.DynamicLibrary.open('libauris.so');
 }
