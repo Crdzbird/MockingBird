@@ -1,0 +1,114 @@
+plugins {
+    id "com.android.library"
+}
+
+group 'io.auris'
+version '1.0-SNAPSHOT'
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+android {
+    if (project.android.hasProperty("namespace")) {
+        namespace 'io.auris'
+    }
+
+    compileSdk 37
+
+    // NDK r28+ for 16KB-page-aligned shared libraries on Android 15+.
+    // // VERIFY  Adjust to match the NDK version installed on the build host.
+    ndkVersion "30.0.14904198"
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+
+    // // VERIFY  Prefab + Oboe both stable in AGP 8+; bump version if you
+    // update the Android plugin.
+    buildFeatures {
+        prefab true
+    }
+
+    defaultConfig {
+        minSdkVersion 21
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++20 -fvisibility=hidden -fvisibility-inlines-hidden"
+                cFlags   "-std=c11 -fvisibility=hidden"
+                arguments "-DANDROID_STL=c++_shared"
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+            version "3.22.1"
+        }
+    }
+
+    // Auris is capture-only: arm64 + x86_64 covers all modern devices and the
+    // emulator. Drop armeabi-v7a / x86 to keep AAR size down; reintroduce if
+    // a 32-bit target is needed.
+    defaultConfig {
+        ndk {
+            abiFilters "arm64-v8a", "x86_64"
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// NOTE on the out-of-tree native sources.
+//
+// libauris.so is compiled from C/C++ that lives at the REPO ROOT (src/,
+// include/, third_party/), pulled in by src/main/cpp/CMakeLists.txt via
+// AURIS_ROOT — one source of truth shared with the top-level CMake build and
+// the iOS/macOS podspecs.
+//
+// You might expect Gradle to miss edits to those root sources (its task input
+// snapshot only covers files under this module). In practice it does NOT, and
+// no extra input wiring is needed, because AGP configures the native build
+// tasks (configureCMake* / buildCMake*) with `upToDateWhen { false }` and
+// caching disabled — verify with:
+//     ./gradlew :mockingbird_android:"buildCMakeDebug[arm64-v8a]" --info \
+//         | grep -A1 "buildCMakeDebug\[arm64-v8a\]' is not up-to-date"
+//     -> "Task.upToDateWhen is false."
+// So the task ALWAYS runs and re-invokes ninja, which recompiles any source
+// whose mtime advanced — including the out-of-tree ones. (Verified: edit a
+// file under src/detect/ then a plain `flutter build apk --debug` produces a
+// new libauris.so, no cache-clear required.)
+//
+// The one residual hazard is universal to ninja and not specific to the
+// out-of-tree layout: an operation that lands a CHANGED file with an OLDER
+// mtime than its cached object — a `git checkout`/branch switch or a file
+// restore — can make ninja skip recompiling it. After such operations, run
+// `flutter clean` (or delete android/.cxx) once. This is the only known way a
+// stale libauris.so can occur here.
+// ---------------------------------------------------------------------------
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
+    }
+}
+
+dependencies {
+    // Native low-latency capture path. Oboe ships as a Prefab module
+    // (libOboe.so + AAR-bundled headers). 1.10.0 ships 16KB-page-aligned
+    // shared libraries for Android 15+.
+    implementation 'com.google.oboe:oboe:1.11.0'
+
+    // ONNX Runtime mobile bundle: ships libonnxruntime.so + Prefab module
+    // descriptors. 1.26.0 ships 16KB-page-aligned shared libraries.
+    implementation 'com.microsoft.onnxruntime:onnxruntime-android:1.30.0'
+}

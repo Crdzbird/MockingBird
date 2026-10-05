@@ -1,0 +1,27 @@
+name: mockingbird_platform_interface
+description: >-
+  The platform interface of the mockingbird plugin: plain data records, the engine contract, and the shared dart:ffi implementation for native platforms.
+version: 0.1.0
+repository: https://github.com/Crdzbird/MockingBird/tree/main/packages/mockingbird_platform_interface
+issue_tracker: https://github.com/Crdzbird/MockingBird/issues
+topics:
+  - audio
+  - ffi
+  - platform-interface
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+  flutter: ">=3.44.0"
+
+dependencies:
+  ffi: ^2.1.4
+  flutter:
+    sdk: flutter
+  plugin_platform_interface: ^2.1.8
+
+dev_dependencies:
+  ffigen: ^22.0.0
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^11.0.0

@@ -1,0 +1,36 @@
+name: mockingbird_ios
+description: >-
+  The iOS implementation of the mockingbird plugin: the Auris engine built from source with Core Audio capture and ONNX Runtime detectors.
+version: 0.1.0
+repository: https://github.com/Crdzbird/MockingBird/tree/main/packages/mockingbird_ios
+issue_tracker: https://github.com/Crdzbird/MockingBird/issues
+topics:
+  - audio
+  - vad
+  - ios
+  - ffi
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+  flutter: ">=3.44.0"
+
+flutter:
+  plugin:
+    implements: mockingbird
+    platforms:
+      ios:
+        pluginClass: AurisPlugin
+        dartPluginClass: AurisIOS
+
+dependencies:
+  flutter:
+    sdk: flutter
+  mockingbird_platform_interface: ^0.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.5
+  plugin_platform_interface: ^2.1.8
+  very_good_analysis: ^11.0.0

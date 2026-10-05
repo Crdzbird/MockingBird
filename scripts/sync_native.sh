@@ -20,7 +20,7 @@ sync_into() {
   find "$dest" -name '.DS_Store' -delete
 }
 
-sync_into "$ROOT/packages/auris_android/android/src/main/native"
-sync_into "$ROOT/packages/auris_ios/ios/auris_ios/Sources/auris_native"
-sync_into "$ROOT/packages/auris_macos/macos/auris_macos/Sources/auris_native"
+sync_into "$ROOT/packages/mockingbird_android/android/src/main/native"
+sync_into "$ROOT/packages/mockingbird_ios/ios/mockingbird_ios/Sources/auris_native"
+sync_into "$ROOT/packages/mockingbird_macos/macos/mockingbird_macos/Sources/auris_native"
 echo "native sources synced"

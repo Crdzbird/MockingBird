@@ -1,4 +1,4 @@
-import 'package:auris/auris.dart';
+import 'package:mockingbird/mockingbird.dart';
 import 'package:auris_bench/auris_scenario.dart';
 import 'package:harness/harness.dart';
 

@@ -17,7 +17,7 @@ import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:auris_platform_interface/ffi.dart';
+import 'package:mockingbird_platform_interface/ffi.dart';
 import 'package:ffi/ffi.dart';
 
 const int sampleRate = 16000;

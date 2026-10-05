@@ -8,7 +8,7 @@ import path from 'node:path';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..', '..');
-const { default: createAurisModule } = await import(path.join(root, 'packages', 'auris_web', 'assets', 'auris.js'));
+const { default: createAurisModule } = await import(path.join(root, 'packages', 'mockingbird_web', 'assets', 'auris.js'));
 const m = await createAurisModule();
 
 function wavSamples(file) {
@@ -86,8 +86,8 @@ for (const [name, fields] of scenarios) {
   const dropped = m._auris_web_stats_get(stats, 1);
   m._auris_destroy(engine);
   const audio = pcm.length / 16000;
-  const r = { library: 'auris_web', scenario: name, audio_s: audio, cpu_s: seconds, wall_s: seconds, cpu_share: seconds / audio, rss_base_mb: rss0 / 1048576, rss_peak_mb: rssPeak / 1048576, counters: { frames_pushed: Math.floor(pcm.length / chunk), packets, speech_begin: speech, segments, frames_dropped_capture: dropped } };
+  const r = { library: 'mockingbird_web', scenario: name, audio_s: audio, cpu_s: seconds, wall_s: seconds, cpu_share: seconds / audio, rss_base_mb: rss0 / 1048576, rss_peak_mb: rssPeak / 1048576, counters: { frames_pushed: Math.floor(pcm.length / chunk), packets, speech_begin: speech, segments, frames_dropped_capture: dropped } };
   lines.push(JSON.stringify(r));
   console.log(`${name.padEnd(24)} share ${(r.cpu_share * 100).toFixed(2)}%  packets ${packets} segments ${segments} dropped ${dropped}`);
 }
-writeFileSync(path.join(here, 'results', 'auris_web.jsonl'), lines.join('\n') + '\n');
+writeFileSync(path.join(here, 'results', 'mockingbird_web.jsonl'), lines.join('\n') + '\n');

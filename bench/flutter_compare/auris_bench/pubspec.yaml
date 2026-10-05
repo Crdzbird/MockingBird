@@ -18,13 +18,13 @@ flutter:
   uses-material-design: false
 
 dependency_overrides:
-  auris_platform_interface:
-    path: ../../../packages/auris_platform_interface
-  auris_android:
-    path: ../../../packages/auris_android
-  auris_ios:
-    path: ../../../packages/auris_ios
-  auris_macos:
-    path: ../../../packages/auris_macos
-  auris_web:
-    path: ../../../packages/auris_web
+  mockingbird_platform_interface:
+    path: ../../../packages/mockingbird_platform_interface
+  mockingbird_android:
+    path: ../../../packages/mockingbird_android
+  mockingbird_ios:
+    path: ../../../packages/mockingbird_ios
+  mockingbird_macos:
+    path: ../../../packages/mockingbird_macos
+  mockingbird_web:
+    path: ../../../packages/mockingbird_web

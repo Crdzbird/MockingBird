@@ -5,7 +5,7 @@
 import FlutterMacOS
 import Foundation
 
-import auris_macos
+import mockingbird_macos
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   AurisPlugin.register(with: registry.registrar(forPlugin: "AurisPlugin"))

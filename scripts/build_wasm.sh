@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Builds the engine to WebAssembly with Emscripten and copies auris.js and
-# auris.wasm into the auris_web Flutter package.
+# auris.wasm into the mockingbird_web Flutter package.
 #   scripts/build_wasm.sh            # release
 #   scripts/build_wasm.sh Debug
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD_TYPE="${1:-Release}"
-OUT="$ROOT/packages/auris_web/assets"
+OUT="$ROOT/packages/mockingbird_web/assets"
 
 emcmake cmake -S "$ROOT" -B "$ROOT/build-wasm" \
   -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \

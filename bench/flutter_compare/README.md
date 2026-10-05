@@ -6,12 +6,12 @@ ONNX Runtime build.
 
 | App | Package | Scenarios |
 |---|---|---|
-| `auris_bench` | `auris` (path dependency on this repository) | fast VAD, neural VAD, anomaly gate, RNNoise, YAMNet, everything on |
+| `auris_bench` | `mockingbird` (path dependency on this repository) | fast VAD, neural VAD, anomaly gate, RNNoise, YAMNet, everything on |
 | `vad_plus_bench` | `vad_plus` | Silero VAD |
 | `vad_bench` | `vad` | Silero VAD |
 | `sherpa_bench` | `sherpa_onnx` | Silero VAD, gtcrn denoiser, CED tiny audio tagging |
 | `nnnoiseless_bench` | `flutter_nnnoiseless` | RNNoise denoise |
-| `web_bench.mjs` | `auris_web` (the WebAssembly build, under Node's V8) | fast VAD, anomaly gate, RNNoise, everything the web build has |
+| `web_bench.mjs` | `mockingbird_web` (the WebAssembly build, under Node's V8) | fast VAD, anomaly gate, RNNoise, everything the web build has |
 
 ## Method
 
@@ -61,6 +61,6 @@ it and processes each chunk inline on the caller's thread:
 node bench/flutter_compare/web_bench.mjs
 ```
 
-It loads `packages/auris_web/assets/auris.js`, builds the same fixture, and
+It loads `packages/mockingbird_web/assets/auris.js`, builds the same fixture, and
 records the push loop's wall time as the CPU time, into
-`results/auris_web.jsonl`.
+`results/mockingbird_web.jsonl`.

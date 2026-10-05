@@ -1,4 +1,4 @@
-import 'package:auris/auris.dart';
+import 'package:mockingbird/mockingbird.dart';
 
 class AurisScenario {
   const AurisScenario(this.name, this.config);

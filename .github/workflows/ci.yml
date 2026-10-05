@@ -114,13 +114,13 @@ jobs:
         with:
           channel: stable
       - name: pub get
-        working-directory: packages/auris
+        working-directory: packages/mockingbird
         run: flutter pub get
       - name: analyze
-        working-directory: packages/auris
+        working-directory: packages/mockingbird
         run: flutter analyze --no-fatal-infos
       - name: test
-        working-directory: packages/auris
+        working-directory: packages/mockingbird
         run: flutter test
 
   # ---------------------------------------------------------------------------

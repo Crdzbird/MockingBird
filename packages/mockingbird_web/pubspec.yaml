@@ -1,0 +1,41 @@
+name: mockingbird_web
+description: >-
+  The web implementation of the mockingbird plugin: the Auris engine as WebAssembly with Web Audio microphone capture.
+version: 0.1.0
+repository: https://github.com/Crdzbird/MockingBird/tree/main/packages/mockingbird_web
+issue_tracker: https://github.com/Crdzbird/MockingBird/issues
+topics:
+  - audio
+  - vad
+  - web
+  - wasm
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+  flutter: ">=3.44.0"
+
+flutter:
+  plugin:
+    implements: mockingbird
+    platforms:
+      web:
+        pluginClass: AurisWeb
+        fileName: mockingbird_web.dart
+  assets:
+    - assets/auris.js
+    - assets/auris.wasm
+    - assets/auris_capture_worklet.js
+
+dependencies:
+  mockingbird_platform_interface: ^0.1.0
+  flutter:
+    sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
+  web: ^1.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^11.0.0

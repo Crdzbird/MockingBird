@@ -1,0 +1,52 @@
+name: mockingbird
+description: >-
+  Native audio capture with multilingual voice detection, an anomaly gate, YAMNet sound classification, RNNoise and Opus packets over dart:ffi, on Android, iOS, macOS and web.
+version: 0.1.0
+repository: https://github.com/Crdzbird/MockingBird/tree/main/packages/mockingbird
+issue_tracker: https://github.com/Crdzbird/MockingBird/issues
+topics:
+  - audio
+  - voice-activity-detection
+  - vad
+  - ffi
+  - speech
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+  flutter: ">=3.44.0"
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        default_package: mockingbird_android
+      ios:
+        default_package: mockingbird_ios
+      macos:
+        default_package: mockingbird_macos
+      web:
+        default_package: mockingbird_web
+  # ONNX models bundled with the plugin so the demo (or any consumer)
+  # gets Neural VAD + YAMNet sound classification with no extra setup.
+  assets:
+    - assets/silero_vad.onnx
+    - assets/yamnet_3s.onnx
+    - assets/yamnet_class_map.txt
+
+dependencies:
+  flutter:
+    sdk: flutter
+  path_provider: ^2.1.6
+  mockingbird_android: ^0.1.0
+  mockingbird_ios: ^0.1.0
+  mockingbird_macos: ^0.1.0
+  mockingbird_platform_interface: ^0.1.0
+  mockingbird_web: ^0.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.5
+  plugin_platform_interface: ^2.1.8
+  very_good_analysis: ^11.0.0

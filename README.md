@@ -108,7 +108,7 @@ with no platform channels on the hot path. Events, packets and stats arrive as
 streams.
 
 ```dart
-import 'package:auris/auris.dart';
+import 'package:mockingbird/mockingbird.dart';
 
 final engine = AurisEngine.create(
   AurisConfig.sensitive(
@@ -128,7 +128,7 @@ engine.events.listen((event) => switch (event) {
     });
 ```
 
-Full API notes are in [packages/auris/README.md](packages/auris/README.md).
+Full API notes are in [packages/mockingbird/README.md](packages/mockingbird/README.md).
 
 ### Go
 
@@ -248,7 +248,7 @@ cmake --build build-tsan -j && ./build-tsan/test_auris
 | RNNoise | compiled into the library | |
 
 Copies live in `tests/fixtures/` for the core tests and the Go and Python
-examples, and in `packages/auris/assets/` as Flutter assets. The Flutter
+examples, and in `packages/mockingbird/assets/` as Flutter assets. The Flutter
 package extracts them to an app-writable path at runtime through
 `AurisModels`.
 
@@ -269,7 +269,7 @@ the build leaves out the capture backends and the ONNX detectors; the Flutter
 web package captures through Web Audio and pushes PCM in.
 
 ```bash
-scripts/build_wasm.sh                 # writes packages/auris_web/assets/auris.{js,wasm}
+scripts/build_wasm.sh                 # writes packages/mockingbird_web/assets/auris.{js,wasm}
 node tests/wasm/smoke.mjs             # pushes the speech fixture through the build
 ```
 
@@ -277,7 +277,7 @@ The web package's own tests run the module in Chrome with a synthetic
 microphone:
 
 ```bash
-cd packages/auris_web
+cd packages/mockingbird_web
 CHROME_EXECUTABLE=../../scripts/chrome_fake_mic.sh flutter test --platform chrome
 ```
 
@@ -289,7 +289,7 @@ the podspec and Swift package globs safe.
 
 ## Running the Flutter demo on a device
 
-The example app in `packages/auris/example` is a live demo with presets
+The example app in `packages/mockingbird/example` is a live demo with presets
 (Balanced, Voice only, Everything, Anomaly watch, Sound ID), a sensitivity
 slider that retunes the running engine, an RNNoise toggle, a level meter and
 the full stats card.
@@ -298,7 +298,7 @@ Toolchain used for the current release: Flutter 3.47.6, Dart 3.11, Xcode 27,
 Android NDK r30, compileSdk 37, minSdk 21.
 
 ```bash
-cd packages/auris/example
+cd packages/mockingbird/example
 flutter devices                      # list targets
 flutter run -d macos
 flutter run -d <iphone-or-simulator-id>
@@ -325,7 +325,7 @@ Notes for Android devices:
 Unit tests and analysis for the Dart package:
 
 ```bash
-cd packages/auris
+cd packages/mockingbird
 flutter analyze
 flutter test
 ```
@@ -444,7 +444,7 @@ frames of added latency. `worker_wakeups` in the stats shows the effect.
 that cover parts of the same job (vad_plus, vad, sherpa_onnx, flutter_nnnoiseless),
 each in its own release-mode app on the same input, and the WebAssembly build
 under V8 on the same input. The results and how to read them are in
-`packages/auris/README.md`. In short, the web build costs about the same as
+`packages/mockingbird/README.md`. In short, the web build costs about the same as
 native for the detectors and about twice as much for RNNoise, which has no
 SIMD there: everything the web build has, with Opus, is 2.9% of a core.
 
@@ -465,7 +465,7 @@ These are the requirements that make the native library link and capture
 correctly on each platform. They are already encoded in the build files under
 `packages/`; this section explains why they are there.
 
-### Android (`packages/auris_android`)
+### Android (`packages/mockingbird_android`)
 
 - NDK r28 or newer (the plugin pins r30) with `-Wl,-z,max-page-size=16384`
   for the 16 KB page alignment Android 15 requires. Oboe 1.10 and ONNX Runtime 1.26 and later ship
@@ -478,7 +478,7 @@ correctly on each platform. They are already encoded in the build files under
   through `AURIS_ROOT`. The plugin's CMake file lists them explicitly, so a new
   source file must be added there as well as to the root `CMakeLists.txt`.
 
-### iOS and macOS (`packages/auris_ios`, `packages/auris_macos`)
+### iOS and macOS (`packages/mockingbird_ios`, `packages/mockingbird_macos`)
 
 - CocoaPods: the podspec copies the C and C++ tree into the pod and compiles it
   inline, so the symbols land in the host app. Linkage is static
@@ -568,21 +568,21 @@ The Dart binding is generated from `include/auris/auris.h`. After changing the
 header:
 
 ```bash
-cd packages/auris_platform_interface && dart run ffigen --config ffigen.yaml
+cd packages/mockingbird_platform_interface && dart run ffigen --config ffigen.yaml
 ```
 
 ### Adding a C++ source file
 
 Add it to `AURIS_SOURCES` in the root `CMakeLists.txt` and to the Android
-plugin's `packages/auris_android/android/src/main/cpp/CMakeLists.txt`. The
+plugin's `packages/mockingbird_android/android/src/main/cpp/CMakeLists.txt`. The
 podspecs and Swift packages glob the tree and pick it up on their own. A file
 meant for one build only must be guarded (`#ifdef __EMSCRIPTEN__` or its
 negation) for the same reason.
 
 ### The native copies inside the platform packages
 
-A pub.dev package must be self-contained, so `auris_android`, `auris_ios` and
-`auris_macos` each carry a copy of `include/`, `src/` and the vendored
+A pub.dev package must be self-contained, so `mockingbird_android`, `mockingbird_ios` and
+`mockingbird_macos` each carry a copy of `include/`, `src/` and the vendored
 third-party sources, and their build files point at that copy. The repository
 root stays the only place to edit. After any change there, run:
 
@@ -601,8 +601,8 @@ outside the workspace that uses the unpublished packages, such as the
 comparison benchmark, adds `dependency_overrides` with paths.
 
 Before publishing, run `dart pub publish --dry-run` in each package. Publish
-in dependency order: `auris_platform_interface`, then `auris_android`,
-`auris_ios`, `auris_macos` and `auris_web`, then `auris`. The engine's
+in dependency order: `mockingbird_platform_interface`, then `mockingbird_android`,
+`mockingbird_ios`, `mockingbird_macos` and `mockingbird_web`, then `mockingbird`. The engine's
 WebAssembly build and the native copies must be synced first.
 
 ### Adding a C ABI entry point
