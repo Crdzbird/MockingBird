@@ -14,7 +14,7 @@ target uses the portable path, or vec_neon.h on arm64 automatically). Tools with
 their own main() (dump_features.c, dump_rnnoise_tables.c, write_weights.c) and the
 training scripts are not vendored.
 
-src/os_support.h is an AURIS SHIM, not part of the release: vec.h / vec_neon.h
+src/os_support.h is an MOCKINGBIRD SHIM, not part of the release: vec.h / vec_neon.h
 include it and use OPUS_CLEAR, but the 0.2 tarball ships no such header (x86 builds
 take the vec_avx.h branch and never notice). It carries opus' celt/os_support.h
 definitions.

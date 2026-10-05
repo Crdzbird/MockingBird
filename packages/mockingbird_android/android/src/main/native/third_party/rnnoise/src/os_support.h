@@ -1,4 +1,4 @@
-/* os_support.h — Auris-provided shim, NOT part of the rnnoise 0.2 release.
+/* os_support.h — Mockingbird-provided shim, NOT part of the rnnoise 0.2 release.
  *
  * rnnoise 0.2's vec.h / vec_neon.h include "os_support.h" and use OPUS_CLEAR,
  * but the release tarball ships no such header and defines the macro nowhere
