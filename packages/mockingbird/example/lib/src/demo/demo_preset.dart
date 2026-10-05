@@ -33,14 +33,14 @@ final class DemoPreset {
   /// The engine configuration for this preset on the live microphone.
   /// On the web the neural tier falls back to the fast one and the sound
   /// classifier stays off.
-  AurisConfig config({
+  MockingbirdConfig config({
     required double sensitivity,
     required bool denoise,
     required String neuralVadModelPath,
     required String soundClassModelPath,
-  }) => AurisConfig.sensitive(
+  }) => MockingbirdConfig.sensitive(
     sensitivity,
-    backend: AurisBackend.platformDefault,
+    backend: MockingbirdBackend.platformDefault,
     denoise: denoise || this.denoise,
     vad: vad,
     vadTier: neural && !kIsWeb ? .neural : .fast,
@@ -48,6 +48,6 @@ final class DemoPreset {
     anomaly: anomaly,
     soundClass: soundClass && !kIsWeb,
     soundClassModelPath: kIsWeb ? null : soundClassModelPath,
-    performance: const AurisPerformanceConfig.mobile(),
+    performance: const MockingbirdPerformanceConfig.mobile(),
   );
 }

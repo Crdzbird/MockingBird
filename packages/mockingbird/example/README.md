@@ -1,3 +1,3 @@
 # mockingbird_example
 
-Demonstrates how to use the auris plugin.
+Demonstrates how to use the mockingbird plugin.

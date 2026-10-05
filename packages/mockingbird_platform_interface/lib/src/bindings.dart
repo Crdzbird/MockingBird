@@ -9,388 +9,424 @@
 // ignore_for_file: unused_import, unused_element, deprecated_member_use_from_same_package
 import 'dart:ffi' as ffi;
 
-/// Raw FFI bindings for the auris C ABI.
-class AurisBindings {
+/// Raw FFI bindings for the mockingbird C ABI.
+class MockingbirdBindings {
   /// Holds the symbol lookup function.
   final ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName)
   _lookup;
 
   /// The symbols are looked up in [dynamicLibrary].
-  AurisBindings(ffi.DynamicLibrary dynamicLibrary)
+  MockingbirdBindings(ffi.DynamicLibrary dynamicLibrary)
     : _lookup = dynamicLibrary.lookup;
 
   /// The symbols are looked up with [lookup].
-  AurisBindings.fromLookup(
+  MockingbirdBindings.fromLookup(
     ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName) lookup,
   ) : _lookup = lookup;
 
-  auris_status auris_config_defaults(ffi.Pointer<auris_config_t> out_cfg) {
-    return auris_status.fromValue(_auris_config_defaults(out_cfg));
-  }
-
-  late final _auris_config_defaultsPtr =
-      _lookup<
-        ffi.NativeFunction<ffi.Int Function(ffi.Pointer<auris_config_t>)>
-      >('auris_config_defaults');
-  late final _auris_config_defaults = _auris_config_defaultsPtr
-      .asFunction<int Function(ffi.Pointer<auris_config_t>)>();
-
-  auris_status auris_create(
-    ffi.Pointer<auris_config_t> cfg,
-    ffi.Pointer<ffi.Pointer<auris_engine_t>> out_engine,
+  mockingbird_status mockingbird_config_defaults(
+    ffi.Pointer<mockingbird_config_t> out_cfg,
   ) {
-    return auris_status.fromValue(_auris_create(cfg, out_engine));
+    return mockingbird_status.fromValue(_mockingbird_config_defaults(out_cfg));
   }
 
-  late final _auris_createPtr =
+  late final _mockingbird_config_defaultsPtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Int Function(ffi.Pointer<mockingbird_config_t>)>
+      >('mockingbird_config_defaults');
+  late final _mockingbird_config_defaults = _mockingbird_config_defaultsPtr
+      .asFunction<int Function(ffi.Pointer<mockingbird_config_t>)>();
+
+  mockingbird_status mockingbird_create(
+    ffi.Pointer<mockingbird_config_t> cfg,
+    ffi.Pointer<ffi.Pointer<mockingbird_engine_t>> out_engine,
+  ) {
+    return mockingbird_status.fromValue(_mockingbird_create(cfg, out_engine));
+  }
+
+  late final _mockingbird_createPtr =
       _lookup<
         ffi.NativeFunction<
           ffi.Int Function(
-            ffi.Pointer<auris_config_t>,
-            ffi.Pointer<ffi.Pointer<auris_engine_t>>,
+            ffi.Pointer<mockingbird_config_t>,
+            ffi.Pointer<ffi.Pointer<mockingbird_engine_t>>,
           )
         >
-      >('auris_create');
-  late final _auris_create = _auris_createPtr
+      >('mockingbird_create');
+  late final _mockingbird_create = _mockingbird_createPtr
       .asFunction<
         int Function(
-          ffi.Pointer<auris_config_t>,
-          ffi.Pointer<ffi.Pointer<auris_engine_t>>,
+          ffi.Pointer<mockingbird_config_t>,
+          ffi.Pointer<ffi.Pointer<mockingbird_engine_t>>,
         )
       >();
 
-  void auris_destroy(ffi.Pointer<auris_engine_t> engine) {
-    return _auris_destroy(engine);
+  void mockingbird_destroy(ffi.Pointer<mockingbird_engine_t> engine) {
+    return _mockingbird_destroy(engine);
   }
 
-  late final _auris_destroyPtr =
+  late final _mockingbird_destroyPtr =
       _lookup<
-        ffi.NativeFunction<ffi.Void Function(ffi.Pointer<auris_engine_t>)>
-      >('auris_destroy');
-  late final _auris_destroy = _auris_destroyPtr
-      .asFunction<void Function(ffi.Pointer<auris_engine_t>)>();
+        ffi.NativeFunction<ffi.Void Function(ffi.Pointer<mockingbird_engine_t>)>
+      >('mockingbird_destroy');
+  late final _mockingbird_destroy = _mockingbird_destroyPtr
+      .asFunction<void Function(ffi.Pointer<mockingbird_engine_t>)>();
 
-  auris_status auris_drain(
-    ffi.Pointer<auris_engine_t> engine,
-    ffi.Pointer<auris_packet_t> out_pkt,
+  mockingbird_status mockingbird_drain(
+    ffi.Pointer<mockingbird_engine_t> engine,
+    ffi.Pointer<mockingbird_packet_t> out_pkt,
   ) {
-    return auris_status.fromValue(_auris_drain(engine, out_pkt));
+    return mockingbird_status.fromValue(_mockingbird_drain(engine, out_pkt));
   }
 
-  late final _auris_drainPtr =
+  late final _mockingbird_drainPtr =
       _lookup<
         ffi.NativeFunction<
           ffi.Int Function(
-            ffi.Pointer<auris_engine_t>,
-            ffi.Pointer<auris_packet_t>,
+            ffi.Pointer<mockingbird_engine_t>,
+            ffi.Pointer<mockingbird_packet_t>,
           )
         >
-      >('auris_drain');
-  late final _auris_drain = _auris_drainPtr
+      >('mockingbird_drain');
+  late final _mockingbird_drain = _mockingbird_drainPtr
       .asFunction<
-        int Function(ffi.Pointer<auris_engine_t>, ffi.Pointer<auris_packet_t>)
+        int Function(
+          ffi.Pointer<mockingbird_engine_t>,
+          ffi.Pointer<mockingbird_packet_t>,
+        )
       >();
 
-  auris_status auris_get_stats(
-    ffi.Pointer<auris_engine_t> engine,
-    ffi.Pointer<auris_stats_t> out_stats,
+  mockingbird_status mockingbird_get_stats(
+    ffi.Pointer<mockingbird_engine_t> engine,
+    ffi.Pointer<mockingbird_stats_t> out_stats,
   ) {
-    return auris_status.fromValue(_auris_get_stats(engine, out_stats));
+    return mockingbird_status.fromValue(
+      _mockingbird_get_stats(engine, out_stats),
+    );
   }
 
-  late final _auris_get_statsPtr =
+  late final _mockingbird_get_statsPtr =
       _lookup<
         ffi.NativeFunction<
           ffi.Int Function(
-            ffi.Pointer<auris_engine_t>,
-            ffi.Pointer<auris_stats_t>,
+            ffi.Pointer<mockingbird_engine_t>,
+            ffi.Pointer<mockingbird_stats_t>,
           )
         >
-      >('auris_get_stats');
-  late final _auris_get_stats = _auris_get_statsPtr
+      >('mockingbird_get_stats');
+  late final _mockingbird_get_stats = _mockingbird_get_statsPtr
       .asFunction<
-        int Function(ffi.Pointer<auris_engine_t>, ffi.Pointer<auris_stats_t>)
+        int Function(
+          ffi.Pointer<mockingbird_engine_t>,
+          ffi.Pointer<mockingbird_stats_t>,
+        )
       >();
 
-  auris_status auris_poll_event(
-    ffi.Pointer<auris_engine_t> engine,
-    ffi.Pointer<auris_event_t> out_evt,
+  mockingbird_status mockingbird_poll_event(
+    ffi.Pointer<mockingbird_engine_t> engine,
+    ffi.Pointer<mockingbird_event_t> out_evt,
   ) {
-    return auris_status.fromValue(_auris_poll_event(engine, out_evt));
+    return mockingbird_status.fromValue(
+      _mockingbird_poll_event(engine, out_evt),
+    );
   }
 
-  late final _auris_poll_eventPtr =
+  late final _mockingbird_poll_eventPtr =
       _lookup<
         ffi.NativeFunction<
           ffi.Int Function(
-            ffi.Pointer<auris_engine_t>,
-            ffi.Pointer<auris_event_t>,
+            ffi.Pointer<mockingbird_engine_t>,
+            ffi.Pointer<mockingbird_event_t>,
           )
         >
-      >('auris_poll_event');
-  late final _auris_poll_event = _auris_poll_eventPtr
+      >('mockingbird_poll_event');
+  late final _mockingbird_poll_event = _mockingbird_poll_eventPtr
       .asFunction<
-        int Function(ffi.Pointer<auris_engine_t>, ffi.Pointer<auris_event_t>)
+        int Function(
+          ffi.Pointer<mockingbird_engine_t>,
+          ffi.Pointer<mockingbird_event_t>,
+        )
       >();
 
-  auris_status auris_push_pcm(
-    ffi.Pointer<auris_engine_t> engine,
+  mockingbird_status mockingbird_push_pcm(
+    ffi.Pointer<mockingbird_engine_t> engine,
     ffi.Pointer<ffi.Int16> samples,
     int frame_count,
     int capture_ts_us,
   ) {
-    return auris_status.fromValue(
-      _auris_push_pcm(engine, samples, frame_count, capture_ts_us),
+    return mockingbird_status.fromValue(
+      _mockingbird_push_pcm(engine, samples, frame_count, capture_ts_us),
     );
   }
 
-  late final _auris_push_pcmPtr =
+  late final _mockingbird_push_pcmPtr =
       _lookup<
         ffi.NativeFunction<
           ffi.Int Function(
-            ffi.Pointer<auris_engine_t>,
+            ffi.Pointer<mockingbird_engine_t>,
             ffi.Pointer<ffi.Int16>,
             ffi.Uint32,
             ffi.Uint64,
           )
         >
-      >('auris_push_pcm');
-  late final _auris_push_pcm = _auris_push_pcmPtr
+      >('mockingbird_push_pcm');
+  late final _mockingbird_push_pcm = _mockingbird_push_pcmPtr
       .asFunction<
         int Function(
-          ffi.Pointer<auris_engine_t>,
+          ffi.Pointer<mockingbird_engine_t>,
           ffi.Pointer<ffi.Int16>,
           int,
           int,
         )
       >();
 
-  auris_status auris_read_pcm(
-    ffi.Pointer<auris_engine_t> engine,
+  mockingbird_status mockingbird_read_pcm(
+    ffi.Pointer<mockingbird_engine_t> engine,
     ffi.Pointer<ffi.Int16> out,
     int max_samples,
     ffi.Pointer<ffi.Uint32> out_written,
   ) {
-    return auris_status.fromValue(
-      _auris_read_pcm(engine, out, max_samples, out_written),
+    return mockingbird_status.fromValue(
+      _mockingbird_read_pcm(engine, out, max_samples, out_written),
     );
   }
 
-  late final _auris_read_pcmPtr =
+  late final _mockingbird_read_pcmPtr =
       _lookup<
         ffi.NativeFunction<
           ffi.Int Function(
-            ffi.Pointer<auris_engine_t>,
+            ffi.Pointer<mockingbird_engine_t>,
             ffi.Pointer<ffi.Int16>,
             ffi.Uint32,
             ffi.Pointer<ffi.Uint32>,
           )
         >
-      >('auris_read_pcm');
-  late final _auris_read_pcm = _auris_read_pcmPtr
+      >('mockingbird_read_pcm');
+  late final _mockingbird_read_pcm = _mockingbird_read_pcmPtr
       .asFunction<
         int Function(
-          ffi.Pointer<auris_engine_t>,
+          ffi.Pointer<mockingbird_engine_t>,
           ffi.Pointer<ffi.Int16>,
           int,
           ffi.Pointer<ffi.Uint32>,
         )
       >();
 
-  auris_status auris_release(
-    ffi.Pointer<auris_engine_t> engine,
-    ffi.Pointer<auris_packet_t> pkt,
+  mockingbird_status mockingbird_release(
+    ffi.Pointer<mockingbird_engine_t> engine,
+    ffi.Pointer<mockingbird_packet_t> pkt,
   ) {
-    return auris_status.fromValue(_auris_release(engine, pkt));
+    return mockingbird_status.fromValue(_mockingbird_release(engine, pkt));
   }
 
-  late final _auris_releasePtr =
+  late final _mockingbird_releasePtr =
       _lookup<
         ffi.NativeFunction<
           ffi.Int Function(
-            ffi.Pointer<auris_engine_t>,
-            ffi.Pointer<auris_packet_t>,
+            ffi.Pointer<mockingbird_engine_t>,
+            ffi.Pointer<mockingbird_packet_t>,
           )
         >
-      >('auris_release');
-  late final _auris_release = _auris_releasePtr
-      .asFunction<
-        int Function(ffi.Pointer<auris_engine_t>, ffi.Pointer<auris_packet_t>)
-      >();
-
-  auris_status auris_set_event_callback(
-    ffi.Pointer<auris_engine_t> engine,
-    auris_event_cb cb,
-    ffi.Pointer<ffi.Void> user,
-  ) {
-    return auris_status.fromValue(_auris_set_event_callback(engine, cb, user));
-  }
-
-  late final _auris_set_event_callbackPtr =
-      _lookup<
-        ffi.NativeFunction<
-          ffi.Int Function(
-            ffi.Pointer<auris_engine_t>,
-            auris_event_cb,
-            ffi.Pointer<ffi.Void>,
-          )
-        >
-      >('auris_set_event_callback');
-  late final _auris_set_event_callback = _auris_set_event_callbackPtr
+      >('mockingbird_release');
+  late final _mockingbird_release = _mockingbird_releasePtr
       .asFunction<
         int Function(
-          ffi.Pointer<auris_engine_t>,
-          auris_event_cb,
-          ffi.Pointer<ffi.Void>,
+          ffi.Pointer<mockingbird_engine_t>,
+          ffi.Pointer<mockingbird_packet_t>,
         )
       >();
 
-  auris_status auris_start(ffi.Pointer<auris_engine_t> engine) {
-    return auris_status.fromValue(_auris_start(engine));
-  }
-
-  late final _auris_startPtr =
-      _lookup<
-        ffi.NativeFunction<ffi.Int Function(ffi.Pointer<auris_engine_t>)>
-      >('auris_start');
-  late final _auris_start = _auris_startPtr
-      .asFunction<int Function(ffi.Pointer<auris_engine_t>)>();
-
-  ffi.Pointer<ffi.Char> auris_status_str(int s) {
-    return _auris_status_str(s);
-  }
-
-  late final _auris_status_strPtr =
-      _lookup<ffi.NativeFunction<ffi.Pointer<ffi.Char> Function(ffi.Int)>>(
-        'auris_status_str',
-      );
-  late final _auris_status_str = _auris_status_strPtr
-      .asFunction<ffi.Pointer<ffi.Char> Function(int)>();
-
-  auris_status auris_stop(ffi.Pointer<auris_engine_t> engine) {
-    return auris_status.fromValue(_auris_stop(engine));
-  }
-
-  late final _auris_stopPtr =
-      _lookup<
-        ffi.NativeFunction<ffi.Int Function(ffi.Pointer<auris_engine_t>)>
-      >('auris_stop');
-  late final _auris_stop = _auris_stopPtr
-      .asFunction<int Function(ffi.Pointer<auris_engine_t>)>();
-
-  auris_status auris_update_config(
-    ffi.Pointer<auris_engine_t> engine,
-    ffi.Pointer<auris_config_t> cfg,
+  mockingbird_status mockingbird_set_event_callback(
+    ffi.Pointer<mockingbird_engine_t> engine,
+    mockingbird_event_cb cb,
+    ffi.Pointer<ffi.Void> user,
   ) {
-    return auris_status.fromValue(_auris_update_config(engine, cfg));
+    return mockingbird_status.fromValue(
+      _mockingbird_set_event_callback(engine, cb, user),
+    );
   }
 
-  late final _auris_update_configPtr =
+  late final _mockingbird_set_event_callbackPtr =
       _lookup<
         ffi.NativeFunction<
           ffi.Int Function(
-            ffi.Pointer<auris_engine_t>,
-            ffi.Pointer<auris_config_t>,
+            ffi.Pointer<mockingbird_engine_t>,
+            mockingbird_event_cb,
+            ffi.Pointer<ffi.Void>,
           )
         >
-      >('auris_update_config');
-  late final _auris_update_config = _auris_update_configPtr
-      .asFunction<
-        int Function(ffi.Pointer<auris_engine_t>, ffi.Pointer<auris_config_t>)
-      >();
+      >('mockingbird_set_event_callback');
+  late final _mockingbird_set_event_callback =
+      _mockingbird_set_event_callbackPtr
+          .asFunction<
+            int Function(
+              ffi.Pointer<mockingbird_engine_t>,
+              mockingbird_event_cb,
+              ffi.Pointer<ffi.Void>,
+            )
+          >();
 
-  ffi.Pointer<ffi.Char> auris_version_string() {
-    return _auris_version_string();
-  }
-
-  late final _auris_version_stringPtr =
-      _lookup<ffi.NativeFunction<ffi.Pointer<ffi.Char> Function()>>(
-        'auris_version_string',
-      );
-  late final _auris_version_string = _auris_version_stringPtr
-      .asFunction<ffi.Pointer<ffi.Char> Function()>();
-
-  auris_status auris_wait_handle(
-    ffi.Pointer<auris_engine_t> engine,
-    ffi.Pointer<ffi.IntPtr> out_handle,
+  mockingbird_status mockingbird_start(
+    ffi.Pointer<mockingbird_engine_t> engine,
   ) {
-    return auris_status.fromValue(_auris_wait_handle(engine, out_handle));
+    return mockingbird_status.fromValue(_mockingbird_start(engine));
   }
 
-  late final _auris_wait_handlePtr =
+  late final _mockingbird_startPtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Int Function(ffi.Pointer<mockingbird_engine_t>)>
+      >('mockingbird_start');
+  late final _mockingbird_start = _mockingbird_startPtr
+      .asFunction<int Function(ffi.Pointer<mockingbird_engine_t>)>();
+
+  ffi.Pointer<ffi.Char> mockingbird_status_str(int s) {
+    return _mockingbird_status_str(s);
+  }
+
+  late final _mockingbird_status_strPtr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<ffi.Char> Function(ffi.Int)>>(
+        'mockingbird_status_str',
+      );
+  late final _mockingbird_status_str = _mockingbird_status_strPtr
+      .asFunction<ffi.Pointer<ffi.Char> Function(int)>();
+
+  mockingbird_status mockingbird_stop(
+    ffi.Pointer<mockingbird_engine_t> engine,
+  ) {
+    return mockingbird_status.fromValue(_mockingbird_stop(engine));
+  }
+
+  late final _mockingbird_stopPtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Int Function(ffi.Pointer<mockingbird_engine_t>)>
+      >('mockingbird_stop');
+  late final _mockingbird_stop = _mockingbird_stopPtr
+      .asFunction<int Function(ffi.Pointer<mockingbird_engine_t>)>();
+
+  mockingbird_status mockingbird_update_config(
+    ffi.Pointer<mockingbird_engine_t> engine,
+    ffi.Pointer<mockingbird_config_t> cfg,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_update_config(engine, cfg),
+    );
+  }
+
+  late final _mockingbird_update_configPtr =
       _lookup<
         ffi.NativeFunction<
-          ffi.Int Function(ffi.Pointer<auris_engine_t>, ffi.Pointer<ffi.IntPtr>)
+          ffi.Int Function(
+            ffi.Pointer<mockingbird_engine_t>,
+            ffi.Pointer<mockingbird_config_t>,
+          )
         >
-      >('auris_wait_handle');
-  late final _auris_wait_handle = _auris_wait_handlePtr
+      >('mockingbird_update_config');
+  late final _mockingbird_update_config = _mockingbird_update_configPtr
       .asFunction<
-        int Function(ffi.Pointer<auris_engine_t>, ffi.Pointer<ffi.IntPtr>)
+        int Function(
+          ffi.Pointer<mockingbird_engine_t>,
+          ffi.Pointer<mockingbird_config_t>,
+        )
+      >();
+
+  ffi.Pointer<ffi.Char> mockingbird_version_string() {
+    return _mockingbird_version_string();
+  }
+
+  late final _mockingbird_version_stringPtr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<ffi.Char> Function()>>(
+        'mockingbird_version_string',
+      );
+  late final _mockingbird_version_string = _mockingbird_version_stringPtr
+      .asFunction<ffi.Pointer<ffi.Char> Function()>();
+
+  mockingbird_status mockingbird_wait_handle(
+    ffi.Pointer<mockingbird_engine_t> engine,
+    ffi.Pointer<ffi.IntPtr> out_handle,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_wait_handle(engine, out_handle),
+    );
+  }
+
+  late final _mockingbird_wait_handlePtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<mockingbird_engine_t>,
+            ffi.Pointer<ffi.IntPtr>,
+          )
+        >
+      >('mockingbird_wait_handle');
+  late final _mockingbird_wait_handle = _mockingbird_wait_handlePtr
+      .asFunction<
+        int Function(ffi.Pointer<mockingbird_engine_t>, ffi.Pointer<ffi.IntPtr>)
       >();
 }
 
-const int AURIS_ANOMALY_CENTROID = 4;
+const int MOCKINGBIRD_ANOMALY_CENTROID = 4;
 
-const int AURIS_ANOMALY_RMS = 1;
+const int MOCKINGBIRD_ANOMALY_RMS = 1;
 
-const int AURIS_ANOMALY_SPECTRAL_FLUX = 2;
+const int MOCKINGBIRD_ANOMALY_SPECTRAL_FLUX = 2;
 
-const int AURIS_PKT_FLAG_KEYFRAME = 4;
+const int MOCKINGBIRD_PKT_FLAG_KEYFRAME = 4;
 
-const int AURIS_PKT_FLAG_LAST = 8;
+const int MOCKINGBIRD_PKT_FLAG_LAST = 8;
 
-const int AURIS_PKT_FLAG_POSTROLL = 2;
+const int MOCKINGBIRD_PKT_FLAG_POSTROLL = 2;
 
-const int AURIS_PKT_FLAG_PREROLL = 1;
+const int MOCKINGBIRD_PKT_FLAG_PREROLL = 1;
 
-const int AURIS_VERSION_MAJOR = 0;
+const int MOCKINGBIRD_VERSION_MAJOR = 0;
 
-const int AURIS_VERSION_MINOR = 1;
+const int MOCKINGBIRD_VERSION_MINOR = 1;
 
-const int AURIS_VERSION_PATCH = 0;
+const int MOCKINGBIRD_VERSION_PATCH = 0;
 
-enum auris_backend {
-  AURIS_BACKEND_AUTO(0),
-  AURIS_BACKEND_MINIAUDIO(1),
-  AURIS_BACKEND_OBOE(2),
-  AURIS_BACKEND_COREAUDIO(3),
-  AURIS_BACKEND_HOST_PCM(4);
+enum mockingbird_backend {
+  MOCKINGBIRD_BACKEND_AUTO(0),
+  MOCKINGBIRD_BACKEND_MINIAUDIO(1),
+  MOCKINGBIRD_BACKEND_OBOE(2),
+  MOCKINGBIRD_BACKEND_COREAUDIO(3),
+  MOCKINGBIRD_BACKEND_HOST_PCM(4);
 
   final int value;
-  const auris_backend(this.value);
+  const mockingbird_backend(this.value);
 
-  static auris_backend fromValue(int value) => switch (value) {
-    0 => AURIS_BACKEND_AUTO,
-    1 => AURIS_BACKEND_MINIAUDIO,
-    2 => AURIS_BACKEND_OBOE,
-    3 => AURIS_BACKEND_COREAUDIO,
-    4 => AURIS_BACKEND_HOST_PCM,
-    _ => throw ArgumentError('Unknown value for auris_backend: $value'),
+  static mockingbird_backend fromValue(int value) => switch (value) {
+    0 => MOCKINGBIRD_BACKEND_AUTO,
+    1 => MOCKINGBIRD_BACKEND_MINIAUDIO,
+    2 => MOCKINGBIRD_BACKEND_OBOE,
+    3 => MOCKINGBIRD_BACKEND_COREAUDIO,
+    4 => MOCKINGBIRD_BACKEND_HOST_PCM,
+    _ => throw ArgumentError('Unknown value for mockingbird_backend: $value'),
   };
 }
 
-enum auris_codec {
-  AURIS_CODEC_PCM_S16LE(0),
-  AURIS_CODEC_OPUS(1),
-  AURIS_CODEC_FLAC(2);
+enum mockingbird_codec {
+  MOCKINGBIRD_CODEC_PCM_S16LE(0),
+  MOCKINGBIRD_CODEC_OPUS(1),
+  MOCKINGBIRD_CODEC_FLAC(2);
 
   final int value;
-  const auris_codec(this.value);
+  const mockingbird_codec(this.value);
 
-  static auris_codec fromValue(int value) => switch (value) {
-    0 => AURIS_CODEC_PCM_S16LE,
-    1 => AURIS_CODEC_OPUS,
-    2 => AURIS_CODEC_FLAC,
-    _ => throw ArgumentError('Unknown value for auris_codec: $value'),
+  static mockingbird_codec fromValue(int value) => switch (value) {
+    0 => MOCKINGBIRD_CODEC_PCM_S16LE,
+    1 => MOCKINGBIRD_CODEC_OPUS,
+    2 => MOCKINGBIRD_CODEC_FLAC,
+    _ => throw ArgumentError('Unknown value for mockingbird_codec: $value'),
   };
 }
 
-final class auris_config extends ffi.Struct {
+final class mockingbird_config extends ffi.Struct {
   @ffi.UnsignedInt()
   external int backendAsInt;
 
-  auris_backend get backend => auris_backend.fromValue(backendAsInt);
-  set backend(auris_backend value) => backendAsInt = value.value;
+  mockingbird_backend get backend =>
+      mockingbird_backend.fromValue(backendAsInt);
+  set backend(mockingbird_backend value) => backendAsInt = value.value;
 
   @ffi.Uint32()
   external int sample_rate_hz;
@@ -401,9 +437,9 @@ final class auris_config extends ffi.Struct {
   @ffi.UnsignedInt()
   external int sample_formatAsInt;
 
-  auris_sample_format get sample_format =>
-      auris_sample_format.fromValue(sample_formatAsInt);
-  set sample_format(auris_sample_format value) =>
+  mockingbird_sample_format get sample_format =>
+      mockingbird_sample_format.fromValue(sample_formatAsInt);
+  set sample_format(mockingbird_sample_format value) =>
       sample_formatAsInt = value.value;
 
   @ffi.Uint32()
@@ -418,8 +454,9 @@ final class auris_config extends ffi.Struct {
   @ffi.UnsignedInt()
   external int vad_tierAsInt;
 
-  auris_vad_tier get vad_tier => auris_vad_tier.fromValue(vad_tierAsInt);
-  set vad_tier(auris_vad_tier value) => vad_tierAsInt = value.value;
+  mockingbird_vad_tier get vad_tier =>
+      mockingbird_vad_tier.fromValue(vad_tierAsInt);
+  set vad_tier(mockingbird_vad_tier value) => vad_tierAsInt = value.value;
 
   @ffi.Int()
   external int vad_aggressiveness;
@@ -454,8 +491,8 @@ final class auris_config extends ffi.Struct {
   @ffi.UnsignedInt()
   external int codecAsInt;
 
-  auris_codec get codec => auris_codec.fromValue(codecAsInt);
-  set codec(auris_codec value) => codecAsInt = value.value;
+  mockingbird_codec get codec => mockingbird_codec.fromValue(codecAsInt);
+  set codec(mockingbird_codec value) => codecAsInt = value.value;
 
   @ffi.Uint32()
   external int opus_bitrate_bps;
@@ -510,18 +547,19 @@ final class auris_config extends ffi.Struct {
   external ffi.Array<ffi.Uint32> _reserved;
 }
 
-typedef auris_config_t = auris_config;
+typedef mockingbird_config_t = mockingbird_config;
 
-final class auris_engine extends ffi.Opaque {}
+final class mockingbird_engine extends ffi.Opaque {}
 
-typedef auris_engine_t = auris_engine;
+typedef mockingbird_engine_t = mockingbird_engine;
 
-final class auris_event extends ffi.Struct {
+final class mockingbird_event extends ffi.Struct {
   @ffi.UnsignedInt()
   external int typeAsInt;
 
-  auris_event_type get type => auris_event_type.fromValue(typeAsInt);
-  set type(auris_event_type value) => typeAsInt = value.value;
+  mockingbird_event_type get type =>
+      mockingbird_event_type.fromValue(typeAsInt);
+  set type(mockingbird_event_type value) => typeAsInt = value.value;
 
   @ffi.Uint64()
   external int segment_id;
@@ -538,15 +576,15 @@ final class auris_event extends ffi.Struct {
   @ffi.Uint32()
   external int _reserved;
 
-  static ffi.Pointer<auris_event> $allocate(
+  static ffi.Pointer<mockingbird_event> $allocate(
     ffi.Allocator $allocator, {
-    required auris_event_type type,
+    required mockingbird_event_type type,
     required int segment_id,
     required int timestamp_us,
     required int reason_mask,
     required double confidence,
     required int $reserved,
-  }) => $allocator<auris_event>()
+  }) => $allocator<mockingbird_event>()
     ..ref.type = type
     ..ref.segment_id = segment_id
     ..ref.timestamp_us = timestamp_us
@@ -555,46 +593,51 @@ final class auris_event extends ffi.Struct {
     ..ref._reserved = $reserved;
 }
 
-typedef auris_event_cb =
-    ffi.Pointer<ffi.NativeFunction<auris_event_cbFunction>>;
-typedef auris_event_cbFunction =
+typedef mockingbird_event_cb =
+    ffi.Pointer<ffi.NativeFunction<mockingbird_event_cbFunction>>;
+typedef mockingbird_event_cbFunction =
     ffi.Void Function(
-      ffi.Pointer<auris_event_t> evt,
+      ffi.Pointer<mockingbird_event_t> evt,
       ffi.Pointer<ffi.Void> user,
     );
-typedef Dartauris_event_cbFunction =
-    void Function(ffi.Pointer<auris_event_t> evt, ffi.Pointer<ffi.Void> user);
-typedef auris_event_t = auris_event;
+typedef Dartmockingbird_event_cbFunction =
+    void Function(
+      ffi.Pointer<mockingbird_event_t> evt,
+      ffi.Pointer<ffi.Void> user,
+    );
+typedef mockingbird_event_t = mockingbird_event;
 
-enum auris_event_type {
-  AURIS_EVT_SPEECH_BEGIN(1),
-  AURIS_EVT_SPEECH_END(2),
-  AURIS_EVT_ANOMALY(3),
-  AURIS_EVT_SEGMENT_BEGIN(4),
-  AURIS_EVT_SEGMENT_END(5),
-  AURIS_EVT_OVERRUN(6),
-  AURIS_EVT_BACKEND_ERROR(7),
-  AURIS_EVT_SOUND_CLASS(8),
-  AURIS_EVT_DEGRADATION(9);
+enum mockingbird_event_type {
+  MOCKINGBIRD_EVT_SPEECH_BEGIN(1),
+  MOCKINGBIRD_EVT_SPEECH_END(2),
+  MOCKINGBIRD_EVT_ANOMALY(3),
+  MOCKINGBIRD_EVT_SEGMENT_BEGIN(4),
+  MOCKINGBIRD_EVT_SEGMENT_END(5),
+  MOCKINGBIRD_EVT_OVERRUN(6),
+  MOCKINGBIRD_EVT_BACKEND_ERROR(7),
+  MOCKINGBIRD_EVT_SOUND_CLASS(8),
+  MOCKINGBIRD_EVT_DEGRADATION(9);
 
   final int value;
-  const auris_event_type(this.value);
+  const mockingbird_event_type(this.value);
 
-  static auris_event_type fromValue(int value) => switch (value) {
-    1 => AURIS_EVT_SPEECH_BEGIN,
-    2 => AURIS_EVT_SPEECH_END,
-    3 => AURIS_EVT_ANOMALY,
-    4 => AURIS_EVT_SEGMENT_BEGIN,
-    5 => AURIS_EVT_SEGMENT_END,
-    6 => AURIS_EVT_OVERRUN,
-    7 => AURIS_EVT_BACKEND_ERROR,
-    8 => AURIS_EVT_SOUND_CLASS,
-    9 => AURIS_EVT_DEGRADATION,
-    _ => throw ArgumentError('Unknown value for auris_event_type: $value'),
+  static mockingbird_event_type fromValue(int value) => switch (value) {
+    1 => MOCKINGBIRD_EVT_SPEECH_BEGIN,
+    2 => MOCKINGBIRD_EVT_SPEECH_END,
+    3 => MOCKINGBIRD_EVT_ANOMALY,
+    4 => MOCKINGBIRD_EVT_SEGMENT_BEGIN,
+    5 => MOCKINGBIRD_EVT_SEGMENT_END,
+    6 => MOCKINGBIRD_EVT_OVERRUN,
+    7 => MOCKINGBIRD_EVT_BACKEND_ERROR,
+    8 => MOCKINGBIRD_EVT_SOUND_CLASS,
+    9 => MOCKINGBIRD_EVT_DEGRADATION,
+    _ => throw ArgumentError(
+      'Unknown value for mockingbird_event_type: $value',
+    ),
   };
 }
 
-final class auris_packet extends ffi.Struct {
+final class mockingbird_packet extends ffi.Struct {
   @ffi.Uint64()
   external int segment_id;
 
@@ -610,8 +653,8 @@ final class auris_packet extends ffi.Struct {
   @ffi.UnsignedInt()
   external int codecAsInt;
 
-  auris_codec get codec => auris_codec.fromValue(codecAsInt);
-  set codec(auris_codec value) => codecAsInt = value.value;
+  mockingbird_codec get codec => mockingbird_codec.fromValue(codecAsInt);
+  set codec(mockingbird_codec value) => codecAsInt = value.value;
 
   external ffi.Pointer<ffi.Uint8> data;
 
@@ -621,17 +664,17 @@ final class auris_packet extends ffi.Struct {
   @ffi.Uint32()
   external int _reserved;
 
-  static ffi.Pointer<auris_packet> $allocate(
+  static ffi.Pointer<mockingbird_packet> $allocate(
     ffi.Allocator $allocator, {
     required int segment_id,
     required int pts_us,
     required int capture_ts_us,
     required int flags,
-    required auris_codec codec,
+    required mockingbird_codec codec,
     required ffi.Pointer<ffi.Uint8> data,
     required int size,
     required int $reserved,
-  }) => $allocator<auris_packet>()
+  }) => $allocator<mockingbird_packet>()
     ..ref.segment_id = segment_id
     ..ref.pts_us = pts_us
     ..ref.capture_ts_us = capture_ts_us
@@ -642,21 +685,23 @@ final class auris_packet extends ffi.Struct {
     ..ref._reserved = $reserved;
 }
 
-typedef auris_packet_t = auris_packet;
+typedef mockingbird_packet_t = mockingbird_packet;
 
-enum auris_sample_format {
-  AURIS_SAMPLE_S16(0);
+enum mockingbird_sample_format {
+  MOCKINGBIRD_SAMPLE_S16(0);
 
   final int value;
-  const auris_sample_format(this.value);
+  const mockingbird_sample_format(this.value);
 
-  static auris_sample_format fromValue(int value) => switch (value) {
-    0 => AURIS_SAMPLE_S16,
-    _ => throw ArgumentError('Unknown value for auris_sample_format: $value'),
+  static mockingbird_sample_format fromValue(int value) => switch (value) {
+    0 => MOCKINGBIRD_SAMPLE_S16,
+    _ => throw ArgumentError(
+      'Unknown value for mockingbird_sample_format: $value',
+    ),
   };
 }
 
-final class auris_stats extends ffi.Struct {
+final class mockingbird_stats extends ffi.Struct {
   @ffi.Uint64()
   external int frames_captured;
 
@@ -715,50 +760,50 @@ final class auris_stats extends ffi.Struct {
   external ffi.Array<ffi.Uint32> _reserved;
 }
 
-typedef auris_stats_t = auris_stats;
+typedef mockingbird_stats_t = mockingbird_stats;
 
-enum auris_status {
-  AURIS_OK(0),
-  AURIS_ERR_INVALID_ARG(-1),
-  AURIS_ERR_INVALID_STATE(-2),
-  AURIS_ERR_NO_MEMORY(-3),
-  AURIS_ERR_BACKEND(-4),
-  AURIS_ERR_NOT_RUNNING(-5),
-  AURIS_ERR_ALREADY_RUNNING(-6),
-  AURIS_ERR_QUEUE_EMPTY(-7),
-  AURIS_ERR_PERMISSION(-8),
-  AURIS_ERR_UNSUPPORTED(-9),
-  AURIS_ERR_INTERNAL(-10);
+enum mockingbird_status {
+  MOCKINGBIRD_OK(0),
+  MOCKINGBIRD_ERR_INVALID_ARG(-1),
+  MOCKINGBIRD_ERR_INVALID_STATE(-2),
+  MOCKINGBIRD_ERR_NO_MEMORY(-3),
+  MOCKINGBIRD_ERR_BACKEND(-4),
+  MOCKINGBIRD_ERR_NOT_RUNNING(-5),
+  MOCKINGBIRD_ERR_ALREADY_RUNNING(-6),
+  MOCKINGBIRD_ERR_QUEUE_EMPTY(-7),
+  MOCKINGBIRD_ERR_PERMISSION(-8),
+  MOCKINGBIRD_ERR_UNSUPPORTED(-9),
+  MOCKINGBIRD_ERR_INTERNAL(-10);
 
   final int value;
-  const auris_status(this.value);
+  const mockingbird_status(this.value);
 
-  static auris_status fromValue(int value) => switch (value) {
-    0 => AURIS_OK,
-    -1 => AURIS_ERR_INVALID_ARG,
-    -2 => AURIS_ERR_INVALID_STATE,
-    -3 => AURIS_ERR_NO_MEMORY,
-    -4 => AURIS_ERR_BACKEND,
-    -5 => AURIS_ERR_NOT_RUNNING,
-    -6 => AURIS_ERR_ALREADY_RUNNING,
-    -7 => AURIS_ERR_QUEUE_EMPTY,
-    -8 => AURIS_ERR_PERMISSION,
-    -9 => AURIS_ERR_UNSUPPORTED,
-    -10 => AURIS_ERR_INTERNAL,
-    _ => throw ArgumentError('Unknown value for auris_status: $value'),
+  static mockingbird_status fromValue(int value) => switch (value) {
+    0 => MOCKINGBIRD_OK,
+    -1 => MOCKINGBIRD_ERR_INVALID_ARG,
+    -2 => MOCKINGBIRD_ERR_INVALID_STATE,
+    -3 => MOCKINGBIRD_ERR_NO_MEMORY,
+    -4 => MOCKINGBIRD_ERR_BACKEND,
+    -5 => MOCKINGBIRD_ERR_NOT_RUNNING,
+    -6 => MOCKINGBIRD_ERR_ALREADY_RUNNING,
+    -7 => MOCKINGBIRD_ERR_QUEUE_EMPTY,
+    -8 => MOCKINGBIRD_ERR_PERMISSION,
+    -9 => MOCKINGBIRD_ERR_UNSUPPORTED,
+    -10 => MOCKINGBIRD_ERR_INTERNAL,
+    _ => throw ArgumentError('Unknown value for mockingbird_status: $value'),
   };
 }
 
-enum auris_vad_tier {
-  AURIS_VAD_FAST(0),
-  AURIS_VAD_NEURAL(1);
+enum mockingbird_vad_tier {
+  MOCKINGBIRD_VAD_FAST(0),
+  MOCKINGBIRD_VAD_NEURAL(1);
 
   final int value;
-  const auris_vad_tier(this.value);
+  const mockingbird_vad_tier(this.value);
 
-  static auris_vad_tier fromValue(int value) => switch (value) {
-    0 => AURIS_VAD_FAST,
-    1 => AURIS_VAD_NEURAL,
-    _ => throw ArgumentError('Unknown value for auris_vad_tier: $value'),
+  static mockingbird_vad_tier fromValue(int value) => switch (value) {
+    0 => MOCKINGBIRD_VAD_FAST,
+    1 => MOCKINGBIRD_VAD_NEURAL,
+    _ => throw ArgumentError('Unknown value for mockingbird_vad_tier: $value'),
   };
 }

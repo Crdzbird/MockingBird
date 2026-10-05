@@ -14,7 +14,7 @@
 //      must never crash or corrupt the ring.
 
 #include "doctest.h"
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 #include "encode/encoder.hpp"
 
 #include <chrono>
@@ -24,11 +24,11 @@
 
 namespace {
 
-auris_config_t base_cfg() {
-    auris_config_t c{};
-    auris_config_defaults(&c);
-    c.backend            = AURIS_BACKEND_HOST_PCM;
-    c.codec              = AURIS_CODEC_PCM_S16LE;
+mockingbird_config_t base_cfg() {
+    mockingbird_config_t c{};
+    mockingbird_config_defaults(&c);
+    c.backend            = MOCKINGBIRD_BACKEND_HOST_PCM;
+    c.codec              = MOCKINGBIRD_CODEC_PCM_S16LE;
     c.sample_rate_hz     = 16000;
     c.frame_ms           = 20;
     c.enable_vad         = 0;      // passthrough: every frame becomes a packet
@@ -44,7 +44,7 @@ auris_config_t base_cfg() {
 // ---------------------------------------------------------------------------
 
 TEST_CASE("Fault: encoders return <= 0 on a too-small buffer, never overflow it") {
-    auris_config_t cfg = base_cfg();
+    mockingbird_config_t cfg = base_cfg();
     constexpr uint32_t N = 320;                     // 20 ms @ 16 kHz
     std::vector<int16_t> frame(N);
     for (uint32_t i = 0; i < N; ++i) {
@@ -52,10 +52,10 @@ TEST_CASE("Fault: encoders return <= 0 on a too-small buffer, never overflow it"
     }
 
     SUBCASE("PCM") {
-        cfg.codec = AURIS_CODEC_PCM_S16LE;
-        auto enc = auris::make_encoder(cfg.codec);
+        cfg.codec = MOCKINGBIRD_CODEC_PCM_S16LE;
+        auto enc = mockingbird::make_encoder(cfg.codec);
         REQUIRE(enc != nullptr);
-        REQUIRE(enc->init(cfg) == AURIS_OK);
+        REQUIRE(enc->init(cfg) == MOCKINGBIRD_OK);
         // Exactly out_cap bytes so ASan flags any overrun.
         for (uint32_t cap : {0u, 1u, 100u, 639u}) {  // all < 640 needed bytes
             std::vector<uint8_t> out(cap == 0 ? 1 : cap);
@@ -69,14 +69,14 @@ TEST_CASE("Fault: encoders return <= 0 on a too-small buffer, never overflow it"
                           static_cast<uint32_t>(ok.size())) <= 0);
     }
 
-#ifdef AURIS_HAVE_OPUS
+#ifdef MOCKINGBIRD_HAVE_OPUS
     SUBCASE("Opus") {
-        cfg.codec            = AURIS_CODEC_OPUS;
+        cfg.codec            = MOCKINGBIRD_CODEC_OPUS;
         cfg.opus_bitrate_bps = 32000;
         cfg.opus_complexity  = 5;
-        auto enc = auris::make_encoder(cfg.codec);
+        auto enc = mockingbird::make_encoder(cfg.codec);
         REQUIRE(enc != nullptr);
-        REQUIRE(enc->init(cfg) == AURIS_OK);
+        REQUIRE(enc->init(cfg) == MOCKINGBIRD_OK);
         // opus_encode treats out_cap as a HARD ceiling: it degrades the bitrate
         // to fit (or returns an error), but never writes past the buffer. The
         // safety invariant the worker depends on is exactly that — the return
@@ -101,31 +101,31 @@ TEST_CASE("Fault: encoders return <= 0 on a too-small buffer, never overflow it"
 // ---------------------------------------------------------------------------
 
 TEST_CASE("Fault: flooding the packet queue with no draining drops-oldest and recovers") {
-    auris_config_t cfg = base_cfg();
+    mockingbird_config_t cfg = base_cfg();
     cfg.packet_queue_capacity = 4;                  // tiny on purpose
     cfg.pcm_ring_frames       = 1u << 15;
 
-    auris_engine_t* e = nullptr;
-    REQUIRE(auris_create(&cfg, &e) == AURIS_OK);
-    REQUIRE(auris_start(e) == AURIS_OK);
+    mockingbird_engine_t* e = nullptr;
+    REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
+    REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
 
     // Push far more frames than the queue can hold, never draining.
     std::vector<int16_t> frame(320, 2500);
     for (int i = 0; i < 400; ++i) {
-        REQUIRE(auris_push_pcm(e, frame.data(), 320,
-                               static_cast<uint64_t>(i) * 20'000ull) == AURIS_OK);
+        REQUIRE(mockingbird_push_pcm(e, frame.data(), 320,
+                               static_cast<uint64_t>(i) * 20'000ull) == MOCKINGBIRD_OK);
         if ((i & 0x1Fu) == 0x1F) std::this_thread::sleep_for(std::chrono::milliseconds(15));
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(80));
 
     uint32_t overruns = 0;
-    auris_event_t evt{};
-    while (auris_poll_event(e, &evt) == AURIS_OK) {
-        if (evt.type == AURIS_EVT_OVERRUN) ++overruns;
+    mockingbird_event_t evt{};
+    while (mockingbird_poll_event(e, &evt) == MOCKINGBIRD_OK) {
+        if (evt.type == MOCKINGBIRD_EVT_OVERRUN) ++overruns;
     }
 
-    auris_stats_t st{};
-    REQUIRE(auris_get_stats(e, &st) == AURIS_OK);
+    mockingbird_stats_t st{};
+    REQUIRE(mockingbird_get_stats(e, &st) == MOCKINGBIRD_OK);
     INFO("emitted=" << st.packets_emitted << " dropped=" << st.packets_dropped
          << " overruns=" << overruns << " queue_fill=" << st.packet_queue_fill);
     CHECK(st.packets_emitted > 0);
@@ -134,15 +134,15 @@ TEST_CASE("Fault: flooding the packet queue with no draining drops-oldest and re
 
     // Recovery: the queue still holds AT MOST capacity packets, all releasable.
     uint32_t drained = 0;
-    auris_packet_t pkt{};
-    while (auris_drain(e, &pkt) == AURIS_OK) {
-        CHECK(auris_release(e, &pkt) == AURIS_OK);  // no corruption / double-hand-out
+    mockingbird_packet_t pkt{};
+    while (mockingbird_drain(e, &pkt) == MOCKINGBIRD_OK) {
+        CHECK(mockingbird_release(e, &pkt) == MOCKINGBIRD_OK);  // no corruption / double-hand-out
         ++drained;
     }
     CHECK(drained <= cfg.packet_queue_capacity);
 
-    REQUIRE(auris_stop(e) == AURIS_OK);
-    auris_destroy(e);
+    REQUIRE(mockingbird_stop(e) == MOCKINGBIRD_OK);
+    mockingbird_destroy(e);
 }
 
 // ---------------------------------------------------------------------------
@@ -150,10 +150,10 @@ TEST_CASE("Fault: flooding the packet queue with no draining drops-oldest and re
 // ---------------------------------------------------------------------------
 
 TEST_CASE("Fault: arbitrary non-frame-aligned push sizes never crash or corrupt") {
-    auris_config_t cfg = base_cfg();
-    auris_engine_t* e = nullptr;
-    REQUIRE(auris_create(&cfg, &e) == AURIS_OK);
-    REQUIRE(auris_start(e) == AURIS_OK);
+    mockingbird_config_t cfg = base_cfg();
+    mockingbird_engine_t* e = nullptr;
+    REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
+    REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
 
     // Odd counts that don't divide the 320-sample frame, plus a zero (no-op).
     std::vector<int16_t> buf(4096, 700);
@@ -161,21 +161,21 @@ TEST_CASE("Fault: arbitrary non-frame-aligned push sizes never crash or corrupt"
     uint64_t total = 0;
     for (int rep = 0; rep < 50; ++rep) {
         for (uint32_t n : counts) {
-            REQUIRE(auris_push_pcm(e, buf.data(), n, total * 20'000ull) == AURIS_OK);
+            REQUIRE(mockingbird_push_pcm(e, buf.data(), n, total * 20'000ull) == MOCKINGBIRD_OK);
             total += n;
         }
         // drain so the ring keeps flowing
-        auris_packet_t pkt{};
-        while (auris_drain(e, &pkt) == AURIS_OK) auris_release(e, &pkt);
-        auris_event_t evt{};
-        while (auris_poll_event(e, &evt) == AURIS_OK) { /* discard */ }
+        mockingbird_packet_t pkt{};
+        while (mockingbird_drain(e, &pkt) == MOCKINGBIRD_OK) mockingbird_release(e, &pkt);
+        mockingbird_event_t evt{};
+        while (mockingbird_poll_event(e, &evt) == MOCKINGBIRD_OK) { /* discard */ }
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-    auris_stats_t st{};
-    REQUIRE(auris_get_stats(e, &st) == AURIS_OK);
-    REQUIRE(auris_stop(e) == AURIS_OK);
-    auris_destroy(e);
+    mockingbird_stats_t st{};
+    REQUIRE(mockingbird_get_stats(e, &st) == MOCKINGBIRD_OK);
+    REQUIRE(mockingbird_stop(e) == MOCKINGBIRD_OK);
+    mockingbird_destroy(e);
     // Captured + dropped-at-ring must account for everything that wasn't a
     // zero-length push; we only assert it didn't crash and made progress.
     INFO("pushed=" << total << " captured=" << st.frames_captured

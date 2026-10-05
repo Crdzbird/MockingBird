@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-namespace auris {
+namespace mockingbird {
 
 struct DetectionResult {
     bool     active      = false;
@@ -11,4 +11,4 @@ struct DetectionResult {
     float    confidence  = 0.0f;
 };
 
-} // namespace auris
+} // namespace mockingbird

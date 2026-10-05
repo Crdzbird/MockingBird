@@ -5,22 +5,22 @@
 #include <chrono>
 #include <cstdint>
 
-struct auris_engine;
+struct mockingbird_engine;
 
-namespace auris {
+namespace mockingbird {
 
 class Tunables;
 
 class WorkerHealth {
 public:
-    void start(const auris_engine* e);
+    void start(const mockingbird_engine* e);
     void begin_frame();
-    void end_frame(auris_engine* e, uint64_t now_ts, Tunables& t);
+    void end_frame(mockingbird_engine* e, uint64_t now_ts, Tunables& t);
 
 private:
     using clock = std::chrono::steady_clock;
 
-    void close_window(auris_engine* e, uint64_t now_ts, Tunables& t, uint64_t window_ns);
+    void close_window(mockingbird_engine* e, uint64_t now_ts, Tunables& t, uint64_t window_ns);
 
     clock::time_point win_start_;
     clock::time_point frame_t0_;
@@ -29,4 +29,4 @@ private:
     uint32_t          max_frame_us_ = 0;
 };
 
-} // namespace auris
+} // namespace mockingbird

@@ -9,7 +9,7 @@
 // arithmetic surfaces as a failed test rather than a silent regression.
 
 #include "doctest.h"
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 
 #include <chrono>
 #include <cmath>
@@ -20,30 +20,30 @@
 namespace {
 
 struct EngineGuard {
-    auris_engine_t* e = nullptr;
+    mockingbird_engine_t* e = nullptr;
     ~EngineGuard() {
         if (e) {
-            auris_stop(e);
-            auris_destroy(e);
+            mockingbird_stop(e);
+            mockingbird_destroy(e);
         }
     }
 };
 
-auris_engine_t* make_host_pcm_with(int enable_vad,
+mockingbird_engine_t* make_host_pcm_with(int enable_vad,
                                    int enable_anomaly,
                                    int vad_aggressiveness) {
-    auris_config_t cfg{};
-    auris_config_defaults(&cfg);
-    cfg.backend            = AURIS_BACKEND_HOST_PCM;
-    cfg.codec              = AURIS_CODEC_PCM_S16LE;
+    mockingbird_config_t cfg{};
+    mockingbird_config_defaults(&cfg);
+    cfg.backend            = MOCKINGBIRD_BACKEND_HOST_PCM;
+    cfg.codec              = MOCKINGBIRD_CODEC_PCM_S16LE;
     cfg.sample_rate_hz     = 16000;
     cfg.frame_ms           = 20;
     cfg.enable_vad         = enable_vad;
     cfg.enable_anomaly     = enable_anomaly;
     cfg.vad_aggressiveness = vad_aggressiveness;
-    auris_engine_t* e = nullptr;
-    REQUIRE(auris_create(&cfg, &e) == AURIS_OK);
-    REQUIRE(auris_start(e) == AURIS_OK);
+    mockingbird_engine_t* e = nullptr;
+    REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
+    REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
     return e;
 }
 
@@ -60,11 +60,11 @@ std::vector<int16_t> sine_tone(uint32_t n, double freq_hz, double amplitude01) {
     return v;
 }
 
-void push_silence_frames(auris_engine_t* e, uint32_t frames) {
+void push_silence_frames(mockingbird_engine_t* e, uint32_t frames) {
     auto buf = silence(320);
     for (uint32_t i = 0; i < frames; ++i) {
-        REQUIRE(auris_push_pcm(e, buf.data(), 320,
-                               uint64_t{i} * 20'000ull) == AURIS_OK);
+        REQUIRE(mockingbird_push_pcm(e, buf.data(), 320,
+                               uint64_t{i} * 20'000ull) == MOCKINGBIRD_OK);
         // The default PCM ring holds ~51 frames. Pace pushes so the worker
         // drains between batches; otherwise excess frames are dropped at the
         // ring and the test never sees them at the detector.
@@ -75,14 +75,14 @@ void push_silence_frames(auris_engine_t* e, uint32_t frames) {
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
 }
 
-void push_frames(auris_engine_t* e,
+void push_frames(mockingbird_engine_t* e,
                  const std::vector<int16_t>& buf,
                  uint32_t                    frames,
                  uint64_t                    start_ts_us,
                  uint64_t                    step_us) {
     for (uint32_t i = 0; i < frames; ++i) {
-        REQUIRE(auris_push_pcm(e, buf.data(), 320, start_ts_us + i * step_us)
-                == AURIS_OK);
+        REQUIRE(mockingbird_push_pcm(e, buf.data(), 320, start_ts_us + i * step_us)
+                == MOCKINGBIRD_OK);
         if ((i & 0x1Fu) == 0x1F) {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
@@ -90,15 +90,15 @@ void push_frames(auris_engine_t* e,
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
 }
 
-uint32_t drain_packet_count(auris_engine_t* e) {
+uint32_t drain_packet_count(mockingbird_engine_t* e) {
     uint32_t n = 0;
     while (true) {
-        auris_packet_t pkt{};
-        const auris_status_t s = auris_drain(e, &pkt);
-        if (s == AURIS_ERR_QUEUE_EMPTY) break;
-        REQUIRE(s == AURIS_OK);
+        mockingbird_packet_t pkt{};
+        const mockingbird_status_t s = mockingbird_drain(e, &pkt);
+        if (s == MOCKINGBIRD_ERR_QUEUE_EMPTY) break;
+        REQUIRE(s == MOCKINGBIRD_OK);
         ++n;
-        REQUIRE(auris_release(e, &pkt) == AURIS_OK);
+        REQUIRE(mockingbird_release(e, &pkt) == MOCKINGBIRD_OK);
     }
     return n;
 }
@@ -111,19 +111,19 @@ struct EventTally {
     uint32_t segment_end   = 0;
 };
 
-EventTally drain_events(auris_engine_t* e) {
+EventTally drain_events(mockingbird_engine_t* e) {
     EventTally t{};
     while (true) {
-        auris_event_t evt{};
-        const auris_status_t s = auris_poll_event(e, &evt);
-        if (s == AURIS_ERR_QUEUE_EMPTY) break;
-        REQUIRE(s == AURIS_OK);
+        mockingbird_event_t evt{};
+        const mockingbird_status_t s = mockingbird_poll_event(e, &evt);
+        if (s == MOCKINGBIRD_ERR_QUEUE_EMPTY) break;
+        REQUIRE(s == MOCKINGBIRD_OK);
         switch (evt.type) {
-            case AURIS_EVT_SPEECH_BEGIN:  ++t.speech_begin;  break;
-            case AURIS_EVT_SPEECH_END:    ++t.speech_end;    break;
-            case AURIS_EVT_ANOMALY:       ++t.anomaly;       break;
-            case AURIS_EVT_SEGMENT_BEGIN: ++t.segment_begin; break;
-            case AURIS_EVT_SEGMENT_END:   ++t.segment_end;   break;
+            case MOCKINGBIRD_EVT_SPEECH_BEGIN:  ++t.speech_begin;  break;
+            case MOCKINGBIRD_EVT_SPEECH_END:    ++t.speech_end;    break;
+            case MOCKINGBIRD_EVT_ANOMALY:       ++t.anomaly;       break;
+            case MOCKINGBIRD_EVT_SEGMENT_BEGIN: ++t.segment_begin; break;
+            case MOCKINGBIRD_EVT_SEGMENT_END:   ++t.segment_end;   break;
             default: break;
         }
     }
@@ -161,11 +161,11 @@ TEST_CASE("VAD: every SPEECH_BEGIN is balanced by exactly one SPEECH_END") {
 
     const auto tone = sine_tone(320, 440.0, 0.3);
     for (uint32_t i = 0; i < 25; ++i) {
-        REQUIRE(auris_push_pcm(g.e, tone.data(), 320,
-                               uint64_t{i} * 20'000ull) == AURIS_OK);
+        REQUIRE(mockingbird_push_pcm(g.e, tone.data(), 320,
+                               uint64_t{i} * 20'000ull) == MOCKINGBIRD_OK);
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(120));
-    REQUIRE(auris_stop(g.e) == AURIS_OK);
+    REQUIRE(mockingbird_stop(g.e) == MOCKINGBIRD_OK);
 
     const auto tally = drain_events(g.e);
     CHECK(tally.speech_begin == tally.speech_end);
@@ -216,12 +216,12 @@ TEST_CASE("Pre-roll: when a segment opens after silence, PREROLL-flagged "
 
     bool seen_preroll = false;
     while (true) {
-        auris_packet_t pkt{};
-        const auris_status_t s = auris_drain(g.e, &pkt);
-        if (s == AURIS_ERR_QUEUE_EMPTY) break;
-        REQUIRE(s == AURIS_OK);
-        if (pkt.flags & AURIS_PKT_FLAG_PREROLL) seen_preroll = true;
-        REQUIRE(auris_release(g.e, &pkt) == AURIS_OK);
+        mockingbird_packet_t pkt{};
+        const mockingbird_status_t s = mockingbird_drain(g.e, &pkt);
+        if (s == MOCKINGBIRD_ERR_QUEUE_EMPTY) break;
+        REQUIRE(s == MOCKINGBIRD_OK);
+        if (pkt.flags & MOCKINGBIRD_PKT_FLAG_PREROLL) seen_preroll = true;
+        REQUIRE(mockingbird_release(g.e, &pkt) == MOCKINGBIRD_OK);
     }
     CHECK(seen_preroll);
 }
@@ -237,13 +237,13 @@ TEST_CASE("Stats: frames_captured matches the total samples pushed exactly") {
     constexpr uint32_t kFrames = 30;
     auto buf = silence(320);
     for (uint32_t i = 0; i < kFrames; ++i) {
-        REQUIRE(auris_push_pcm(g.e, buf.data(), 320, 0) == AURIS_OK);
+        REQUIRE(mockingbird_push_pcm(g.e, buf.data(), 320, 0) == MOCKINGBIRD_OK);
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    auris_stop(g.e);
+    mockingbird_stop(g.e);
 
-    auris_stats_t s{};
-    REQUIRE(auris_get_stats(g.e, &s) == AURIS_OK);
+    mockingbird_stats_t s{};
+    REQUIRE(mockingbird_get_stats(g.e, &s) == MOCKINGBIRD_OK);
     CHECK(s.frames_captured        == kFrames * 320);
     CHECK(s.frames_dropped_capture == 0);
     CHECK(s.packets_dropped        == 0);

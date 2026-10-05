@@ -1,35 +1,35 @@
-# Auris for Go
+# Mockingbird for Go
 
-Go bindings for the [Auris](../../README.md) native audio engine over its C
+Go bindings for the [Mockingbird](../../README.md) native audio engine over its C
 ABI: capture, optional RNNoise, multilingual voice detection, an anomaly gate,
 YAMNet sound classification, and Opus or PCM packets, delivered on channels.
 
 ```go
-import "github.com/auris-audio/auris"
+import "github.com/Crdzbird/MockingBird/bindings/go"
 ```
 
 ## Prerequisites
 
-The binding links `libauris`, built from this repository with CMake:
+The binding links `libmockingbird`, built from this repository with CMake:
 
 ```bash
-cmake -S . -B build -DAURIS_BUILD_SHARED=ON -DAURIS_ENABLE_NEURAL_VAD=ON
+cmake -S . -B build -DMOCKINGBIRD_BUILD_SHARED=ON -DMOCKINGBIRD_ENABLE_NEURAL_VAD=ON
 cmake --build build -j
 ```
 
-The cgo directives in [`auris.go`](auris.go) point at the repository's
+The cgo directives in [`mockingbird.go`](mockingbird.go) point at the repository's
 `include/` and `build/` directories, so a checkout needs no further setup.
 For an installed copy, override the flags:
 
 ```bash
 CGO_CFLAGS="-I/usr/local/include" \
-CGO_LDFLAGS="-L/usr/local/lib -lauris -Wl,-rpath,/usr/local/lib" go build ./...
+CGO_LDFLAGS="-L/usr/local/lib -lmockingbird -Wl,-rpath,/usr/local/lib" go build ./...
 ```
 
 ## Quick start
 
 ```go
-e, err := auris.New(auris.DefaultConfig())
+e, err := mockingbird.New(mockingbird.DefaultConfig())
 if err != nil {
     log.Fatal(err)
 }
@@ -39,9 +39,9 @@ if err := e.Start(); err != nil {
 }
 for ev := range e.Events() {
     switch ev.Type {
-    case auris.EventSpeechBegin:
+    case mockingbird.EventSpeechBegin:
         fmt.Println("voice")
-    case auris.EventSoundClass:
+    case mockingbird.EventSoundClass:
         fmt.Println(ev.Category(), ev.Confidence)
     }
 }
@@ -66,20 +66,20 @@ microphone. Everything else is grouped by concern:
 from one `0..1` value; options adjust the rest:
 
 ```go
-cfg := auris.Sensitive(0.6,
-    auris.WithNeuralVADModel("silero_vad.onnx"),
-    auris.WithSoundClassModel("yamnet_3s.onnx"),
-    auris.WithDenoise(true),
-    auris.WithEncoder(auris.OpusEncoder()),
+cfg := mockingbird.Sensitive(0.6,
+    mockingbird.WithNeuralVADModel("silero_vad.onnx"),
+    mockingbird.WithSoundClassModel("yamnet_3s.onnx"),
+    mockingbird.WithDenoise(true),
+    mockingbird.WithEncoder(mockingbird.OpusEncoder()),
 )
 ```
 
 ### Host-pushed PCM
 
 ```go
-cfg := auris.DefaultConfig()
-cfg.Backend = auris.BackendHostPCM
-e, _ := auris.New(cfg)
+cfg := mockingbird.DefaultConfig()
+cfg.Backend = mockingbird.BackendHostPCM
+e, _ := mockingbird.New(cfg)
 e.Start()
 e.PushPCM(samples, captureTsUs)
 ```
@@ -113,13 +113,13 @@ full; `Dropped` reports the count.
 Native failures are `*StatusError`:
 
 ```go
-var se *auris.StatusError
-if errors.As(err, &se) && se.Status == auris.StatusErrPermission {
+var se *mockingbird.StatusError
+if errors.As(err, &se) && se.Status == mockingbird.StatusErrPermission {
     ...
 }
 ```
 
-Methods on a closed engine return `auris.ErrClosed`.
+Methods on a closed engine return `mockingbird.ErrClosed`.
 
 ## Testing
 

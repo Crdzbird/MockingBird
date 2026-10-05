@@ -1,13 +1,12 @@
-/// The web implementation of the auris plugin.
+/// The web implementation of the mockingbird plugin.
 library;
 
 import 'dart:async';
-import 'dart:js_interop';
 import 'dart:typed_data';
 
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
-import 'package:mockingbird_web/src/auris_module.dart';
+import 'package:mockingbird_web/src/mockingbird_module.dart';
 import 'package:mockingbird_web/src/module_registry.dart';
 import 'package:mockingbird_web/src/web_assets.dart';
 import 'package:mockingbird_web/src/web_engine.dart';
@@ -15,20 +14,20 @@ import 'package:mockingbird_web/src/web_engine_handle.dart';
 import 'package:mockingbird_web/src/web_lifecycle.dart';
 
 /// Runs the engine as WebAssembly in the page and captures through Web Audio.
-class AurisWeb extends AurisPlatform {
-  /// Creates the platform; [registerWith] installs it and starts loading.
-  AurisWeb();
+class MockingbirdWeb extends MockingbirdPlatform {
+  /// Creates the platform; [registerWith] installs it.
+  MockingbirdWeb();
 
   late final WebLifecycle _lifecycle = WebLifecycle(() => _ready, pushPcm);
 
-  /// Where the wasm, its loader and the worklet are served from; null uses
-  /// the asset bundle. Set before [initialize] to host them elsewhere.
+  /// Where the wasm, loader and worklet are served from; null means the
+  /// asset bundle. Set before [initialize].
   static String? get assetBaseUrl => WebAssets.baseUrl;
   static set assetBaseUrl(String? url) => WebAssets.baseUrl = url;
 
   /// Called by the plugin registrant; also starts loading the module.
   static void registerWith(Registrar registrar) {
-    AurisPlatform.instance = AurisWeb();
+    MockingbirdPlatform.instance = MockingbirdWeb();
     ModuleRegistry.begin();
   }
 
@@ -37,58 +36,65 @@ class AurisWeb extends AurisPlatform {
 
   WebEngine get _engine => WebEngine(_ready);
 
-  AurisModule get _ready => ModuleRegistry.module;
+  MockingbirdModule get _ready => ModuleRegistry.module;
 
   @override
-  String version() => _ready.utf8ToString(_ready.versionString()).toDart;
+  String version() => _engine.version();
 
   @override
-  String statusName(int status) =>
-      _ready.utf8ToString(_ready.statusStr(status)).toDart;
+  String statusName(int status) => _engine.statusName(status);
 
   @override
-  AurisCreateResult create(AurisNativeConfig config) => _engine.create(config);
+  MockingbirdCreateResult create(MockingbirdNativeConfig config) =>
+      _engine.create(config);
 
   @override
-  void destroy(AurisEngineHandle handle) {
+  void destroy(MockingbirdEngineHandle handle) {
     final h = handle as WebEngineHandle;
     h.capture?.stop();
     _engine.destroy(h);
   }
 
   @override
-  int start(AurisEngineHandle handle) =>
+  int start(MockingbirdEngineHandle handle) =>
       _lifecycle.start(handle as WebEngineHandle);
 
   @override
-  int stop(AurisEngineHandle handle) =>
+  int stop(MockingbirdEngineHandle handle) =>
       _lifecycle.stop(handle as WebEngineHandle);
 
   @override
-  int pushPcm(AurisEngineHandle handle, Int16List samples, int captureTsUs) =>
-      _engine.pushPcm(handle as WebEngineHandle, samples, captureTsUs);
+  int pushPcm(
+    MockingbirdEngineHandle handle,
+    Int16List samples,
+    int captureTsUs,
+  ) => _engine.pushPcm(handle as WebEngineHandle, samples, captureTsUs);
 
   @override
-  AurisPcmResult readPcm(AurisEngineHandle handle, int maxSamples) =>
-      _engine.readPcm(handle as WebEngineHandle, maxSamples);
+  MockingbirdPcmResult readPcm(
+    MockingbirdEngineHandle handle,
+    int maxSamples,
+  ) => _engine.readPcm(handle as WebEngineHandle, maxSamples);
 
   @override
-  AurisEventResult pollEvent(AurisEngineHandle handle) {
+  MockingbirdEventResult pollEvent(MockingbirdEngineHandle handle) {
     if (_lifecycle.takePending() case final event?) {
-      return (status: AurisStatusCode.ok, event: event);
+      return (status: MockingbirdStatusCode.ok, event: event);
     }
     return _engine.pollEvent(handle as WebEngineHandle);
   }
 
   @override
-  AurisPacketResult drainPacket(AurisEngineHandle handle) =>
+  MockingbirdPacketResult drainPacket(MockingbirdEngineHandle handle) =>
       _engine.drainPacket(handle as WebEngineHandle);
 
   @override
-  AurisStatsResult stats(AurisEngineHandle handle) =>
+  MockingbirdStatsResult stats(MockingbirdEngineHandle handle) =>
       _engine.stats(handle as WebEngineHandle);
 
   @override
-  int updateConfig(AurisEngineHandle handle, AurisNativeConfig config) =>
-      _engine.updateConfig(handle as WebEngineHandle, config);
+  int updateConfig(
+    MockingbirdEngineHandle handle,
+    MockingbirdNativeConfig config,
+  ) => _engine.updateConfig(handle as WebEngineHandle, config);
 }

@@ -5,7 +5,7 @@ It is endorsed, so depending on `mockingbird` includes it automatically.
 
 ## What it bundles
 
-- The Auris engine compiled from source into the host app: capture, RNNoise,
+- The Mockingbird engine compiled from source into the host app: capture, RNNoise,
   libfvad, the anomaly gate, the Opus encoder, and the ONNX Runtime detectors
   (Silero VAD and YAMNet).
 - Microphone capture through a Core Audio HALOutput unit bound to the default
@@ -44,4 +44,4 @@ usage description to `Info.plist`:
 
 Request access with `AVCaptureDevice.requestAccess` or `permission_handler`
 before starting an engine that captures. Engines created with
-`AurisBackend.hostPcm` do not touch the microphone.
+`MockingbirdBackend.hostPcm` do not touch the microphone.

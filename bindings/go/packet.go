@@ -1,7 +1,7 @@
-package auris
+package mockingbird
 
 /*
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 */
 import "C"
 
@@ -30,7 +30,7 @@ func (p Packet) IsKeyframe() bool { return p.Flags&PacketFlagKeyframe != 0 }
 // IsLast reports the terminal packet of a segment.
 func (p Packet) IsLast() bool { return p.Flags&PacketFlagLast != 0 }
 
-func packetFromC(p C.auris_packet_t) Packet {
+func packetFromC(p C.mockingbird_packet_t) Packet {
 	var data []byte
 	if p.size > 0 && p.data != nil {
 		data = C.GoBytes(unsafe.Pointer(p.data), C.int(p.size))

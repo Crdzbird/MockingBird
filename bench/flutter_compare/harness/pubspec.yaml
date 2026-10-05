@@ -1,5 +1,5 @@
 name: harness
-description: Shared measurement code for the Auris package comparison benchmark.
+description: Shared measurement code for the Mockingbird package comparison benchmark.
 version: 0.1.0
 publish_to: none
 

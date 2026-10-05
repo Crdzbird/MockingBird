@@ -3,7 +3,7 @@
 
 #include "capture/capture_backend.hpp"
 
-namespace auris {
+namespace mockingbird {
 
 namespace {
 BackendFactoryFn g_backend_override = nullptr;
@@ -13,11 +13,11 @@ void set_backend_factory_override(BackendFactoryFn fn) {
     g_backend_override = fn;
 }
 
-std::unique_ptr<CaptureBackend> make_backend(auris_backend_t which) {
+std::unique_ptr<CaptureBackend> make_backend(mockingbird_backend_t which) {
     if (g_backend_override != nullptr) return g_backend_override(which);
     return nullptr;
 }
 
-} // namespace auris
+} // namespace mockingbird
 
 #endif

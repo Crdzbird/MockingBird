@@ -1,13 +1,14 @@
-/// The platform interface of the auris plugin: plain data types and the
+/// The platform interface of the mockingbird plugin: plain data types and the
 /// engine operations every platform implementation provides.
 library;
 
-export 'package:mockingbird_platform_interface/src/auris_engine_handle.dart';
-export 'package:mockingbird_platform_interface/src/auris_native_config.dart';
-export 'package:mockingbird_platform_interface/src/auris_native_detector_config.dart';
-export 'package:mockingbird_platform_interface/src/auris_native_event.dart';
-export 'package:mockingbird_platform_interface/src/auris_native_output_config.dart';
-export 'package:mockingbird_platform_interface/src/auris_native_packet.dart';
-export 'package:mockingbird_platform_interface/src/auris_native_stats.dart';
-export 'package:mockingbird_platform_interface/src/auris_platform.dart';
-export 'package:mockingbird_platform_interface/src/auris_status_code.dart';
+export 'package:mockingbird_platform_interface/src/mockingbird_engine_handle.dart';
+export 'package:mockingbird_platform_interface/src/mockingbird_native_config.dart';
+export 'package:mockingbird_platform_interface/src/mockingbird_native_detector_config.dart';
+export 'package:mockingbird_platform_interface/src/mockingbird_native_event.dart';
+export 'package:mockingbird_platform_interface/src/mockingbird_native_output_config.dart';
+export 'package:mockingbird_platform_interface/src/mockingbird_native_packet.dart';
+export 'package:mockingbird_platform_interface/src/mockingbird_native_stats.dart';
+export 'package:mockingbird_platform_interface/src/mockingbird_platform.dart';
+export 'package:mockingbird_platform_interface/src/mockingbird_results.dart';
+export 'package:mockingbird_platform_interface/src/mockingbird_status_code.dart';

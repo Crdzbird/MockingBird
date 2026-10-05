@@ -2,9 +2,9 @@
 //
 // Swift Package Manager support for the mockingbird_ios Flutter plugin.
 //
-// Auris' C/C++ core is shared by every platform and lives at the repository
+// Mockingbird' C/C++ core is shared by every platform and lives at the repository
 // root. SwiftPM requires a target's sources to live inside the package, so
-// Sources/auris_native contains SYMLINKS to the real tree (include/, src/,
+// Sources/mockingbird_native contains SYMLINKS to the real tree (include/, src/,
 // third_party/*). SwiftPM follows them, and because they are links rather than
 // copies the package can never drift from the source of truth. This directory
 // is only ever used on macOS, so symlinks are safe here.
@@ -84,15 +84,15 @@ let package = Package(
     // package (FlutterGeneratedPluginSwiftPackage) that vends the Flutter
     // framework and depends on this one, exactly as shipping plugins do.
     targets: [
-        // The native engine: Auris' C/C++ plus its vendored, permissively
+        // The native engine: Mockingbird' C/C++ plus its vendored, permissively
         // licensed dependencies. Compiled into the app so the Dart side can
         // reach the C ABI through DynamicLibrary.process().
         .target(
-            name: "auris_native",
+            name: "mockingbird_native",
             dependencies: [
                 .product(name: "onnxruntime", package: "onnxruntime-swift-package-manager"),
             ],
-            path: "Sources/auris_native",
+            path: "Sources/mockingbird_native",
             exclude: [
                 // Compiled via the Objective-C shim below (miniaudio's Apple
                 // backend imports AVFoundation, so its single implementation
@@ -129,9 +129,9 @@ let package = Package(
                 .headerSearchPath("third_party/opus/silk"),
                 .headerSearchPath("third_party/opus/silk/float"),
                 .headerSearchPath("third_party/opus/src"),
-                .define("AURIS_BUILDING", to: "1"),
-                .define("AURIS_HAVE_OPUS", to: "1"),
-                .define("AURIS_HAVE_RNNOISE", to: "1"),
+                .define("MOCKINGBIRD_BUILDING", to: "1"),
+                .define("MOCKINGBIRD_HAVE_OPUS", to: "1"),
+                .define("MOCKINGBIRD_HAVE_RNNOISE", to: "1"),
                 .define("OPUS_BUILD", to: "1"),
                 .define("OPUS_DISABLE_INTRINSICS", to: "1"),
                 .define("VAR_ARRAYS", to: "1"),
@@ -148,11 +148,11 @@ let package = Package(
                 .headerSearchPath("third_party/pffft"),
                 .headerSearchPath("third_party/rnnoise/include"),
                 .headerSearchPath("third_party/opus/include"),
-                .define("AURIS_BUILDING", to: "1"),
-                .define("AURIS_HAVE_OPUS", to: "1"),
-                .define("AURIS_HAVE_RNNOISE", to: "1"),
-                .define("AURIS_HAVE_NEURAL_VAD", to: "1"),
-                .define("AURIS_HAVE_SOUND_CLASS", to: "1"),
+                .define("MOCKINGBIRD_BUILDING", to: "1"),
+                .define("MOCKINGBIRD_HAVE_OPUS", to: "1"),
+                .define("MOCKINGBIRD_HAVE_RNNOISE", to: "1"),
+                .define("MOCKINGBIRD_HAVE_NEURAL_VAD", to: "1"),
+                .define("MOCKINGBIRD_HAVE_SOUND_CLASS", to: "1"),
             ],
             linkerSettings: [
                 .linkedFramework("CoreFoundation"),
@@ -165,7 +165,7 @@ let package = Package(
         // symbol anchor that keeps the C ABI reachable from dart:ffi.
         .target(
             name: "mockingbird_macos",
-            dependencies: ["auris_native"],
+            dependencies: ["mockingbird_native"],
             path: "Sources/mockingbird_macos"
         ),
     ],

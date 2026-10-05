@@ -3,19 +3,19 @@
 
 #include <cstring>
 
-namespace auris {
+namespace mockingbird {
 
 namespace {
 
 class PassthroughEncoder final : public Encoder {
 public:
-    auris_status_t init(const auris_config_t& cfg) override {
+    mockingbird_status_t init(const mockingbird_config_t& cfg) override {
         frame_samples_ = (cfg.sample_rate_hz / 1000u) * cfg.frame_ms;
         max_bytes_     = static_cast<size_t>(frame_samples_) * sizeof(int16_t);
-        return AURIS_OK;
+        return MOCKINGBIRD_OK;
     }
 
-    auris_codec_t codec() const override { return AURIS_CODEC_PCM_S16LE; }
+    mockingbird_codec_t codec() const override { return MOCKINGBIRD_CODEC_PCM_S16LE; }
     size_t max_packet_bytes() const override { return max_bytes_; }
 
     int encode(const int16_t* in_samples, uint32_t n, uint8_t* out_buf,
@@ -38,4 +38,4 @@ std::unique_ptr<Encoder> make_passthrough_encoder() {
     return std::make_unique<PassthroughEncoder>();
 }
 
-} // namespace auris
+} // namespace mockingbird

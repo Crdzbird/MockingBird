@@ -3,7 +3,7 @@
 // slot index and checkout generation rejects stale or double releases.
 #pragma once
 
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -12,7 +12,7 @@
 #include <mutex>
 #include <vector>
 
-namespace auris {
+namespace mockingbird {
 
 class PacketPool {
 public:
@@ -23,7 +23,7 @@ public:
         uint64_t                   pts_us        = 0;
         uint64_t                   capture_ts_us = 0;
         uint32_t                   flags         = 0;
-        auris_codec_t              codec         = AURIS_CODEC_PCM_S16LE;
+        mockingbird_codec_t              codec         = MOCKINGBIRD_CODEC_PCM_S16LE;
         uint32_t                   index         = 0;
         uint32_t                   generation    = 0;
         bool                       in_flight     = false;
@@ -41,8 +41,8 @@ public:
     bool  commit(Slot* slot);
     void  release_unused(Slot* slot);
 
-    bool           drain(auris_packet_t* out);
-    auris_status_t release(const auris_packet_t* pkt);
+    bool           drain(mockingbird_packet_t* out);
+    mockingbird_status_t release(const mockingbird_packet_t* pkt);
 
     size_t ready_size() const;
     size_t pool_capacity() const noexcept { return slots_.size(); }
@@ -60,4 +60,4 @@ private:
     std::deque<Slot*>  ready_;
 };
 
-} // namespace auris
+} // namespace mockingbird

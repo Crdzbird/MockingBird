@@ -2,7 +2,7 @@ plugins {
     id "com.android.library"
 }
 
-group 'io.auris'
+group 'io.mockingbird'
 version '1.0-SNAPSHOT'
 
 allprojects {
@@ -14,7 +14,7 @@ allprojects {
 
 android {
     if (project.android.hasProperty("namespace")) {
-        namespace 'io.auris'
+        namespace 'io.mockingbird'
     }
 
     compileSdk 37
@@ -57,7 +57,7 @@ android {
         }
     }
 
-    // Auris is capture-only: arm64 + x86_64 covers all modern devices and the
+    // Mockingbird is capture-only: arm64 + x86_64 covers all modern devices and the
     // emulator. Drop armeabi-v7a / x86 to keep AAR size down; reintroduce if
     // a 32-bit target is needed.
     defaultConfig {
@@ -70,9 +70,9 @@ android {
 // ---------------------------------------------------------------------------
 // NOTE on the out-of-tree native sources.
 //
-// libauris.so is compiled from C/C++ that lives at the REPO ROOT (src/,
+// libmockingbird.so is compiled from C/C++ that lives at the REPO ROOT (src/,
 // include/, third_party/), pulled in by src/main/cpp/CMakeLists.txt via
-// AURIS_ROOT — one source of truth shared with the top-level CMake build and
+// MOCKINGBIRD_ROOT — one source of truth shared with the top-level CMake build and
 // the iOS/macOS podspecs.
 //
 // You might expect Gradle to miss edits to those root sources (its task input
@@ -86,14 +86,14 @@ android {
 // So the task ALWAYS runs and re-invokes ninja, which recompiles any source
 // whose mtime advanced — including the out-of-tree ones. (Verified: edit a
 // file under src/detect/ then a plain `flutter build apk --debug` produces a
-// new libauris.so, no cache-clear required.)
+// new libmockingbird.so, no cache-clear required.)
 //
 // The one residual hazard is universal to ninja and not specific to the
 // out-of-tree layout: an operation that lands a CHANGED file with an OLDER
 // mtime than its cached object — a `git checkout`/branch switch or a file
 // restore — can make ninja skip recompiling it. After such operations, run
 // `flutter clean` (or delete android/.cxx) once. This is the only known way a
-// stale libauris.so can occur here.
+// stale libmockingbird.so can occur here.
 // ---------------------------------------------------------------------------
 
 kotlin {

@@ -11,7 +11,7 @@
 // over the speech, silent tail.
 
 #include "doctest.h"
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 
 #include <chrono>
 #include <cstdint>
@@ -89,24 +89,24 @@ WavInts16 read_wav_int16(const std::string& path) {
 
 TEST_CASE("Differential: real speech triggers at least one SPEECH_BEGIN") {
     const std::string fixture =
-        std::string(AURIS_TEST_FIXTURE_DIR) + "/hello.wav";
+        std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/hello.wav";
     const auto wav = read_wav_int16(fixture);
     REQUIRE(wav.samples.size() > 0);
     REQUIRE(wav.sample_rate_hz == 16000);
     REQUIRE(wav.channels       == 1);
 
-    auris_config_t cfg{};
-    REQUIRE(auris_config_defaults(&cfg) == AURIS_OK);
-    cfg.backend            = AURIS_BACKEND_HOST_PCM;
-    cfg.codec              = AURIS_CODEC_PCM_S16LE;
+    mockingbird_config_t cfg{};
+    REQUIRE(mockingbird_config_defaults(&cfg) == MOCKINGBIRD_OK);
+    cfg.backend            = MOCKINGBIRD_BACKEND_HOST_PCM;
+    cfg.codec              = MOCKINGBIRD_CODEC_PCM_S16LE;
     cfg.sample_rate_hz     = 16000;
     cfg.frame_ms           = 20;
     cfg.enable_vad         = 1;
     cfg.enable_anomaly     = 0;
     cfg.vad_aggressiveness = 1;        // less aggressive = more accepting
-    auris_engine_t* e = nullptr;
-    REQUIRE(auris_create(&cfg, &e) == AURIS_OK);
-    REQUIRE(auris_start(e) == AURIS_OK);
+    mockingbird_engine_t* e = nullptr;
+    REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
+    REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
 
     constexpr uint32_t kFrameSamples = 320;     // 20 ms @ 16 kHz
     const size_t total_frames = wav.samples.size() / kFrameSamples;
@@ -121,31 +121,31 @@ TEST_CASE("Differential: real speech triggers at least one SPEECH_BEGIN") {
 
     auto drain_events = [&]() {
         while (true) {
-            auris_event_t evt{};
-            const auris_status_t s = auris_poll_event(e, &evt);
-            if (s == AURIS_ERR_QUEUE_EMPTY) return;
-            REQUIRE(s == AURIS_OK);
-            if (evt.type == AURIS_EVT_SPEECH_BEGIN)  ++speech_begin_count;
-            if (evt.type == AURIS_EVT_SPEECH_END)    ++speech_end_count;
-            if (evt.type == AURIS_EVT_SEGMENT_BEGIN) ++segment_begin_cnt;
-            if (evt.type == AURIS_EVT_SEGMENT_END)   ++segment_end_cnt;
+            mockingbird_event_t evt{};
+            const mockingbird_status_t s = mockingbird_poll_event(e, &evt);
+            if (s == MOCKINGBIRD_ERR_QUEUE_EMPTY) return;
+            REQUIRE(s == MOCKINGBIRD_OK);
+            if (evt.type == MOCKINGBIRD_EVT_SPEECH_BEGIN)  ++speech_begin_count;
+            if (evt.type == MOCKINGBIRD_EVT_SPEECH_END)    ++speech_end_count;
+            if (evt.type == MOCKINGBIRD_EVT_SEGMENT_BEGIN) ++segment_begin_cnt;
+            if (evt.type == MOCKINGBIRD_EVT_SEGMENT_END)   ++segment_end_cnt;
         }
     };
     auto drain_packets = [&]() {
         while (true) {
-            auris_packet_t pkt{};
-            const auris_status_t s = auris_drain(e, &pkt);
-            if (s == AURIS_ERR_QUEUE_EMPTY) return;
-            REQUIRE(s == AURIS_OK);
+            mockingbird_packet_t pkt{};
+            const mockingbird_status_t s = mockingbird_drain(e, &pkt);
+            if (s == MOCKINGBIRD_ERR_QUEUE_EMPTY) return;
+            REQUIRE(s == MOCKINGBIRD_OK);
             ++packets_drained;
-            REQUIRE(auris_release(e, &pkt) == AURIS_OK);
+            REQUIRE(mockingbird_release(e, &pkt) == MOCKINGBIRD_OK);
         }
     };
 
     for (size_t i = 0; i < total_frames; ++i) {
         const int16_t* p = wav.samples.data() + i * kFrameSamples;
-        REQUIRE(auris_push_pcm(e, p, kFrameSamples,
-                               static_cast<uint64_t>(i) * 20'000ull) == AURIS_OK);
+        REQUIRE(mockingbird_push_pcm(e, p, kFrameSamples,
+                               static_cast<uint64_t>(i) * 20'000ull) == MOCKINGBIRD_OK);
         if ((i & 0x1Fu) == 0x1F) {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
             drain_events();
@@ -156,12 +156,12 @@ TEST_CASE("Differential: real speech triggers at least one SPEECH_BEGIN") {
     drain_events();
     drain_packets();
 
-    REQUIRE(auris_stop(e) == AURIS_OK);
+    REQUIRE(mockingbird_stop(e) == MOCKINGBIRD_OK);
     drain_events();
 
-    auris_stats_t stats{};
-    REQUIRE(auris_get_stats(e, &stats) == AURIS_OK);
-    auris_destroy(e);
+    mockingbird_stats_t stats{};
+    REQUIRE(mockingbird_get_stats(e, &stats) == MOCKINGBIRD_OK);
+    mockingbird_destroy(e);
 
     INFO("fixture frames=" << total_frames
                            << " speech_begin=" << speech_begin_count

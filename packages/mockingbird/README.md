@@ -4,9 +4,9 @@ Native audio capture and detection for Flutter. Mockingbird listens to the
 microphone (or to PCM you push), optionally denoises it, detects human voice in
 any language and non-speech acoustic events, classifies what it hears, and
 hands you only the audio that matters as encoded packets. Everything runs in
-the Auris C++ engine, reached through `dart:ffi`; there are no platform
+the Mockingbird C++ engine, reached through `dart:ffi`; there are no platform
 channels on the hot path. The Dart API keeps the engine's name as its prefix:
-`AurisEngine`, `AurisConfig`, `AurisEvent`.
+`MockingbirdEngine`, `MockingbirdConfig`, `MockingbirdEvent`.
 
 | Stage | What runs | Notes |
 |---|---|---|
@@ -44,13 +44,13 @@ that only receive pushed PCM need none of it.
 | macOS | 12.0 with CocoaPods, 14.0 with Swift Package Manager |
 | Web | a browser with AudioWorklet and ES modules; no cross-origin isolation needed |
 
-Call `Auris.initialize()` once at startup. It loads the WebAssembly module on
+Call `Mockingbird.initialize()` once at startup. It loads the WebAssembly module on
 the web and returns immediately elsewhere:
 
 ```dart
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Auris.initialize();
+  await Mockingbird.initialize();
   runApp(const MyApp());
 }
 ```
@@ -60,13 +60,13 @@ Future<void> main() async {
 ```dart
 import 'package:mockingbird/mockingbird.dart';
 
-final engine = AurisEngine.create(const AurisConfig())..start();
+final engine = MockingbirdEngine.create(const MockingbirdConfig())..start();
 
 engine.events.listen((event) {
   switch (event) {
-    case AurisSpeechBeginEvent():
+    case MockingbirdSpeechBeginEvent():
       print('voice');
-    case AurisSoundClassEvent(:final category, :final confidence):
+    case MockingbirdSoundClassEvent(:final category, :final confidence):
       print('$category ${(confidence * 100).round()}%');
     default:
       break;
@@ -81,20 +81,20 @@ The default config captures from the microphone with fast VAD and the anomaly
 gate. To turn everything on with one dial:
 
 ```dart
-final engine = AurisEngine.create(
-  AurisConfig.sensitive(
+final engine = MockingbirdEngine.create(
+  MockingbirdConfig.sensitive(
     0.6,
-    neuralVadModelPath: await AurisModels.neuralVadPath(),
-    soundClassModelPath: await AurisModels.soundClassPath(),
+    neuralVadModelPath: await MockingbirdModels.neuralVadPath(),
+    soundClassModelPath: await MockingbirdModels.soundClassPath(),
     denoise: true,
-    encoder: const AurisEncoderConfig.opus(),
-    performance: const AurisPerformanceConfig.mobile(),
+    encoder: const MockingbirdEncoderConfig.opus(),
+    performance: const MockingbirdPerformanceConfig.mobile(),
   ),
 )..start();
 ```
 
-`AurisConfig.sensitive` maps one value in `0..1` onto every detector's
-threshold and selects the neural VAD. `AurisModels` copies the bundled Silero
+`MockingbirdConfig.sensitive` maps one value in `0..1` onto every detector's
+threshold and selects the neural VAD. `MockingbirdModels` copies the bundled Silero
 and YAMNet models to an app-writable path once and returns their paths.
 
 ## Configuration
@@ -104,30 +104,30 @@ only what you change.
 
 | Group | Type | Knobs |
 |---|---|---|
-| `vad` | `AurisVadConfig` | tier (`fast` or `neural`), aggressiveness, neural threshold, hangover, model path |
-| `anomaly` | `AurisAnomalyConfig` | z-score triggers, background window |
-| `soundClass` | `AurisSoundClassConfig` | threshold, cadence, model path |
-| `segments` | `AurisSegmentConfig` | pre-roll, post-roll, maximum length |
-| `encoder` | `AurisEncoderConfig` | `pcm16` or `opus` (`AurisEncoderConfig.opus()`), bitrate, VBR, complexity |
-| `queues` | `AurisQueueConfig` | ring sizes and the ungated PCM tap |
-| `performance` | `AurisPerformanceConfig` | silence gate, adaptive degradation, wake batching (`AurisPerformanceConfig.mobile()`) |
+| `vad` | `MockingbirdVadConfig` | tier (`fast` or `neural`), aggressiveness, neural threshold, hangover, model path |
+| `anomaly` | `MockingbirdAnomalyConfig` | z-score triggers, background window |
+| `soundClass` | `MockingbirdSoundClassConfig` | threshold, cadence, model path |
+| `segments` | `MockingbirdSegmentConfig` | pre-roll, post-roll, maximum length |
+| `encoder` | `MockingbirdEncoderConfig` | `pcm16` or `opus` (`MockingbirdEncoderConfig.opus()`), bitrate, VBR, complexity |
+| `queues` | `MockingbirdQueueConfig` | ring sizes and the ungated PCM tap |
+| `performance` | `MockingbirdPerformanceConfig` | silence gate, adaptive degradation, wake batching (`MockingbirdPerformanceConfig.mobile()`) |
 
 ## Streams
 
 | Stream | Yields |
 |---|---|
-| `engine.events` | `AurisEvent`, a sealed hierarchy: `AurisSpeechBeginEvent`, `AurisSpeechEndEvent`, `AurisAnomalyEvent`, `AurisSegmentBeginEvent`, `AurisSegmentEndEvent`, `AurisSoundClassEvent`, `AurisOverrunEvent`, `AurisBackendErrorEvent`, `AurisDegradationEvent` |
-| `engine.packets` | `AurisPacket`: encoded audio in a `Uint8List` you own, with `isPreroll`, `isPostroll`, `isKeyframe`, `isLast` |
-| `engine.stats` | `AurisStats`: counters, input level in dBFS, queue fill, and `worker` health |
+| `engine.events` | `MockingbirdEvent`, a sealed hierarchy: `MockingbirdSpeechBeginEvent`, `MockingbirdSpeechEndEvent`, `MockingbirdAnomalyEvent`, `MockingbirdSegmentBeginEvent`, `MockingbirdSegmentEndEvent`, `MockingbirdSoundClassEvent`, `MockingbirdOverrunEvent`, `MockingbirdBackendErrorEvent`, `MockingbirdDegradationEvent` |
+| `engine.packets` | `MockingbirdPacket`: encoded audio in a `Uint8List` you own, with `isPreroll`, `isPostroll`, `isKeyframe`, `isLast` |
+| `engine.stats` | `MockingbirdStats`: counters, input level in dBFS, queue fill, and `worker` health |
 
-`AurisEvent` is sealed, so a `switch` over it is exhaustive and each subtype
-carries a typed payload: `AurisSoundClassEvent.category`,
-`AurisAnomalyEvent.reasons`, `AurisDegradationEvent.level`.
+`MockingbirdEvent` is sealed, so a `switch` over it is exhaustive and each subtype
+carries a typed payload: `MockingbirdSoundClassEvent.category`,
+`MockingbirdAnomalyEvent.reasons`, `MockingbirdDegradationEvent.level`.
 
 Events are polled off the engine's own queues on a timer (50 ms by default)
 rather than delivered through a native callback, which keeps every object on
 the Dart side engine-owned and copy-safe. A native error inside a poll surfaces
-as an `AurisException` on `engine.events`.
+as a `MockingbirdException` on `engine.events`.
 
 ```dart
 engine.packets.listen((p) => socket.add(p.data));
@@ -136,7 +136,7 @@ engine.packets.listen((p) => socket.add(p.data));
 ## Retune without restarting
 
 ```dart
-engine.updateConfig(AurisConfig.sensitive(0.8));
+engine.updateConfig(MockingbirdConfig.sensitive(0.8));
 ```
 
 Thresholds change on the running engine; detector state survives, so an
@@ -146,8 +146,8 @@ codec, queue sizes) must match the config the engine was created with.
 ## Feed your own audio
 
 ```dart
-final engine = AurisEngine.create(
-  const AurisConfig(backend: .hostPcm),
+final engine = MockingbirdEngine.create(
+  const MockingbirdConfig(backend: .hostPcm),
 )..start();
 engine.pushPcm(samples, captureTsUs: ts); // Int16List, mono, at sampleRateHz
 ```
@@ -159,15 +159,15 @@ always gives the same packets and events.
 ## Sound classes
 
 ```dart
-final labels = await AurisModels.yamnetLabels(); // 521 AudioSet names
+final labels = await MockingbirdModels.yamnetLabels(); // 521 AudioSet names
 engine.events.listen((e) {
-  if (e case AurisSoundClassEvent(:final classId, :final isHumanVoice)) {
+  if (e case MockingbirdSoundClassEvent(:final classId, :final isHumanVoice)) {
     print('${labels[classId]} voice=$isHumanVoice');
   }
 });
 ```
 
-`AurisSoundCategory.of(classId)` folds the 521 classes into speech,
+`MockingbirdSoundCategory.of(classId)` folds the 521 classes into speech,
 humanOther, animal, music, nature and other. AudioSet is English-biased;
 non-English speech often lands on "Conversation" or "Narration", and both map
 to speech.
@@ -193,7 +193,7 @@ about scope; the second is measured.
 | License | MIT | MIT | MIT | Apache-2.0 | LGPL-3.0 | BSD-3-Clause |
 
 sherpa_onnx also ships speech recognition, synthesis, keyword spotting and
-speaker identification, which Auris does not attempt.
+speaker identification, which Mockingbird does not attempt.
 
 ### Measured
 
@@ -247,7 +247,7 @@ Reading the numbers fairly:
 - The mockingbird rows include the whole pipeline around the detector: segmentation
   with pre-roll, packetisation, the event queue and the Dart poll loop. The
   sherpa_onnx VAD row is the bare detector with no capture or packet path.
-- The noise suppression rows run different RNNoise builds. Auris compiles the
+- The noise suppression rows run different RNNoise builds. Mockingbird compiles the
   0.2 full model and bridges 16 kHz to 48 kHz and back; flutter_nnnoiseless is
   a Rust port with the smaller classic model.
 - CED tiny is a smaller network than YAMNet with its own label set; the rows
@@ -281,10 +281,10 @@ first run.
 - The silence gate (`silenceGateDbfs`, default -60) skips RNNoise and YAMNet
   while the input is quiet; VAD and the anomaly gate stay live. A quiet room
   with every feature on costs about 0.4% of a desktop core.
-- `AurisPerformanceConfig.mobile()` turns on adaptive degradation, which steps
+- `MockingbirdPerformanceConfig.mobile()` turns on adaptive degradation, which steps
   YAMNet's cadence down under load and back up when calm, and batches worker
   wake-ups to cut thread switches.
-- `AurisSoundClassConfig.intervalMs` is the biggest single lever: 1000 ms is
+- `MockingbirdSoundClassConfig.intervalMs` is the biggest single lever: 1000 ms is
   the default, 500 ms roughly doubles the classifier's cost.
 - `engine.stats` reports `worker.busyPpm`, wake-ups and the peak frame time,
   so you can see the cost on the device you ship to.
@@ -298,7 +298,7 @@ The web build is the same engine compiled to WebAssembly, running
 single-threaded in the page and fed by an AudioWorklet. Fast VAD, the anomaly
 gate, RNNoise, Opus and every API above work; the neural tier and YAMNet are
 rejected with `unsupported` because ONNX Runtime is not part of the build, and
-`AurisModels` throws since there is no file system. The three assets add about
+`MockingbirdModels` throws since there is no file system. The three assets add about
 6 MB to the app. See [mockingbird_web](https://pub.dev/packages/mockingbird_web) for the
 details and for hosting the files on a CDN.
 
@@ -312,7 +312,7 @@ detectors fall back to the fast tier.
 
 ## Engine
 
-The engine is the Auris C++ library, with a pure C ABI, bindings for Go and
+The engine is the Mockingbird C++ library, with a pure C ABI, bindings for Go and
 Python, and a conformance harness that checks the three language surfaces
 produce byte-identical output. Its repository has the build, the tests, the
 benchmark and the design notes. Everything is MIT licensed; the vendored

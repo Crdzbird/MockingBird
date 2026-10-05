@@ -7,7 +7,7 @@
 
 #include <algorithm>
 
-namespace auris {
+namespace mockingbird {
 
 void Segmenter::on_frame(const int16_t* samples, uint64_t now_ts, const DetectionPair& d,
                          uint32_t hangover_frames) {
@@ -33,11 +33,11 @@ void Segmenter::on_active(const int16_t* samples, uint64_t now_ts, const Detecti
     }
     if (d.vad_on && d.vad.active && !vad_was_active_) {
         had_speech_ = true;
-        emit_event(e_, make_event(AURIS_EVT_SPEECH_BEGIN, open_id_, now_ts, 0,
+        emit_event(e_, make_event(MOCKINGBIRD_EVT_SPEECH_BEGIN, open_id_, now_ts, 0,
                                   d.vad.confidence));
     }
     if (d.anomaly_on && d.anomaly.active && !ano_was_active_) {
-        emit_event(e_, make_event(AURIS_EVT_ANOMALY, open_id_, now_ts,
+        emit_event(e_, make_event(MOCKINGBIRD_EVT_ANOMALY, open_id_, now_ts,
                                   d.anomaly.reason_mask, d.anomaly.confidence));
     }
     emit(samples, now_ts, 0u);
@@ -45,7 +45,7 @@ void Segmenter::on_active(const int16_t* samples, uint64_t now_ts, const Detecti
 
 void Segmenter::on_trailing_silence(const int16_t* samples, uint64_t now_ts,
                                     uint32_t hangover_frames) {
-    emit(samples, now_ts, AURIS_PKT_FLAG_POSTROLL);
+    emit(samples, now_ts, MOCKINGBIRD_PKT_FLAG_POSTROLL);
     ++silence_frames_;
     if (silence_frames_ < hangover_frames) return;
     if (had_speech_) emit_speech_end(now_ts);
@@ -55,4 +55,4 @@ void Segmenter::on_trailing_silence(const int16_t* samples, uint64_t now_ts,
     silence_frames_ = 0;
 }
 
-} // namespace auris
+} // namespace mockingbird

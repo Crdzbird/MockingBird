@@ -1,6 +1,6 @@
 #
 # mockingbird_macos podspec. Mirror of mockingbird_ios; same prepare_command rsync of
-# libauris's C/C++ tree, same source globs. Differences:
+# libmockingbird's C/C++ tree, same source globs. Differences:
 #   - dependency FlutterMacOS, not Flutter
 #   - platform osx, not ios
 #   - no AVFoundation (macOS Core Audio is plain C; AVAudioSession is iOS-only)
@@ -11,28 +11,28 @@
 Pod::Spec.new do |s|
   s.name             = 'mockingbird_macos'
   s.version          = '0.1.0'
-  s.summary          = 'macOS bridge for the Auris audio engine.'
+  s.summary          = 'macOS bridge for the Mockingbird audio engine.'
   s.description      = <<-DESC
-  macOS implementation of the auris plugin. Compiles libauris's C ABI core
+  macOS implementation of the mockingbird plugin. Compiles libmockingbird's C ABI core
   (capture + detection + packetization) inline so the host app can call the
   C symbols directly via dart:ffi.
                        DESC
-  s.homepage         = 'https://github.com/auris'
+  s.homepage         = 'https://github.com/mockingbird'
   s.license          = { :type => 'MIT', :file => '../LICENSE' }
-  s.author           = { 'Auris' => 'noreply@example.com' }
+  s.author           = { 'Mockingbird' => 'noreply@example.com' }
   s.source           = { :path => '.' }
 
   s.prepare_command = <<-CMD
     set -euo pipefail
     rm -rf Sources
     mkdir -p Sources/include Sources/src Sources/third_party
-    cp -R mockingbird_macos/Sources/auris_native/include/auris        Sources/include/
-    cp -R mockingbird_macos/Sources/auris_native/src/                  Sources/src/auris/
-    cp -R mockingbird_macos/Sources/auris_native/third_party/miniaudio Sources/third_party/
-    cp -R mockingbird_macos/Sources/auris_native/third_party/libfvad   Sources/third_party/
-    cp -R mockingbird_macos/Sources/auris_native/third_party/pffft     Sources/third_party/
-    cp -R mockingbird_macos/Sources/auris_native/third_party/rnnoise   Sources/third_party/
-    cp -R mockingbird_macos/Sources/auris_native/third_party/opus      Sources/third_party/
+    cp -R mockingbird_macos/Sources/mockingbird_native/include/mockingbird        Sources/include/
+    cp -R mockingbird_macos/Sources/mockingbird_native/src/                  Sources/src/mockingbird/
+    cp -R mockingbird_macos/Sources/mockingbird_native/third_party/miniaudio Sources/third_party/
+    cp -R mockingbird_macos/Sources/mockingbird_native/third_party/libfvad   Sources/third_party/
+    cp -R mockingbird_macos/Sources/mockingbird_native/third_party/pffft     Sources/third_party/
+    cp -R mockingbird_macos/Sources/mockingbird_native/third_party/rnnoise   Sources/third_party/
+    cp -R mockingbird_macos/Sources/mockingbird_native/third_party/opus      Sources/third_party/
     rm -rf Sources/third_party/opus/celt/{x86,arm,tests,dump_modes}
     rm -rf Sources/third_party/opus/silk/{x86,arm,mips,fixed,tests}
     rm -rf Sources/third_party/opus/silk/float/x86
@@ -48,14 +48,14 @@ Pod::Spec.new do |s|
     # // VERIFY  miniaudio uses CoreAudio (plain C) on macOS, so the .m
     # rename is not strictly required. Keeping it symmetric with iOS avoids
     # platform-specific branching in shared infra.
-    mv Sources/src/auris/capture/miniaudio_impl.c \
-       Sources/src/auris/capture/miniaudio_impl.m
+    mv Sources/src/mockingbird/capture/miniaudio_impl.c \
+       Sources/src/mockingbird/capture/miniaudio_impl.m
   CMD
 
   s.source_files = [
     'mockingbird_macos/Sources/mockingbird_macos/**/*.swift',
-    'Sources/include/auris/*.h',
-    'Sources/src/auris/**/*.{c,cpp,m,mm,h,hpp}',
+    'Sources/include/mockingbird/*.h',
+    'Sources/src/mockingbird/**/*.{c,cpp,m,mm,h,hpp}',
     'Sources/third_party/miniaudio/miniaudio.h',
     'Sources/third_party/libfvad/include/*.h',
     'Sources/third_party/libfvad/src/**/*.{c,h}',
@@ -68,7 +68,7 @@ Pod::Spec.new do |s|
     'Sources/third_party/opus/silk/float/*.{c,h}',
     'Sources/third_party/opus/src/*.{c,h}',
   ]
-  s.public_header_files = 'Sources/include/auris/*.h'
+  s.public_header_files = 'Sources/include/mockingbird/*.h'
 
   s.dependency 'FlutterMacOS'
   s.dependency 'onnxruntime-c', '~> 1.20'
@@ -87,11 +87,11 @@ Pod::Spec.new do |s|
     'CLANG_CXX_LIBRARY'           => 'libc++',
     'GCC_C_LANGUAGE_STANDARD'     => 'c11',
     'GCC_PREPROCESSOR_DEFINITIONS' =>
-        'AURIS_BUILDING=1 '\
-        'AURIS_HAVE_OPUS=1 '\
-        'AURIS_HAVE_NEURAL_VAD=1 '\
-        'AURIS_HAVE_SOUND_CLASS=1 '\
-        'AURIS_HAVE_RNNOISE=1 '\
+        'MOCKINGBIRD_BUILDING=1 '\
+        'MOCKINGBIRD_HAVE_OPUS=1 '\
+        'MOCKINGBIRD_HAVE_NEURAL_VAD=1 '\
+        'MOCKINGBIRD_HAVE_SOUND_CLASS=1 '\
+        'MOCKINGBIRD_HAVE_RNNOISE=1 '\
         'OPUS_BUILD=1 '\
         'HAVE_LRINTF=1 '\
         'HAVE_LRINT=1 '\
@@ -116,7 +116,7 @@ Pod::Spec.new do |s|
       '"$(PODS_TARGET_SRCROOT)/Sources/third_party/opus/silk"',
       '"$(PODS_TARGET_SRCROOT)/Sources/third_party/opus/silk/float"',
       '"$(PODS_TARGET_SRCROOT)/Sources/third_party/opus/src"',
-      '"$(PODS_TARGET_SRCROOT)/Sources/src/auris"',
+      '"$(PODS_TARGET_SRCROOT)/Sources/src/mockingbird"',
     ].join(' '),
     'OTHER_LDFLAGS' => '-Wl,-undefined,dynamic_lookup',
   }
@@ -124,8 +124,8 @@ Pod::Spec.new do |s|
   # dart:ffi resolves the C ABI through DynamicLibrary.process(), which searches
   # the HOST EXECUTABLE's dynamic symbol table. The C ABI is referenced only at
   # runtime (from Dart), so the linker would otherwise keep none of it and the
-  # lookup fails with "Failed to lookup symbol 'auris_*': symbol not found".
-  # AurisPlugin.register() (always called by Flutter) takes the address of the
+  # lookup fails with "Failed to lookup symbol 'mockingbird_*': symbol not found".
+  # MockingbirdPlugin.register() (always called by Flutter) takes the address of the
   # ABI entry points, which keeps their whole transitive closure in the binary;
   # -export_dynamic then publishes those default-visibility symbols into the
   # dynamic symbol table. Applied to the CONSUMER (app) target.

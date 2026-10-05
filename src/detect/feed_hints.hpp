@@ -4,7 +4,7 @@
 
 #include <cstdint>
 
-namespace auris {
+namespace mockingbird {
 
 struct FeedHints {
     bool     quiet              = false;
@@ -12,4 +12,4 @@ struct FeedHints {
     bool     inhibit            = false;
 };
 
-} // namespace auris
+} // namespace mockingbird

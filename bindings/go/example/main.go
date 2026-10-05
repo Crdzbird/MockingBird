@@ -1,4 +1,4 @@
-// Command auris-demo runs the Auris engine on the microphone or a WAV file
+// Command mockingbird-demo runs the Mockingbird engine on the microphone or a WAV file
 // with any combination of detectors, denoise and codec, prints detections,
 // and reports the engine's counters.
 //
@@ -13,7 +13,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/auris-audio/auris"
+	"github.com/Crdzbird/MockingBird/bindings/go"
 )
 
 func main() {
@@ -33,8 +33,8 @@ func main() {
 	flag.Parse()
 
 	cfg := f.config()
-	fmt.Printf("Auris %s — %s\n", auris.Version(), describe(cfg, f.preset))
-	e, err := auris.New(cfg)
+	fmt.Printf("Mockingbird %s — %s\n", mockingbird.Version(), describe(cfg, f.preset))
+	e, err := mockingbird.New(cfg)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "create:", err)
 		os.Exit(1)

@@ -6,7 +6,7 @@
 #include <cstring>
 #include <vector>
 
-namespace auris {
+namespace mockingbird {
 
 class PrerollRing {
 public:
@@ -61,4 +61,4 @@ private:
     size_t             filled_        = 0;
 };
 
-} // namespace auris
+} // namespace mockingbird

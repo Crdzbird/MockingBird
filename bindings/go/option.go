@@ -1,4 +1,4 @@
-package auris
+package mockingbird
 
 // Option adjusts a Config built by Sensitive.
 type Option func(*Config)

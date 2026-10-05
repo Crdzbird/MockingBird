@@ -9,7 +9,7 @@ final class WebCaptureWorklet {
   /// Creates the helper.
   const WebCaptureWorklet();
 
-  static const _file = 'auris_capture_worklet.js';
+  static const _file = 'mockingbird_capture_worklet.js';
   static const _permissionDenied = -8;
   static const _backendError = -4;
   static const _backendErrorType = 7;
@@ -31,10 +31,10 @@ final class WebCaptureWorklet {
   }
 
   /// The backend-error event the platform reports when capture fails.
-  AurisNativeEvent errorEvent(Object error) {
+  MockingbirdNativeEvent errorEvent(Object error) {
     final denied = error.toString().contains('NotAllowed');
     final status = denied ? _permissionDenied : _backendError;
-    return AurisNativeEvent(
+    return MockingbirdNativeEvent(
       type: _backendErrorType,
       segmentId: 0,
       timestampUs: 0,

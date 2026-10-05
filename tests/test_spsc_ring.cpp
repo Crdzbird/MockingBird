@@ -11,17 +11,17 @@
 #include <thread>
 #include <vector>
 
-using auris::SpscRing;
+using mockingbird::SpscRing;
 
 TEST_CASE("round_up_pow2 covers boundary cases") {
-    CHECK(auris::round_up_pow2(0)    == 1);
-    CHECK(auris::round_up_pow2(1)    == 1);
-    CHECK(auris::round_up_pow2(2)    == 2);
-    CHECK(auris::round_up_pow2(3)    == 4);
-    CHECK(auris::round_up_pow2(5)    == 8);
-    CHECK(auris::round_up_pow2(1000) == 1024);
-    CHECK(auris::round_up_pow2(1024) == 1024);
-    CHECK(auris::round_up_pow2(1025) == 2048);
+    CHECK(mockingbird::round_up_pow2(0)    == 1);
+    CHECK(mockingbird::round_up_pow2(1)    == 1);
+    CHECK(mockingbird::round_up_pow2(2)    == 2);
+    CHECK(mockingbird::round_up_pow2(3)    == 4);
+    CHECK(mockingbird::round_up_pow2(5)    == 8);
+    CHECK(mockingbird::round_up_pow2(1000) == 1024);
+    CHECK(mockingbird::round_up_pow2(1024) == 1024);
+    CHECK(mockingbird::round_up_pow2(1025) == 2048);
 }
 
 TEST_CASE("SpscRing rounds capacity up to power of two") {

@@ -5,7 +5,7 @@
 
 #include <cstdint>
 
-namespace auris {
+namespace mockingbird {
 
 class MachTimebase {
 public:
@@ -27,4 +27,4 @@ private:
     bool                      ready_ = false;
 };
 
-} // namespace auris
+} // namespace mockingbird

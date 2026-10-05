@@ -1,7 +1,7 @@
 // The outcome of feeding one frame to the sound classifier.
 #pragma once
 
-namespace auris {
+namespace mockingbird {
 
 struct ClassificationResult {
     bool  ready      = false;
@@ -11,4 +11,4 @@ struct ClassificationResult {
     bool  skipped    = false;
 };
 
-} // namespace auris
+} // namespace mockingbird

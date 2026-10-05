@@ -1,6 +1,6 @@
-// Command conformance is the Go peer of the Auris cross-binding conformance
+// Command conformance is the Go peer of the Mockingbird cross-binding conformance
 // harness. It exchanges deterministic audio with the Dart peer over TCP and
-// proves that BOTH bindings, driving the same native libauris, turn identical
+// proves that BOTH bindings, driving the same native libmockingbird, turn identical
 // input PCM into byte-identical packets, events, and stats — i.e. quality and
 // information are the same and the two language surfaces stay in sync.
 //
@@ -29,7 +29,7 @@ import (
 	"net"
 	"os"
 
-	"github.com/auris-audio/auris"
+	"github.com/Crdzbird/MockingBird/bindings/go"
 )
 
 const (
@@ -109,15 +109,15 @@ func (a *hasher) u64(v uint64) {
 }
 
 func process(pcm []int16) (result, error) {
-	cfg := auris.DefaultConfig()
-	cfg.Backend = auris.BackendHostPCM
-	cfg.Encoder = auris.OpusEncoder()
-	cfg.VAD.Tier = auris.VadFast
+	cfg := mockingbird.DefaultConfig()
+	cfg.Backend = mockingbird.BackendHostPCM
+	cfg.Encoder = mockingbird.OpusEncoder()
+	cfg.VAD.Tier = mockingbird.VadFast
 	cfg.VAD.Aggressiveness = 2
 	cfg.Queues.PCMRingFrames = 1 << 17
 	cfg.Queues.PacketQueueCapacity = 4096
 
-	e, err := auris.New(cfg)
+	e, err := mockingbird.New(cfg)
 	if err != nil {
 		return result{}, err
 	}
@@ -126,8 +126,8 @@ func process(pcm []int16) (result, error) {
 		return result{}, err
 	}
 
-	var packets []auris.Packet
-	var events []auris.Event
+	var packets []mockingbird.Packet
+	var events []mockingbird.Event
 	collect := func() {
 		for {
 			select {

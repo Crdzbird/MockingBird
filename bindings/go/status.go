@@ -1,7 +1,7 @@
-package auris
+package mockingbird
 
 /*
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 */
 import "C"
 
@@ -23,6 +23,6 @@ const (
 )
 
 // String returns the library's own name for the status.
-func (s Status) String() string { return C.GoString(C.auris_status_str(C.int(s))) }
+func (s Status) String() string { return C.GoString(C.mockingbird_status_str(C.int(s))) }
 
 func (s Status) err(op string) error { return &StatusError{Op: op, Status: s} }

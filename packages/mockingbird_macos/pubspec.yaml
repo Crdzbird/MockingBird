@@ -1,6 +1,6 @@
 name: mockingbird_macos
 description: >-
-  The macOS implementation of the mockingbird plugin: the Auris engine built from source with Core Audio capture and ONNX Runtime detectors.
+  The macOS implementation of the mockingbird plugin: the Mockingbird engine built from source with Core Audio capture and ONNX Runtime detectors.
 version: 0.1.0
 repository: https://github.com/Crdzbird/MockingBird/tree/main/packages/mockingbird_macos
 issue_tracker: https://github.com/Crdzbird/MockingBird/issues
@@ -20,8 +20,8 @@ flutter:
     implements: mockingbird
     platforms:
       macos:
-        pluginClass: AurisPlugin
-        dartPluginClass: AurisMacOS
+        pluginClass: MockingbirdPlugin
+        dartPluginClass: MockingbirdMacOS
 
 dependencies:
   flutter:

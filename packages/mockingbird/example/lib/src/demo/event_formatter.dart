@@ -12,8 +12,8 @@ final class EventFormatter {
       : 'class $classId';
 
   /// One console-style line for [event].
-  String format(AurisEvent event) => switch (event) {
-    AurisSoundClassEvent(
+  String format(MockingbirdEvent event) => switch (event) {
+    MockingbirdSoundClassEvent(
       :final timestampUs,
       :final classId,
       :final category,

@@ -8,4 +8,4 @@ First release.
 - One sensitivity dial, live retuning, silence gate, adaptive degradation, worker health stats.
 - Events, packets and stats as Dart streams; no platform channels.
 - Web support through `mockingbird_web`: the engine as WebAssembly with Web Audio capture.
-- `Auris.initialize()` to call once at startup.
+- `Mockingbird.initialize()` to call once at startup.

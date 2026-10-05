@@ -2,13 +2,13 @@
 // sample rate in; the speech probability and the next state out.
 #include "detect/neural_vad_detector.hpp"
 
-#ifdef AURIS_HAVE_NEURAL_VAD
+#ifdef MOCKINGBIRD_HAVE_NEURAL_VAD
 
 #include <algorithm>
 #include <array>
 #include <cstring>
 
-namespace auris {
+namespace mockingbird {
 
 bool NeuralVadDetector::decide(float p_speech) {
     if (!cached_active_) {
@@ -65,6 +65,6 @@ bool NeuralVadDetector::run_inference(const float* window) {
     }
 }
 
-} // namespace auris
+} // namespace mockingbird
 
 #endif

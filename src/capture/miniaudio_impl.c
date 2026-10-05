@@ -1,5 +1,5 @@
 /* The single translation unit that compiles miniaudio's implementation.
- * Auris only captures, so playback-side subsystems are compiled out. */
+ * Mockingbird only captures, so playback-side subsystems are compiled out. */
 #define MA_NO_DECODING
 #define MA_NO_ENCODING
 #define MA_NO_GENERATION

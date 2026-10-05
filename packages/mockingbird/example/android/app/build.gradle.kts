@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    namespace = "io.auris.example"
+    namespace = "io.mockingbird.example"
     compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
@@ -27,7 +27,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "io.auris.example"
+        applicationId = "io.mockingbird.example"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

@@ -8,7 +8,7 @@ import time
 import wave
 from pathlib import Path
 
-import auris
+import mockingbird
 from example_config import FIXTURES
 
 
@@ -20,24 +20,24 @@ def load_labels() -> list[str]:
     return [line.split(" ", 1)[-1] for line in p.read_text().splitlines() if line.strip()]
 
 
-def print_event(ev: auris.Event, labels: list[str]) -> None:
+def print_event(ev: mockingbird.Event, labels: list[str]) -> None:
     match ev:
-        case auris.Event(type=auris.EventType.SPEECH_BEGIN):
+        case mockingbird.Event(type=mockingbird.EventType.SPEECH_BEGIN):
             print("voice   ▶ speech begin")
-        case auris.Event(type=auris.EventType.SPEECH_END):
+        case mockingbird.Event(type=mockingbird.EventType.SPEECH_END):
             print("voice   ■ speech end")
-        case auris.Event(type=auris.EventType.ANOMALY, anomaly_reasons=why, confidence=c):
+        case mockingbird.Event(type=mockingbird.EventType.ANOMALY, anomaly_reasons=why, confidence=c):
             print(f"anomaly   {why!s} conf={c:.2f}")
-        case auris.Event(type=auris.EventType.SOUND_CLASS, sound_class=cls, category=cat):
+        case mockingbird.Event(type=mockingbird.EventType.SOUND_CLASS, sound_class=cls, category=cat):
             name = f" {labels[cls]}" if 0 <= cls < len(labels) else ""
             print(f"sound   [{cat}]{name} (class {cls}, conf {ev.confidence:.2f})")
-        case auris.Event(type=auris.EventType.DEGRADATION, degradation_level=lvl):
+        case mockingbird.Event(type=mockingbird.EventType.DEGRADATION, degradation_level=lvl):
             print(f"engine  degradation level {lvl} (worker {ev.busy_fraction:.0%} busy)")
-        case auris.Event(type=auris.EventType.BACKEND_ERROR):
+        case mockingbird.Event(type=mockingbird.EventType.BACKEND_ERROR):
             print(f"backend error: {ev.backend_error}", file=sys.stderr)
 
 
-def drain(engine: auris.Engine, labels: list[str]) -> tuple[int, int, int]:
+def drain(engine: mockingbird.Engine, labels: list[str]) -> tuple[int, int, int]:
     """Deliver queued events and count packets, bytes and tapped samples."""
     packets = engine.drain_packets()
     for ev in engine.poll_events():
@@ -46,7 +46,7 @@ def drain(engine: auris.Engine, labels: list[str]) -> tuple[int, int, int]:
     return len(packets), sum(len(p.data) for p in packets), tapped
 
 
-def report(engine: auris.Engine, packets: int, nbytes: int, tapped: int) -> None:
+def report(engine: mockingbird.Engine, packets: int, nbytes: int, tapped: int) -> None:
     st, w = engine.stats(), engine.stats().worker
     print(
         f"\n── summary ──\n"
@@ -65,7 +65,7 @@ def report(engine: auris.Engine, packets: int, nbytes: int, tapped: int) -> None
     )
 
 
-def run_file(engine: auris.Engine, path: str, labels: list[str]) -> None:
+def run_file(engine: mockingbird.Engine, path: str, labels: list[str]) -> None:
     with wave.open(path) as w:
         if w.getnchannels() != 1 or w.getsampwidth() != 2:
             sys.exit("need 16-bit mono WAV")
@@ -86,7 +86,7 @@ def run_file(engine: auris.Engine, path: str, labels: list[str]) -> None:
     report(engine, *totals)
 
 
-def run_mic(engine: auris.Engine, seconds: int, labels: list[str]) -> None:
+def run_mic(engine: mockingbird.Engine, seconds: int, labels: list[str]) -> None:
     print(f"listening on the default mic for {seconds}s — Ctrl-C to stop early")
     totals = [0, 0, 0]
     deadline = time.monotonic() + seconds

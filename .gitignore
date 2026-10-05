@@ -45,8 +45,8 @@ pubspec.lock
 **/*.moved-aside
 
 # Plugin C/C++ source mirrors recreated by the podspec prepare_command
-/packages/auris_ios/ios/Sources/
-/packages/auris_macos/macos/Sources/
+/packages/mockingbird_ios/ios/Sources/
+/packages/mockingbird_macos/macos/Sources/
 
 # ───────────────────────────── Android / Gradle ─────────────────────────
 **/.gradle/
@@ -69,8 +69,8 @@ pubspec.lock
 
 # Plugin packages are always consumed as SPM dependencies, so their own
 # Package.resolved is unused (the consuming app's is what pins versions).
-/packages/auris_ios/ios/auris_ios/Package.resolved
-/packages/auris_macos/macos/auris_macos/Package.resolved
+/packages/mockingbird_ios/ios/mockingbird_ios/Package.resolved
+/packages/mockingbird_macos/macos/mockingbird_macos/Package.resolved
 
 # `build` may be a symlink to a configured tree (build/ alone only matches a directory)
 /build

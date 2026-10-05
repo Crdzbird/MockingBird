@@ -8,13 +8,13 @@
 
 #include <cstdint>
 
-struct auris_engine;
+struct mockingbird_engine;
 
-namespace auris {
+namespace mockingbird {
 
 class Segmenter {
 public:
-    void init(auris_engine* e, uint32_t frame_samples);
+    void init(mockingbird_engine* e, uint32_t frame_samples);
 
     void on_frame(const int16_t* samples, uint64_t now_ts, const DetectionPair& d,
                   uint32_t hangover_frames);
@@ -32,7 +32,7 @@ private:
     void on_trailing_silence(const int16_t* samples, uint64_t now_ts, uint32_t hangover_frames);
     void emit_speech_end(uint64_t now_ts);
 
-    auris_engine* e_ = nullptr;
+    mockingbird_engine* e_ = nullptr;
     PacketEmitter emitter_;
     PrerollRing   preroll_;
 
@@ -46,4 +46,4 @@ private:
     uint32_t silence_frames_ = 0;
 };
 
-} // namespace auris
+} // namespace mockingbird

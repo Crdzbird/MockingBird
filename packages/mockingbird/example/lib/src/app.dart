@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:mockingbird_example/src/demo/demo_page.dart';
 
-/// The Auris demo: start the microphone, pick a preset, watch detections.
-class AurisDemoApp extends StatelessWidget {
-  const AurisDemoApp({super.key});
+/// The Mockingbird demo: start the microphone, pick a preset, watch detections.
+class MockingbirdDemoApp extends StatelessWidget {
+  const MockingbirdDemoApp({super.key});
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'Auris Demo',
+    title: 'Mockingbird Demo',
     theme: ThemeData(
       colorSchemeSeed: Colors.indigo,
       useMaterial3: true,

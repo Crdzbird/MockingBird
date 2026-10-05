@@ -1,4 +1,4 @@
-package auris
+package mockingbird
 
 // VadConfig drives voice-activity detection: the language-agnostic
 // EventSpeechBegin and EventSpeechEnd events.

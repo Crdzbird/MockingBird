@@ -1,7 +1,7 @@
-package auris
+package mockingbird
 
 /*
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 */
 import "C"
 
@@ -14,7 +14,7 @@ import (
 // Engine is one native pipeline. Control methods are safe from any goroutine.
 type Engine struct {
 	mu      sync.RWMutex
-	c       *C.auris_engine_t
+	c       *C.mockingbird_engine_t
 	running bool
 	done    chan struct{}
 	wg      sync.WaitGroup
@@ -31,9 +31,9 @@ type Engine struct {
 func New(cfg Config) (*Engine, error) {
 	ccfg, free := cfg.toC()
 	defer free()
-	var c *C.auris_engine_t
-	if st := Status(C.auris_create(&ccfg, &c)); st != StatusOK {
-		return nil, st.err("auris_create")
+	var c *C.mockingbird_engine_t
+	if st := Status(C.mockingbird_create(&ccfg, &c)); st != StatusOK {
+		return nil, st.err("mockingbird_create")
 	}
 	e := &Engine{
 		c:       c,
@@ -57,7 +57,7 @@ func (e *Engine) Close() error {
 		e.running = false
 		e.wg.Wait()
 	}
-	C.auris_destroy(e.c)
+	C.mockingbird_destroy(e.c)
 	e.c = nil
 	runtime.SetFinalizer(e, nil)
 	close(e.events)

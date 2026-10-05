@@ -1,14 +1,14 @@
 // Stop is honoured only after the ring is drained, so every frame pushed
-// before auris_stop is processed. No exception may leave this thread.
+// before mockingbird_stop is processed. No exception may leave this thread.
 #include "worker/worker.hpp"
 
 #include "config_validation.hpp"
 #include "engine.hpp"
 #include "engine_events.hpp"
 
-namespace auris {
+namespace mockingbird {
 
-Worker::Worker(auris_engine* e)
+Worker::Worker(mockingbird_engine* e)
     : e_(e),
       frame_samples_(samples_per_frame(e->cfg)),
       scratch_(frame_samples_),
@@ -62,17 +62,17 @@ void Worker::tap(const int16_t* samples) {
     }
 }
 
-void worker_loop(auris_engine* e) noexcept {
+void worker_loop(mockingbird_engine* e) noexcept {
     try {
         Worker worker(e);
         worker.run();
     } catch (...) {
         e->worker_fatal.store(true, std::memory_order_release);
         try {
-            emit_backend_error(e, AURIS_ERR_INTERNAL);
+            emit_backend_error(e, MOCKINGBIRD_ERR_INTERNAL);
         } catch (...) {
         }
     }
 }
 
-} // namespace auris
+} // namespace mockingbird

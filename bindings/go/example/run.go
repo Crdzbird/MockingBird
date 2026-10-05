@@ -7,12 +7,12 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/auris-audio/auris"
+	"github.com/Crdzbird/MockingBird/bindings/go"
 )
 
 type tally struct{ packets, bytes int }
 
-func (t *tally) drain(e *auris.Engine, labels []string) {
+func (t *tally) drain(e *mockingbird.Engine, labels []string) {
 	for {
 		select {
 		case ev := <-e.Events():
@@ -26,7 +26,7 @@ func (t *tally) drain(e *auris.Engine, labels []string) {
 	}
 }
 
-func runMic(e *auris.Engine, seconds int, labels []string) {
+func runMic(e *mockingbird.Engine, seconds int, labels []string) {
 	fmt.Println("listening on the default mic — Ctrl-C to stop")
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
@@ -58,7 +58,7 @@ func runMic(e *auris.Engine, seconds int, labels []string) {
 	}
 }
 
-func runFile(e *auris.Engine, path string, labels []string) {
+func runFile(e *mockingbird.Engine, path string, labels []string) {
 	samples, rate, err := readWAV(path)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "wav:", err)
@@ -81,7 +81,7 @@ func runFile(e *auris.Engine, path string, labels []string) {
 	report(e, t)
 }
 
-func report(e *auris.Engine, t tally) {
+func report(e *mockingbird.Engine, t tally) {
 	st, _ := e.Stats()
 	de, dp := e.Dropped()
 	w := st.Worker

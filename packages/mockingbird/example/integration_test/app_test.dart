@@ -13,17 +13,19 @@ Int16List frame({int amplitude = 0}) {
   return f;
 }
 
-AurisConfig hostConfig({
-  AurisVadConfig vad = const AurisVadConfig(enabled: false),
-  AurisAnomalyConfig anomaly = const AurisAnomalyConfig(enabled: false),
-  AurisSoundClassConfig soundClass = const AurisSoundClassConfig(),
+MockingbirdConfig hostConfig({
+  MockingbirdVadConfig vad = const MockingbirdVadConfig(enabled: false),
+  MockingbirdAnomalyConfig anomaly = const MockingbirdAnomalyConfig(
+    enabled: false,
+  ),
+  MockingbirdSoundClassConfig soundClass = const MockingbirdSoundClassConfig(),
   bool tap = false,
-}) => AurisConfig(
+}) => MockingbirdConfig(
   backend: .hostPcm,
   vad: vad,
   anomaly: anomaly,
   soundClass: soundClass,
-  queues: AurisQueueConfig(
+  queues: MockingbirdQueueConfig(
     pcmRingFrames: 1 << 17,
     packetQueueCapacity: 4096,
     pcmTap: tap,
@@ -32,7 +34,7 @@ AurisConfig hostConfig({
 );
 
 Future<void> push(
-  AurisEngine engine,
+  MockingbirdEngine engine,
   int frames, {
   int amplitude = 0,
   int from = 0,
@@ -50,13 +52,13 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   test('the native ABI resolves through dart:ffi', () {
-    expect(RegExp(r'^\d+\.\d+\.\d+').hasMatch(Auris.version), isTrue);
+    expect(RegExp(r'^\d+\.\d+\.\d+').hasMatch(Mockingbird.version), isTrue);
   });
 
   test('passthrough emits one packet per pushed frame', () async {
-    final engine = AurisEngine.create(hostConfig())..start();
+    final engine = MockingbirdEngine.create(hostConfig())..start();
     addTearDown(engine.dispose);
-    final packets = <AurisPacket>[];
+    final packets = <MockingbirdPacket>[];
     addTearDown(engine.packets.listen(packets.add).cancel);
     await push(engine, 10);
     await Future<void>.delayed(const Duration(milliseconds: 400));
@@ -65,7 +67,7 @@ void main() {
   });
 
   test('stats report the input level; the PCM tap is ungated', () async {
-    final engine = AurisEngine.create(hostConfig(tap: true))..start();
+    final engine = MockingbirdEngine.create(hostConfig(tap: true))..start();
     addTearDown(engine.dispose);
     const amp = 8192;
     await push(engine, 10, amplitude: amp);
@@ -80,25 +82,28 @@ void main() {
   });
 
   test('a live retune applies; a structural change is rejected', () async {
-    final config = hostConfig(anomaly: const AurisAnomalyConfig());
-    final engine = AurisEngine.create(config)..start();
+    final config = hostConfig(anomaly: const MockingbirdAnomalyConfig());
+    final engine = MockingbirdEngine.create(config)..start();
     addTearDown(engine.dispose);
     await push(engine, 5, amplitude: 4000);
     engine.updateConfig(config);
     expect(engine.isRunning, isTrue);
     expect(
-      () => engine.updateConfig(const AurisConfig(backend: .hostPcm)),
-      throwsA(isA<AurisException>()),
+      () => engine.updateConfig(const MockingbirdConfig(backend: .hostPcm)),
+      throwsA(isA<MockingbirdException>()),
     );
   });
 
   test(
     'the silence gate sheds YAMNet work; worker health is reported',
     () async {
-      final model = await AurisModels.soundClassPath();
-      final engine = AurisEngine.create(
+      final model = await MockingbirdModels.soundClassPath();
+      final engine = MockingbirdEngine.create(
         hostConfig(
-          soundClass: AurisSoundClassConfig(enabled: true, modelPath: model),
+          soundClass: MockingbirdSoundClassConfig(
+            enabled: true,
+            modelPath: model,
+          ),
         ),
       )..start();
       addTearDown(engine.dispose);
@@ -117,10 +122,10 @@ void main() {
   );
 
   test('Silero neural VAD loads and runs (ONNX Runtime is linked)', () async {
-    final model = await AurisModels.neuralVadPath();
-    final engine = AurisEngine.create(
+    final model = await MockingbirdModels.neuralVadPath();
+    final engine = MockingbirdEngine.create(
       hostConfig(
-        vad: AurisVadConfig(tier: .neural, modelPath: model),
+        vad: MockingbirdVadConfig(tier: .neural, modelPath: model),
       ),
     )..start();
     addTearDown(engine.dispose);
@@ -132,17 +137,22 @@ void main() {
   });
 
   test('YAMNet classifies and the event carries a valid class', () async {
-    final model = await AurisModels.soundClassPath();
-    final engine = AurisEngine.create(
+    final model = await MockingbirdModels.soundClassPath();
+    final engine = MockingbirdEngine.create(
       hostConfig(
-        soundClass: AurisSoundClassConfig(enabled: true, modelPath: model),
+        soundClass: MockingbirdSoundClassConfig(
+          enabled: true,
+          modelPath: model,
+        ),
       ),
     )..start();
     addTearDown(engine.dispose);
     final classes = <int>[];
     addTearDown(
       engine.events.listen((e) {
-        if (e case AurisSoundClassEvent(:final classId)) classes.add(classId);
+        if (e case MockingbirdSoundClassEvent(:final classId)) {
+          classes.add(classId);
+        }
       }).cancel,
     );
     await push(engine, 150, amplitude: 9000);

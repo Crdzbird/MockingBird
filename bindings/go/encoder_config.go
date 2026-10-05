@@ -1,4 +1,4 @@
-package auris
+package mockingbird
 
 // EncoderConfig selects how segment audio is encoded for the host.
 type EncoderConfig struct {

@@ -13,7 +13,7 @@
 //      under TSan to catch data races in the lock-free structures.
 
 #include "doctest.h"
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 
 #include <atomic>
 #include <chrono>
@@ -23,11 +23,11 @@
 
 namespace {
 
-auris_config_t host_pcm_cfg(int vad, int anomaly) {
-    auris_config_t cfg{};
-    auris_config_defaults(&cfg);
-    cfg.backend             = AURIS_BACKEND_HOST_PCM;
-    cfg.codec               = AURIS_CODEC_PCM_S16LE;
+mockingbird_config_t host_pcm_cfg(int vad, int anomaly) {
+    mockingbird_config_t cfg{};
+    mockingbird_config_defaults(&cfg);
+    cfg.backend             = MOCKINGBIRD_BACKEND_HOST_PCM;
+    cfg.codec               = MOCKINGBIRD_CODEC_PCM_S16LE;
     cfg.sample_rate_hz      = 16000;
     cfg.frame_ms            = 20;
     cfg.enable_vad          = vad;
@@ -43,45 +43,45 @@ auris_config_t host_pcm_cfg(int vad, int anomaly) {
 TEST_CASE("Stress: 150 full create/start/push/drain/stop/destroy cycles stay clean") {
     std::vector<int16_t> frame(320, 1200);
     for (int i = 0; i < 150; ++i) {
-        auris_config_t cfg = host_pcm_cfg(/*vad=*/i & 1, /*anomaly=*/!(i & 1));
-        auris_engine_t* e = nullptr;
-        REQUIRE(auris_create(&cfg, &e) == AURIS_OK);
-        REQUIRE(auris_start(e) == AURIS_OK);
+        mockingbird_config_t cfg = host_pcm_cfg(/*vad=*/i & 1, /*anomaly=*/!(i & 1));
+        mockingbird_engine_t* e = nullptr;
+        REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
+        REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
         for (int k = 0; k < 8; ++k) {
-            auris_push_pcm(e, frame.data(), 320, static_cast<uint64_t>(k) * 20'000ull);
+            mockingbird_push_pcm(e, frame.data(), 320, static_cast<uint64_t>(k) * 20'000ull);
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
-        auris_packet_t pkt{};
-        while (auris_drain(e, &pkt) == AURIS_OK) auris_release(e, &pkt);
-        REQUIRE(auris_stop(e) == AURIS_OK);
-        auris_destroy(e);
+        mockingbird_packet_t pkt{};
+        while (mockingbird_drain(e, &pkt) == MOCKINGBIRD_OK) mockingbird_release(e, &pkt);
+        REQUIRE(mockingbird_stop(e) == MOCKINGBIRD_OK);
+        mockingbird_destroy(e);
     }
     CHECK(true);   // 150 worker spawns/joins without aborting or exhausting
 }
 
 TEST_CASE("Stress: repeated start/stop on ONE engine joins the worker every time") {
-    auris_config_t cfg = host_pcm_cfg(/*vad=*/1, /*anomaly=*/1);
-    auris_engine_t* e = nullptr;
-    REQUIRE(auris_create(&cfg, &e) == AURIS_OK);
+    mockingbird_config_t cfg = host_pcm_cfg(/*vad=*/1, /*anomaly=*/1);
+    mockingbird_engine_t* e = nullptr;
+    REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
 
     std::vector<int16_t> frame(320, 800);
     for (int i = 0; i < 200; ++i) {
         // If the previous stop() did not join the worker, this start() reassigns
         // a still-joinable std::thread and std::terminate fires — so reaching
         // iteration 200 proves every stop() joined.
-        REQUIRE(auris_start(e) == AURIS_OK);
-        auris_push_pcm(e, frame.data(), 320, 0);
-        REQUIRE(auris_stop(e) == AURIS_OK);
+        REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
+        mockingbird_push_pcm(e, frame.data(), 320, 0);
+        REQUIRE(mockingbird_stop(e) == MOCKINGBIRD_OK);
     }
-    auris_destroy(e);
+    mockingbird_destroy(e);
     CHECK(true);
 }
 
 TEST_CASE("Stress: concurrent producer + host-consumer under load is race-free") {
-    auris_config_t cfg = host_pcm_cfg(/*vad=*/1, /*anomaly=*/1);
-    auris_engine_t* e = nullptr;
-    REQUIRE(auris_create(&cfg, &e) == AURIS_OK);
-    REQUIRE(auris_start(e) == AURIS_OK);
+    mockingbird_config_t cfg = host_pcm_cfg(/*vad=*/1, /*anomaly=*/1);
+    mockingbird_engine_t* e = nullptr;
+    REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
+    REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
 
     std::atomic<bool>     stop{false};
     std::atomic<uint64_t> pushed{0};
@@ -94,7 +94,7 @@ TEST_CASE("Stress: concurrent producer + host-consumer under load is race-free")
         while (!stop.load(std::memory_order_relaxed)) {
             const int16_t v = static_cast<int16_t>(ts & 0x3FFF);
             for (auto& s : frame) s = v;           // varying, non-silent signal
-            if (auris_push_pcm(e, frame.data(), 320, ts) == AURIS_OK) {
+            if (mockingbird_push_pcm(e, frame.data(), 320, ts) == MOCKINGBIRD_OK) {
                 pushed.fetch_add(1, std::memory_order_relaxed);
             }
             ts += 20'000ull;
@@ -105,13 +105,13 @@ TEST_CASE("Stress: concurrent producer + host-consumer under load is race-free")
     // the ABI permits for these calls).
     std::thread consumer([&] {
         while (!stop.load(std::memory_order_relaxed)) {
-            auris_packet_t pkt{};
-            while (auris_drain(e, &pkt) == AURIS_OK) {
+            mockingbird_packet_t pkt{};
+            while (mockingbird_drain(e, &pkt) == MOCKINGBIRD_OK) {
                 drained.fetch_add(1, std::memory_order_relaxed);
-                auris_release(e, &pkt);
+                mockingbird_release(e, &pkt);
             }
-            auris_event_t evt{};
-            while (auris_poll_event(e, &evt) == AURIS_OK) { /* discard */ }
+            mockingbird_event_t evt{};
+            while (mockingbird_poll_event(e, &evt) == MOCKINGBIRD_OK) { /* discard */ }
         }
     });
 
@@ -121,16 +121,16 @@ TEST_CASE("Stress: concurrent producer + host-consumer under load is race-free")
     consumer.join();
 
     // Final drain of whatever the worker committed after the consumer stopped.
-    auris_packet_t pkt{};
-    while (auris_drain(e, &pkt) == AURIS_OK) {
-        auris_release(e, &pkt);
+    mockingbird_packet_t pkt{};
+    while (mockingbird_drain(e, &pkt) == MOCKINGBIRD_OK) {
+        mockingbird_release(e, &pkt);
         drained.fetch_add(1, std::memory_order_relaxed);
     }
 
-    auris_stats_t st{};
-    REQUIRE(auris_get_stats(e, &st) == AURIS_OK);
-    REQUIRE(auris_stop(e) == AURIS_OK);
-    auris_destroy(e);
+    mockingbird_stats_t st{};
+    REQUIRE(mockingbird_get_stats(e, &st) == MOCKINGBIRD_OK);
+    REQUIRE(mockingbird_stop(e) == MOCKINGBIRD_OK);
+    mockingbird_destroy(e);
 
     INFO("pushed=" << pushed.load() << " drained=" << drained.load()
          << " captured=" << st.frames_captured
@@ -143,10 +143,10 @@ TEST_CASE("Stress: concurrent producer + host-consumer under load is race-free")
 }
 
 TEST_CASE("Soak: sustained pipeline keeps making forward progress, no stall") {
-    auris_config_t cfg = host_pcm_cfg(/*vad=*/1, /*anomaly=*/1);
-    auris_engine_t* e = nullptr;
-    REQUIRE(auris_create(&cfg, &e) == AURIS_OK);
-    REQUIRE(auris_start(e) == AURIS_OK);
+    mockingbird_config_t cfg = host_pcm_cfg(/*vad=*/1, /*anomaly=*/1);
+    mockingbird_engine_t* e = nullptr;
+    REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
+    REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
 
     std::atomic<bool> stop{false};
     std::thread producer([&] {
@@ -155,17 +155,17 @@ TEST_CASE("Soak: sustained pipeline keeps making forward progress, no stall") {
         while (!stop.load(std::memory_order_relaxed)) {
             const int16_t v = static_cast<int16_t>((ts / 20'000ull) & 0x1FFF);
             for (auto& s : frame) s = v;
-            auris_push_pcm(e, frame.data(), 320, ts);
+            mockingbird_push_pcm(e, frame.data(), 320, ts);
             ts += 20'000ull;
             std::this_thread::sleep_for(std::chrono::microseconds(200));
         }
     });
     std::thread consumer([&] {
         while (!stop.load(std::memory_order_relaxed)) {
-            auris_packet_t pkt{};
-            while (auris_drain(e, &pkt) == AURIS_OK) auris_release(e, &pkt);
-            auris_event_t evt{};
-            while (auris_poll_event(e, &evt) == AURIS_OK) { /* discard */ }
+            mockingbird_packet_t pkt{};
+            while (mockingbird_drain(e, &pkt) == MOCKINGBIRD_OK) mockingbird_release(e, &pkt);
+            mockingbird_event_t evt{};
+            while (mockingbird_poll_event(e, &evt) == MOCKINGBIRD_OK) { /* discard */ }
             std::this_thread::sleep_for(std::chrono::microseconds(500));
         }
     });
@@ -176,8 +176,8 @@ TEST_CASE("Soak: sustained pipeline keeps making forward progress, no stall") {
     int progressing_windows = 0;
     for (int w = 0; w < 6; ++w) {
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
-        auris_stats_t st{};
-        REQUIRE(auris_get_stats(e, &st) == AURIS_OK);
+        mockingbird_stats_t st{};
+        REQUIRE(mockingbird_get_stats(e, &st) == MOCKINGBIRD_OK);
         CHECK(st.frames_captured >= last_captured);   // monotonic
         CHECK(st.packets_emitted >= last_emitted);
         if (st.frames_captured > last_captured) ++progressing_windows;
@@ -188,10 +188,10 @@ TEST_CASE("Soak: sustained pipeline keeps making forward progress, no stall") {
     stop.store(true, std::memory_order_relaxed);
     producer.join();
     consumer.join();
-    auris_packet_t pkt{};
-    while (auris_drain(e, &pkt) == AURIS_OK) auris_release(e, &pkt);
-    REQUIRE(auris_stop(e) == AURIS_OK);
-    auris_destroy(e);
+    mockingbird_packet_t pkt{};
+    while (mockingbird_drain(e, &pkt) == MOCKINGBIRD_OK) mockingbird_release(e, &pkt);
+    REQUIRE(mockingbird_stop(e) == MOCKINGBIRD_OK);
+    mockingbird_destroy(e);
 
     INFO("progressing_windows=" << progressing_windows << "/6 captured=" << last_captured);
     CHECK(progressing_windows >= 5);                  // forward progress throughout

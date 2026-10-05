@@ -1,8 +1,8 @@
-package auris
+package mockingbird
 
 /*
 #include <stdlib.h>
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 */
 import "C"
 
@@ -15,16 +15,16 @@ func boolToC(b bool) C.int {
 	return 0
 }
 
-func (cfg Config) toC() (C.auris_config_t, func()) {
-	var c C.auris_config_t
-	C.auris_config_defaults(&c)
-	c.backend = C.auris_backend_t(cfg.Backend)
+func (cfg Config) toC() (C.mockingbird_config_t, func()) {
+	var c C.mockingbird_config_t
+	C.mockingbird_config_defaults(&c)
+	c.backend = C.mockingbird_backend_t(cfg.Backend)
 	c.sample_rate_hz = C.uint32_t(cfg.SampleRateHz)
 	c.channels = 1
 	c.frame_ms = C.uint32_t(cfg.FrameMs)
 	c.enable_rnnoise = boolToC(cfg.Denoise)
 	c.enable_vad = boolToC(cfg.VAD.Enabled)
-	c.vad_tier = C.auris_vad_tier_t(cfg.VAD.Tier)
+	c.vad_tier = C.mockingbird_vad_tier_t(cfg.VAD.Tier)
 	c.vad_aggressiveness = C.int(cfg.VAD.Aggressiveness)
 	c.vad_neural_threshold = C.float(cfg.VAD.NeuralThreshold)
 	c.vad_hangover_ms = C.uint32_t(cfg.VAD.HangoverMs)
@@ -38,7 +38,7 @@ func (cfg Config) toC() (C.auris_config_t, func()) {
 	c.pre_roll_ms = C.uint32_t(cfg.Segments.PreRollMs)
 	c.post_roll_ms = C.uint32_t(cfg.Segments.PostRollMs)
 	c.segment_max_ms = C.uint32_t(cfg.Segments.MaxMs)
-	c.codec = C.auris_codec_t(cfg.Encoder.Codec)
+	c.codec = C.mockingbird_codec_t(cfg.Encoder.Codec)
 	c.opus_bitrate_bps = C.uint32_t(cfg.Encoder.OpusBitrateBps)
 	c.opus_vbr = boolToC(cfg.Encoder.OpusVBR)
 	c.opus_complexity = C.int(cfg.Encoder.OpusComplexity)

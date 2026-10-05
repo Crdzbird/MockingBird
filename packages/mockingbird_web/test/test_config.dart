@@ -1,13 +1,13 @@
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
 
 /// A 16 kHz host-PCM config with fast VAD and the anomaly gate.
-AurisNativeConfig testConfig({int backend = 4, bool denoise = false}) =>
-    AurisNativeConfig(
+MockingbirdNativeConfig testConfig({int backend = 4, bool denoise = false}) =>
+    MockingbirdNativeConfig(
       backend: backend,
       sampleRateHz: 16000,
       frameMs: 20,
       enableRnnoise: denoise,
-      detectors: const AurisNativeDetectorConfig(
+      detectors: const MockingbirdNativeDetectorConfig(
         enableVad: true,
         vadTier: 0,
         vadAggressiveness: 2,
@@ -23,7 +23,7 @@ AurisNativeConfig testConfig({int backend = 4, bool denoise = false}) =>
         soundClassThreshold: 0.4,
         soundClassIntervalMs: 1000,
       ),
-      output: const AurisNativeOutputConfig(
+      output: const MockingbirdNativeOutputConfig(
         preRollMs: 300,
         postRollMs: 300,
         segmentMaxMs: 30000,

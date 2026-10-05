@@ -1,6 +1,6 @@
-// auris_start and auris_stop. Capture starts last and stops first, so frames
+// mockingbird_start and mockingbird_stop. Capture starts last and stops first, so frames
 // only flow while the worker is there to consume them.
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 #include "clock.hpp"
 #include "engine.hpp"
 #include "engine_ingest.hpp"
@@ -8,45 +8,45 @@
 
 extern "C" {
 
-AURIS_API auris_status_t auris_start(auris_engine_t* e) {
-    if (e == nullptr) return AURIS_ERR_INVALID_ARG;
+MOCKINGBIRD_API mockingbird_status_t mockingbird_start(mockingbird_engine_t* e) {
+    if (e == nullptr) return MOCKINGBIRD_ERR_INVALID_ARG;
     std::lock_guard lk(e->lifecycle_mu);
-    if (e->running.load(std::memory_order_acquire)) return AURIS_ERR_ALREADY_RUNNING;
+    if (e->running.load(std::memory_order_acquire)) return MOCKINGBIRD_ERR_ALREADY_RUNNING;
     try {
         e->stop_requested.store(false, std::memory_order_release);
-        e->last_capture_ts_us.store(auris::monotonic_now_us(), std::memory_order_release);
+        e->last_capture_ts_us.store(mockingbird::monotonic_now_us(), std::memory_order_release);
         e->first_capture_ts_us.store(~uint64_t{0}, std::memory_order_release);
         if (e->capture_backend) {
-            const auris_status_t r =
-                e->capture_backend->init(e->cfg, auris::backend_pcm_callback, e);
-            if (r != AURIS_OK) return r;
+            const mockingbird_status_t r =
+                e->capture_backend->init(e->cfg, mockingbird::backend_pcm_callback, e);
+            if (r != MOCKINGBIRD_OK) return r;
         }
-        auris::driver_start(e);
+        mockingbird::driver_start(e);
         if (e->capture_backend) {
-            const auris_status_t r = e->capture_backend->start();
-            if (r != AURIS_OK) {
-                auris::driver_stop(e);
+            const mockingbird_status_t r = e->capture_backend->start();
+            if (r != MOCKINGBIRD_OK) {
+                mockingbird::driver_stop(e);
                 return r;
             }
         }
         e->running.store(true, std::memory_order_release);
-        return AURIS_OK;
+        return MOCKINGBIRD_OK;
     } catch (...) {
-        return AURIS_ERR_INTERNAL;
+        return MOCKINGBIRD_ERR_INTERNAL;
     }
 }
 
-AURIS_API auris_status_t auris_stop(auris_engine_t* e) {
-    if (e == nullptr) return AURIS_ERR_INVALID_ARG;
+MOCKINGBIRD_API mockingbird_status_t mockingbird_stop(mockingbird_engine_t* e) {
+    if (e == nullptr) return MOCKINGBIRD_ERR_INVALID_ARG;
     std::lock_guard lk(e->lifecycle_mu);
-    if (!e->running.load(std::memory_order_acquire)) return AURIS_ERR_NOT_RUNNING;
+    if (!e->running.load(std::memory_order_acquire)) return MOCKINGBIRD_ERR_NOT_RUNNING;
     try {
         if (e->capture_backend) e->capture_backend->stop();
-        auris::driver_stop(e);
+        mockingbird::driver_stop(e);
         e->running.store(false, std::memory_order_release);
-        return AURIS_OK;
+        return MOCKINGBIRD_OK;
     } catch (...) {
-        return AURIS_ERR_INTERNAL;
+        return MOCKINGBIRD_ERR_INTERNAL;
     }
 }
 

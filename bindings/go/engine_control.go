@@ -1,7 +1,7 @@
-package auris
+package mockingbird
 
 /*
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 */
 import "C"
 
@@ -17,8 +17,8 @@ func (e *Engine) UpdateConfig(cfg Config) error {
 	if e.c == nil {
 		return ErrClosed
 	}
-	if st := Status(C.auris_update_config(e.c, &ccfg)); st != StatusOK {
-		return st.err("auris_update_config")
+	if st := Status(C.mockingbird_update_config(e.c, &ccfg)); st != StatusOK {
+		return st.err("mockingbird_update_config")
 	}
 	return nil
 }
@@ -30,9 +30,9 @@ func (e *Engine) Stats() (Stats, error) {
 	if e.c == nil {
 		return Stats{}, ErrClosed
 	}
-	var s C.auris_stats_t
-	if st := Status(C.auris_get_stats(e.c, &s)); st != StatusOK {
-		return Stats{}, st.err("auris_get_stats")
+	var s C.mockingbird_stats_t
+	if st := Status(C.mockingbird_get_stats(e.c, &s)); st != StatusOK {
+		return Stats{}, st.err("mockingbird_get_stats")
 	}
 	return statsFromC(s), nil
 }

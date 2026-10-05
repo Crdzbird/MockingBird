@@ -4,45 +4,45 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/auris-audio/auris"
+	"github.com/Crdzbird/MockingBird/bindings/go"
 )
 
-func presetConfig(preset string, sensitivity float64, silero, yamnet string) auris.Config {
-	models := []auris.Option{auris.WithNeuralVADModel(silero), auris.WithSoundClassModel(yamnet)}
+func presetConfig(preset string, sensitivity float64, silero, yamnet string) mockingbird.Config {
+	models := []mockingbird.Option{mockingbird.WithNeuralVADModel(silero), mockingbird.WithSoundClassModel(yamnet)}
 	switch preset {
 	case "voice":
-		return auris.Sensitive(0.6, append(models,
-			auris.WithDetectors(true, false, false), auris.WithDenoise(true),
-			auris.WithEncoder(auris.OpusEncoder()))...)
+		return mockingbird.Sensitive(0.6, append(models,
+			mockingbird.WithDetectors(true, false, false), mockingbird.WithDenoise(true),
+			mockingbird.WithEncoder(mockingbird.OpusEncoder()))...)
 	case "everything":
-		return auris.Sensitive(0.6, append(models,
-			auris.WithDenoise(true), auris.WithEncoder(auris.OpusEncoder()))...)
+		return mockingbird.Sensitive(0.6, append(models,
+			mockingbird.WithDenoise(true), mockingbird.WithEncoder(mockingbird.OpusEncoder()))...)
 	case "anomaly":
-		c := auris.DefaultConfig()
+		c := mockingbird.DefaultConfig()
 		c.VAD.Enabled = false
 		c.Anomaly.RMSZ, c.Anomaly.FluxZ = 2, 2
-		c.Encoder = auris.OpusEncoder()
+		c.Encoder = mockingbird.OpusEncoder()
 		return c
 	case "denoised-voice":
-		c := auris.DefaultConfig()
+		c := mockingbird.DefaultConfig()
 		c.Denoise = true
-		c.VAD.Tier, c.VAD.ModelPath = auris.VadNeural, silero
+		c.VAD.Tier, c.VAD.ModelPath = mockingbird.VadNeural, silero
 		c.Anomaly.Enabled = false
-		c.Encoder = auris.OpusEncoder()
+		c.Encoder = mockingbird.OpusEncoder()
 		return c
 	case "music":
-		c := auris.DefaultConfig()
+		c := mockingbird.DefaultConfig()
 		c.VAD.Enabled, c.Anomaly.Enabled = false, false
-		c.SoundClass = auris.SoundClassConfig{Enabled: true, ModelPath: yamnet, Threshold: 0.3, IntervalMs: 1000}
+		c.SoundClass = mockingbird.SoundClassConfig{Enabled: true, ModelPath: yamnet, Threshold: 0.3, IntervalMs: 1000}
 		return c
 	}
 	if sensitivity >= 0 {
-		return auris.Sensitive(sensitivity, models...)
+		return mockingbird.Sensitive(sensitivity, models...)
 	}
-	return auris.DefaultConfig()
+	return mockingbird.DefaultConfig()
 }
 
-func describe(c auris.Config, preset string) string {
+func describe(c mockingbird.Config, preset string) string {
 	var on []string
 	if c.VAD.Enabled {
 		on = append(on, "VAD:"+c.VAD.Tier.String())

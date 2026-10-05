@@ -1,4 +1,4 @@
-package auris
+package mockingbird
 
 // Config is everything an Engine needs, grouped by concern. DefaultConfig
 // gives fast VAD and the anomaly gate on the platform's microphone.

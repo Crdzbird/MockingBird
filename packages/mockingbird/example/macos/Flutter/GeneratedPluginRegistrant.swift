@@ -8,5 +8,5 @@ import Foundation
 import mockingbird_macos
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
-  AurisPlugin.register(with: registry.registrar(forPlugin: "AurisPlugin"))
+  MockingbirdPlugin.register(with: registry.registrar(forPlugin: "MockingbirdPlugin"))
 }

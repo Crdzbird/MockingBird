@@ -9,7 +9,7 @@
 //   * the host drains, sees bytes intact, and releases without leaks
 //   * SEGMENT_BEGIN / SEGMENT_END events fire on the pull-mode queue
 
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 
 #include <cassert>
 #include <chrono>
@@ -21,19 +21,19 @@
 
 namespace {
 
-void die(const char* what, auris_status_t s) {
-    std::fprintf(stderr, "%s failed: %s\n", what, auris_status_str(s));
+void die(const char* what, mockingbird_status_t s) {
+    std::fprintf(stderr, "%s failed: %s\n", what, mockingbird_status_str(s));
     std::exit(1);
 }
 
 } // namespace
 
 int main() {
-    auris_config_t cfg{};
-    if (auto s = auris_config_defaults(&cfg); s != AURIS_OK) die("defaults", s);
+    mockingbird_config_t cfg{};
+    if (auto s = mockingbird_config_defaults(&cfg); s != MOCKINGBIRD_OK) die("defaults", s);
 
-    cfg.backend            = AURIS_BACKEND_HOST_PCM;
-    cfg.codec              = AURIS_CODEC_PCM_S16LE;   // passthrough
+    cfg.backend            = MOCKINGBIRD_BACKEND_HOST_PCM;
+    cfg.codec              = MOCKINGBIRD_CODEC_PCM_S16LE;   // passthrough
     cfg.sample_rate_hz     = 16000;
     cfg.frame_ms           = 20;                      // 320 samples per frame
     // Smoke pushes a synthetic sawtooth that VAD would classify as silence.
@@ -42,12 +42,12 @@ int main() {
     // Flutter demo on iOS / Android.
     cfg.enable_vad         = 0;
     cfg.enable_anomaly     = 0;
-    cfg.vad_tier           = AURIS_VAD_FAST;
+    cfg.vad_tier           = MOCKINGBIRD_VAD_FAST;
     cfg.vad_aggressiveness = 2;
 
-    auris_engine_t* engine = nullptr;
-    if (auto s = auris_create(&cfg, &engine); s != AURIS_OK) die("create", s);
-    if (auto s = auris_start(engine); s != AURIS_OK) die("start", s);
+    mockingbird_engine_t* engine = nullptr;
+    if (auto s = mockingbird_create(&cfg, &engine); s != MOCKINGBIRD_OK) die("create", s);
+    if (auto s = mockingbird_start(engine); s != MOCKINGBIRD_OK) die("start", s);
 
     const uint32_t frame_samples = (cfg.sample_rate_hz / 1000u) * cfg.frame_ms;
     std::vector<int16_t> samples(frame_samples);
@@ -59,7 +59,7 @@ int main() {
     const uint64_t ts_base = 1'000'000;          // arbitrary monotonic origin
     for (uint32_t f = 0; f < kFramesToPush; ++f) {
         const uint64_t ts = ts_base + uint64_t{f} * (uint64_t{cfg.frame_ms} * 1000ull);
-        if (auto s = auris_push_pcm(engine, samples.data(), frame_samples, ts); s != AURIS_OK) {
+        if (auto s = mockingbird_push_pcm(engine, samples.data(), frame_samples, ts); s != MOCKINGBIRD_OK) {
             die("push", s);
         }
     }
@@ -74,16 +74,16 @@ int main() {
     uint32_t pattern_errors = 0;
     bool     saw_keyframe   = false;
     while (true) {
-        auris_packet_t pkt{};
-        const auris_status_t ds = auris_drain(engine, &pkt);
-        if (ds == AURIS_ERR_QUEUE_EMPTY) break;
-        if (ds != AURIS_OK) die("drain", ds);
+        mockingbird_packet_t pkt{};
+        const mockingbird_status_t ds = mockingbird_drain(engine, &pkt);
+        if (ds == MOCKINGBIRD_ERR_QUEUE_EMPTY) break;
+        if (ds != MOCKINGBIRD_OK) die("drain", ds);
 
-        assert(pkt.codec == AURIS_CODEC_PCM_S16LE);
+        assert(pkt.codec == MOCKINGBIRD_CODEC_PCM_S16LE);
         assert(pkt.size == frame_samples * sizeof(int16_t));
         assert(pkt.data != nullptr);
 
-        if (pkt.flags & AURIS_PKT_FLAG_KEYFRAME) saw_keyframe = true;
+        if (pkt.flags & MOCKINGBIRD_PKT_FLAG_KEYFRAME) saw_keyframe = true;
 
         const auto* p = reinterpret_cast<const int16_t*>(pkt.data);
         for (uint32_t i = 0; i < frame_samples; ++i) {
@@ -94,35 +94,35 @@ int main() {
         }
         ++drained;
 
-        if (auto s = auris_release(engine, &pkt); s != AURIS_OK) die("release", s);
+        if (auto s = mockingbird_release(engine, &pkt); s != MOCKINGBIRD_OK) die("release", s);
     }
 
     // Pull events.
     uint32_t segment_begins = 0;
     uint32_t segment_ends   = 0;
     while (true) {
-        auris_event_t evt{};
-        const auris_status_t es = auris_poll_event(engine, &evt);
-        if (es == AURIS_ERR_QUEUE_EMPTY) break;
-        if (es != AURIS_OK) die("poll_event", es);
-        if (evt.type == AURIS_EVT_SEGMENT_BEGIN) ++segment_begins;
-        if (evt.type == AURIS_EVT_SEGMENT_END)   ++segment_ends;
+        mockingbird_event_t evt{};
+        const mockingbird_status_t es = mockingbird_poll_event(engine, &evt);
+        if (es == MOCKINGBIRD_ERR_QUEUE_EMPTY) break;
+        if (es != MOCKINGBIRD_OK) die("poll_event", es);
+        if (evt.type == MOCKINGBIRD_EVT_SEGMENT_BEGIN) ++segment_begins;
+        if (evt.type == MOCKINGBIRD_EVT_SEGMENT_END)   ++segment_ends;
     }
 
-    auris_stats_t stats{};
-    if (auto s = auris_get_stats(engine, &stats); s != AURIS_OK) die("get_stats", s);
+    mockingbird_stats_t stats{};
+    if (auto s = mockingbird_get_stats(engine, &stats); s != MOCKINGBIRD_OK) die("get_stats", s);
 
-    if (auto s = auris_stop(engine); s != AURIS_OK) die("stop", s);
+    if (auto s = mockingbird_stop(engine); s != MOCKINGBIRD_OK) die("stop", s);
 
     // After stop, the worker has emitted SEGMENT_END. Drain events again.
     while (true) {
-        auris_event_t evt{};
-        const auris_status_t es = auris_poll_event(engine, &evt);
-        if (es == AURIS_ERR_QUEUE_EMPTY) break;
-        if (evt.type == AURIS_EVT_SEGMENT_END) ++segment_ends;
+        mockingbird_event_t evt{};
+        const mockingbird_status_t es = mockingbird_poll_event(engine, &evt);
+        if (es == MOCKINGBIRD_ERR_QUEUE_EMPTY) break;
+        if (evt.type == MOCKINGBIRD_EVT_SEGMENT_END) ++segment_ends;
     }
 
-    auris_destroy(engine);
+    mockingbird_destroy(engine);
 
     std::printf("smoke: drained=%u pattern_errors=%u keyframe_seen=%s\n",
                 drained, pattern_errors, saw_keyframe ? "yes" : "no");
@@ -160,6 +160,6 @@ int main() {
     }
 
     if (!ok) return 1;
-    std::printf("smoke OK (auris %s)\n", auris_version_string());
+    std::printf("smoke OK (mockingbird %s)\n", mockingbird_version_string());
     return 0;
 }

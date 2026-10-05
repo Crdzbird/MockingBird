@@ -2,14 +2,14 @@
 // by field id, and create() with the status returned by pointer.
 #ifdef __EMSCRIPTEN__
 
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 #include "web/web_fields.hpp"
 
 #include <emscripten/emscripten.h>
 
 #include <cstdlib>
 
-using namespace auris::web;
+using namespace mockingbird::web;
 
 namespace {
 
@@ -27,17 +27,17 @@ void assign_enum(E& field, double v) {
 
 extern "C" {
 
-EMSCRIPTEN_KEEPALIVE auris_config_t* auris_web_config_new(void) {
-    auto* cfg = static_cast<auris_config_t*>(std::calloc(1, sizeof(auris_config_t)));
-    if (cfg != nullptr) auris_config_defaults(cfg);
+EMSCRIPTEN_KEEPALIVE mockingbird_config_t* mockingbird_web_config_new(void) {
+    auto* cfg = static_cast<mockingbird_config_t*>(std::calloc(1, sizeof(mockingbird_config_t)));
+    if (cfg != nullptr) mockingbird_config_defaults(cfg);
     return cfg;
 }
 
-EMSCRIPTEN_KEEPALIVE void auris_web_config_free(auris_config_t* cfg) { std::free(cfg); }
+EMSCRIPTEN_KEEPALIVE void mockingbird_web_config_free(mockingbird_config_t* cfg) { std::free(cfg); }
 
-EMSCRIPTEN_KEEPALIVE int auris_web_config_field_count(void) { return kConfigFieldCount; }
+EMSCRIPTEN_KEEPALIVE int mockingbird_web_config_field_count(void) { return kConfigFieldCount; }
 
-EMSCRIPTEN_KEEPALIVE int auris_web_config_set(auris_config_t* c, int field, double v) {
+EMSCRIPTEN_KEEPALIVE int mockingbird_web_config_set(mockingbird_config_t* c, int field, double v) {
     if (c == nullptr) return -1;
     switch (field) {
         case kBackend:                   assign_enum(c->backend, v); break;
@@ -76,11 +76,11 @@ EMSCRIPTEN_KEEPALIVE int auris_web_config_set(auris_config_t* c, int field, doub
     return 0;
 }
 
-EMSCRIPTEN_KEEPALIVE auris_engine_t* auris_web_create(const auris_config_t* cfg, int* out_status) {
-    auris_engine_t* engine = nullptr;
-    const auris_status_t s = auris_create(cfg, &engine);
+EMSCRIPTEN_KEEPALIVE mockingbird_engine_t* mockingbird_web_create(const mockingbird_config_t* cfg, int* out_status) {
+    mockingbird_engine_t* engine = nullptr;
+    const mockingbird_status_t s = mockingbird_create(cfg, &engine);
     if (out_status != nullptr) *out_status = static_cast<int>(s);
-    return s == AURIS_OK ? engine : nullptr;
+    return s == MOCKINGBIRD_OK ? engine : nullptr;
 }
 
 } // extern "C"

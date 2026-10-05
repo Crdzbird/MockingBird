@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "auris"
+name = "mockingbird"
 version = "0.1.0"
-description = "Native audio capture, denoise, multilingual voice + anomaly detection, and sound classification via the Auris C ABI"
+description = "Native audio capture, denoise, multilingual voice + anomaly detection, and sound classification via the Mockingbird C ABI"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
@@ -19,7 +19,7 @@ classifiers = [
     "Topic :: Multimedia :: Sound/Audio :: Capture/Recording",
 ]
 # Pure ctypes — no build step and no third-party runtime dependency. The native
-# libauris shared library is located at import time (see the README).
+# libmockingbird shared library is located at import time (see the README).
 dependencies = []
 
 [project.urls]
@@ -27,4 +27,4 @@ Homepage = "https://github.com/Crdzbird/MockingBird"
 Source = "https://github.com/Crdzbird/MockingBird/tree/main/bindings/python"
 
 [tool.setuptools]
-packages = ["auris"]
+packages = ["mockingbird"]

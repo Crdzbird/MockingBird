@@ -2,11 +2,11 @@
 // classifier resumes with a full, current window.
 #include "detect/yamnet_classifier.hpp"
 
-#ifdef AURIS_HAVE_SOUND_CLASS
+#ifdef MOCKINGBIRD_HAVE_SOUND_CLASS
 
 #include <cstring>
 
-namespace auris {
+namespace mockingbird {
 
 void YamnetClassifier::append(const int16_t* frame, uint32_t n) {
     for (uint32_t i = 0; i < n; ++i) {
@@ -54,6 +54,6 @@ ClassificationResult YamnetClassifier::feed(const int16_t* frame, uint32_t n,
     return fresh;
 }
 
-} // namespace auris
+} // namespace mockingbird
 
 #endif

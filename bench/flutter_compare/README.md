@@ -1,12 +1,12 @@
 # Package comparison benchmark
 
-Measures Auris against the pub.dev packages that cover parts of the same job,
+Measures Mockingbird against the pub.dev packages that cover parts of the same job,
 each in its own Flutter macOS app so no two packages share a process or an
 ONNX Runtime build.
 
 | App | Package | Scenarios |
 |---|---|---|
-| `auris_bench` | `mockingbird` (path dependency on this repository) | fast VAD, neural VAD, anomaly gate, RNNoise, YAMNet, everything on |
+| `mockingbird_bench` | `mockingbird` (path dependency on this repository) | fast VAD, neural VAD, anomaly gate, RNNoise, YAMNet, everything on |
 | `vad_plus_bench` | `vad_plus` | Silero VAD |
 | `vad_bench` | `vad` | Silero VAD |
 | `sherpa_bench` | `sherpa_onnx` | Silero VAD, gtcrn denoiser, CED tiny audio tagging |
@@ -61,6 +61,6 @@ it and processes each chunk inline on the caller's thread:
 node bench/flutter_compare/web_bench.mjs
 ```
 
-It loads `packages/mockingbird_web/assets/auris.js`, builds the same fixture, and
+It loads `packages/mockingbird_web/assets/mockingbird.js`, builds the same fixture, and
 records the push loop's wall time as the CPU time, into
 `results/mockingbird_web.jsonl`.

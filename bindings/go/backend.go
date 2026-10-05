@@ -1,4 +1,4 @@
-package auris
+package mockingbird
 
 // Backend selects where audio comes from.
 type Backend int

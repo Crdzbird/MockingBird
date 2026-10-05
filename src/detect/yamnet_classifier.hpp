@@ -5,7 +5,7 @@
 
 #include "detect/sound_classifier.hpp"
 
-#ifdef AURIS_HAVE_SOUND_CLASS
+#ifdef MOCKINGBIRD_HAVE_SOUND_CLASS
 
 #include "detect/ort_headers.hpp"
 
@@ -14,18 +14,18 @@
 #include <string>
 #include <vector>
 
-namespace auris {
+namespace mockingbird {
 
 class YamnetClassifier final : public SoundClassifier {
 public:
     static constexpr size_t kSampleCount = 48000;
     static constexpr size_t kClassCount  = 521;
 
-    auris_status_t       init(const auris_config_t& cfg) override;
+    mockingbird_status_t       init(const mockingbird_config_t& cfg) override;
     ClassificationResult feed(const int16_t* frame, uint32_t n, const FeedHints& hints) override;
 
 private:
-    auris_status_t       load_session(const auris_config_t& cfg);
+    mockingbird_status_t       load_session(const mockingbird_config_t& cfg);
     void                 select_output_head();
     void                 append(const int16_t* frame, uint32_t n);
     bool                 inference_due(const FeedHints& hints);
@@ -52,6 +52,6 @@ private:
     uint32_t                      quiet_run_frames_       = 0;
 };
 
-} // namespace auris
+} // namespace mockingbird
 
 #endif

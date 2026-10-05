@@ -23,7 +23,7 @@ class DemoView extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Auris demo'),
+        title: const Text('Mockingbird demo'),
         backgroundColor: cs.surfaceContainerHigh,
       ),
       body: SafeArea(

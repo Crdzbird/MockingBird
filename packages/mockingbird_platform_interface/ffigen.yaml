@@ -1,23 +1,23 @@
-# ffigen config for the Auris C ABI.
+# ffigen config for the Mockingbird C ABI.
 #
-# Generates lib/src/bindings.dart from include/auris/auris.h. Run with:
+# Generates lib/src/bindings.dart from include/mockingbird/mockingbird.h. Run with:
 #   dart run ffigen
 # from this package directory.
 
-name: AurisBindings
-description: Raw FFI bindings for the auris C ABI.
+name: MockingbirdBindings
+description: Raw FFI bindings for the mockingbird C ABI.
 output: 'lib/src/bindings.dart'
 
 headers:
   entry-points:
-    - '../../include/auris/auris.h'
+    - '../../include/mockingbird/mockingbird.h'
   include-directives:
-    - '**auris.h'
+    - '**mockingbird.h'
 
 compiler-opts:
   - '-I../../include'
 
-# Auris targets clang only (iOS/macOS/Android with clang >= 17), where the
+# Mockingbird targets clang only (iOS/macOS/Android with clang >= 17), where the
 # C enum underlying type is int by default. Acknowledging that explicitly
 # silences ffigen's portability warning. // VERIFY  Re-check if we ever
 # add a target that uses a different enum ABI (e.g. some embedded toolchains).

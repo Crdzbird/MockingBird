@@ -7,7 +7,7 @@
 #include <cstddef>
 #include <vector>
 
-namespace auris {
+namespace mockingbird {
 
 class RollingStats {
 public:
@@ -53,4 +53,4 @@ private:
     double             sumsq_  = 0.0;
 };
 
-} // namespace auris
+} // namespace mockingbird

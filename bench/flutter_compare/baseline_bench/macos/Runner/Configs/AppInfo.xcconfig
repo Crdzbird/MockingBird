@@ -8,7 +8,7 @@
 PRODUCT_NAME = baseline_bench
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = dev.auris.bench.baselineBench
+PRODUCT_BUNDLE_IDENTIFIER = dev.mockingbird.bench.baselineBench
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 dev.auris.bench. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 dev.mockingbird.bench. All rights reserved.

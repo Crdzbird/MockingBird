@@ -1,6 +1,6 @@
 name: mockingbird_android
 description: >-
-  The Android implementation of the mockingbird plugin: the Auris engine built from source with Oboe capture and ONNX Runtime detectors.
+  The Android implementation of the mockingbird plugin: the Mockingbird engine built from source with Oboe capture and ONNX Runtime detectors.
 version: 0.1.0
 repository: https://github.com/Crdzbird/MockingBird/tree/main/packages/mockingbird_android
 issue_tracker: https://github.com/Crdzbird/MockingBird/issues
@@ -20,9 +20,9 @@ flutter:
     implements: mockingbird
     platforms:
       android:
-        package: io.auris
-        pluginClass: AurisPlugin
-        dartPluginClass: AurisAndroid
+        package: io.mockingbird
+        pluginClass: MockingbirdPlugin
+        dartPluginClass: MockingbirdAndroid
 
 dependencies:
   flutter:

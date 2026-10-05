@@ -8,7 +8,7 @@ extern "C" {
 
 #include <cstdint>
 
-namespace auris {
+namespace mockingbird {
 
 namespace {
 
@@ -20,16 +20,16 @@ public:
         if (fvad_ != nullptr) fvad_free(fvad_);
     }
 
-    auris_status_t init(const auris_config_t& cfg) override {
-        if (fvad_ != nullptr) return AURIS_ERR_INVALID_STATE;
+    mockingbird_status_t init(const mockingbird_config_t& cfg) override {
+        if (fvad_ != nullptr) return MOCKINGBIRD_ERR_INVALID_STATE;
         fvad_ = fvad_new();
-        if (fvad_ == nullptr) return AURIS_ERR_NO_MEMORY;
+        if (fvad_ == nullptr) return MOCKINGBIRD_ERR_NO_MEMORY;
         if (fvad_set_sample_rate(fvad_, static_cast<int>(cfg.sample_rate_hz)) != 0) {
-            return AURIS_ERR_UNSUPPORTED;
+            return MOCKINGBIRD_ERR_UNSUPPORTED;
         }
-        if (fvad_set_mode(fvad_, cfg.vad_aggressiveness) != 0) return AURIS_ERR_INVALID_ARG;
+        if (fvad_set_mode(fvad_, cfg.vad_aggressiveness) != 0) return MOCKINGBIRD_ERR_INVALID_ARG;
         frame_samples_ = (cfg.sample_rate_hz / 1000u) * cfg.frame_ms;
-        return AURIS_OK;
+        return MOCKINGBIRD_OK;
     }
 
     DetectionResult process(const int16_t* frame, uint32_t frame_count) override {
@@ -40,7 +40,7 @@ public:
         return r;
     }
 
-    void retune(const auris_config_t& cfg) override {
+    void retune(const mockingbird_config_t& cfg) override {
         if (fvad_ == nullptr) return;
         if (cfg.vad_aggressiveness >= 0 && cfg.vad_aggressiveness <= 3) {
             fvad_set_mode(fvad_, cfg.vad_aggressiveness);
@@ -54,12 +54,12 @@ private:
 
 } // namespace
 
-std::unique_ptr<Detector> make_vad(auris_vad_tier_t tier) {
+std::unique_ptr<Detector> make_vad(mockingbird_vad_tier_t tier) {
     switch (tier) {
-        case AURIS_VAD_FAST:   return std::make_unique<VadDetector>();
-        case AURIS_VAD_NEURAL: return make_neural_vad();
+        case MOCKINGBIRD_VAD_FAST:   return std::make_unique<VadDetector>();
+        case MOCKINGBIRD_VAD_NEURAL: return make_neural_vad();
     }
     return nullptr;
 }
 
-} // namespace auris
+} // namespace mockingbird

@@ -1,4 +1,4 @@
-package auris
+package mockingbird
 
 // AnomalyConfig drives the anomaly gate: sudden or unusual sounds measured
 // against a rolling background.

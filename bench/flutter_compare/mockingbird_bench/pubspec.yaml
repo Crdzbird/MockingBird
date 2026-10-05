@@ -1,0 +1,30 @@
+name: mockingbird_bench
+description: Mockingbird side of the package comparison benchmark.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  mockingbird:
+    path: ../../../packages/mockingbird
+  flutter:
+    sdk: flutter
+  harness:
+    path: ../harness
+
+flutter:
+  uses-material-design: false
+
+dependency_overrides:
+  mockingbird_platform_interface:
+    path: ../../../packages/mockingbird_platform_interface
+  mockingbird_android:
+    path: ../../../packages/mockingbird_android
+  mockingbird_ios:
+    path: ../../../packages/mockingbird_ios
+  mockingbird_macos:
+    path: ../../../packages/mockingbird_macos
+  mockingbird_web:
+    path: ../../../packages/mockingbird_web

@@ -2,12 +2,12 @@
 // thread where the platform has no threads (WebAssembly without pthreads).
 #pragma once
 
-struct auris_engine;
+struct mockingbird_engine;
 
-namespace auris {
+namespace mockingbird {
 
-void driver_start(auris_engine* e);
-void driver_pump(auris_engine* e) noexcept;
-void driver_stop(auris_engine* e);
+void driver_start(mockingbird_engine* e);
+void driver_pump(mockingbird_engine* e) noexcept;
+void driver_stop(mockingbird_engine* e);
 
-} // namespace auris
+} // namespace mockingbird

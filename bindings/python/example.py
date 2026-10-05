@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A flag-driven tour of the Auris engine from Python.
+"""A flag-driven tour of the Mockingbird engine from Python.
 
     python3 example.py                                   default mic
     python3 example.py --preset everything --file ../../tests/fixtures/hello.wav
@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import auris
+import mockingbird
 from example_config import build_config, describe
 from example_run import load_labels, run_file, run_mic
 
@@ -32,8 +32,8 @@ def main() -> None:
     args = ap.parse_args()
 
     cfg = build_config(args)
-    print(f"Auris {auris.version()} — {describe(cfg, args.preset)}")
-    with auris.Engine(cfg) as engine:
+    print(f"Mockingbird {mockingbird.version()} — {describe(cfg, args.preset)}")
+    with mockingbird.Engine(cfg) as engine:
         engine.start()
         if args.file:
             run_file(engine, args.file, load_labels())

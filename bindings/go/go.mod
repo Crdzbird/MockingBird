@@ -1,3 +1,3 @@
-module github.com/auris-audio/auris
+module github.com/Crdzbird/MockingBird/bindings/go
 
 go 1.25

@@ -3,7 +3,7 @@
 // DenoiseState and both resamplers persist across frames.
 #include "preprocess/preprocessor.hpp"
 
-#ifdef AURIS_HAVE_RNNOISE
+#ifdef MOCKINGBIRD_HAVE_RNNOISE
 
 #include "preprocess/resampler.hpp"
 
@@ -15,7 +15,7 @@ extern "C" {
 #include <cmath>
 #include <vector>
 
-namespace auris {
+namespace mockingbird {
 
 namespace {
 
@@ -28,16 +28,16 @@ public:
         if (st_ != nullptr) rnnoise_destroy(st_);
     }
 
-    auris_status_t init(const auris_config_t& cfg) override {
-        if (st_ != nullptr) return AURIS_ERR_INVALID_STATE;
+    mockingbird_status_t init(const mockingbird_config_t& cfg) override {
+        if (st_ != nullptr) return MOCKINGBIRD_ERR_INVALID_STATE;
         if (cfg.sample_rate_hz == 0 || (kRnnoiseRate % cfg.sample_rate_hz) != 0) {
-            return AURIS_ERR_UNSUPPORTED;
+            return MOCKINGBIRD_ERR_UNSUPPORTED;
         }
         const int factor = static_cast<int>(kRnnoiseRate / cfg.sample_rate_hz);
         up_.configure(factor);
         down_.configure(factor);
         st_ = rnnoise_create(nullptr);
-        return st_ == nullptr ? AURIS_ERR_NO_MEMORY : AURIS_OK;
+        return st_ == nullptr ? MOCKINGBIRD_ERR_NO_MEMORY : MOCKINGBIRD_OK;
     }
 
     void process(int16_t* frame, uint32_t n) override {
@@ -79,12 +79,12 @@ std::unique_ptr<Preprocessor> make_rnnoise_preprocessor() {
     return std::make_unique<RnnoisePreprocessor>();
 }
 
-} // namespace auris
+} // namespace mockingbird
 
 #else
 
-namespace auris {
+namespace mockingbird {
 std::unique_ptr<Preprocessor> make_rnnoise_preprocessor() { return nullptr; }
-} // namespace auris
+} // namespace mockingbird
 
 #endif

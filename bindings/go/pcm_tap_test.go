@@ -1,4 +1,4 @@
-package auris
+package mockingbird
 
 import (
 	"math"

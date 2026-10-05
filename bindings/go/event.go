@@ -1,7 +1,7 @@
-package auris
+package mockingbird
 
 /*
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 */
 import "C"
 
@@ -36,7 +36,7 @@ func (e Event) BusyFraction() float64 { return float64(e.Confidence) }
 // BackendError is the status carried by an EventBackendError.
 func (e Event) BackendError() Status { return Status(int32(e.ReasonMask)) }
 
-func eventFromC(e C.auris_event_t) Event {
+func eventFromC(e C.mockingbird_event_t) Event {
 	return Event{
 		Type:        EventType(e._type),
 		SegmentID:   uint64(e.segment_id),

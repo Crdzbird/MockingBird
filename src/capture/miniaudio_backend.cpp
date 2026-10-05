@@ -7,19 +7,19 @@
 
 #include <cstdint>
 
-namespace auris {
+namespace mockingbird {
 
 namespace {
 
-auris_status_t map_ma_result(ma_result r) noexcept {
+mockingbird_status_t map_ma_result(ma_result r) noexcept {
     switch (r) {
-        case MA_SUCCESS:                return AURIS_OK;
-        case MA_ACCESS_DENIED:          return AURIS_ERR_PERMISSION;
-        case MA_NO_DEVICE:              return AURIS_ERR_BACKEND;
-        case MA_DEVICE_NOT_INITIALIZED: return AURIS_ERR_INVALID_STATE;
-        case MA_INVALID_ARGS:           return AURIS_ERR_INVALID_ARG;
-        case MA_OUT_OF_MEMORY:          return AURIS_ERR_NO_MEMORY;
-        default:                        return AURIS_ERR_BACKEND;
+        case MA_SUCCESS:                return MOCKINGBIRD_OK;
+        case MA_ACCESS_DENIED:          return MOCKINGBIRD_ERR_PERMISSION;
+        case MA_NO_DEVICE:              return MOCKINGBIRD_ERR_BACKEND;
+        case MA_DEVICE_NOT_INITIALIZED: return MOCKINGBIRD_ERR_INVALID_STATE;
+        case MA_INVALID_ARGS:           return MOCKINGBIRD_ERR_INVALID_ARG;
+        case MA_OUT_OF_MEMORY:          return MOCKINGBIRD_ERR_NO_MEMORY;
+        default:                        return MOCKINGBIRD_ERR_BACKEND;
     }
 }
 
@@ -49,9 +49,9 @@ MiniaudioBackend::~MiniaudioBackend() {
     if (impl_->device_initialized) ma_device_uninit(&impl_->device);
 }
 
-auris_status_t MiniaudioBackend::init(const auris_config_t& cfg, PcmCallback cb, void* user) {
-    if (impl_->device_initialized) return AURIS_ERR_INVALID_STATE;
-    if (cb == nullptr) return AURIS_ERR_INVALID_ARG;
+mockingbird_status_t MiniaudioBackend::init(const mockingbird_config_t& cfg, PcmCallback cb, void* user) {
+    if (impl_->device_initialized) return MOCKINGBIRD_ERR_INVALID_STATE;
+    if (cb == nullptr) return MOCKINGBIRD_ERR_INVALID_ARG;
 
     impl_->cb          = cb;
     impl_->user        = user;
@@ -68,23 +68,23 @@ auris_status_t MiniaudioBackend::init(const auris_config_t& cfg, PcmCallback cb,
     const ma_result r = ma_device_init(nullptr, &dc, &impl_->device);
     if (r != MA_SUCCESS) return map_ma_result(r);
     impl_->device_initialized = true;
-    return AURIS_OK;
+    return MOCKINGBIRD_OK;
 }
 
-auris_status_t MiniaudioBackend::start() {
-    if (!impl_->device_initialized) return AURIS_ERR_INVALID_STATE;
-    if (impl_->running) return AURIS_ERR_ALREADY_RUNNING;
+mockingbird_status_t MiniaudioBackend::start() {
+    if (!impl_->device_initialized) return MOCKINGBIRD_ERR_INVALID_STATE;
+    if (impl_->running) return MOCKINGBIRD_ERR_ALREADY_RUNNING;
     const ma_result r = ma_device_start(&impl_->device);
     if (r != MA_SUCCESS) return map_ma_result(r);
     impl_->running = true;
-    return AURIS_OK;
+    return MOCKINGBIRD_OK;
 }
 
-auris_status_t MiniaudioBackend::stop() {
-    if (!impl_->running) return AURIS_OK;
+mockingbird_status_t MiniaudioBackend::stop() {
+    if (!impl_->running) return MOCKINGBIRD_OK;
     ma_device_stop(&impl_->device);
     impl_->running = false;
-    return AURIS_OK;
+    return MOCKINGBIRD_OK;
 }
 
-} // namespace auris
+} // namespace mockingbird

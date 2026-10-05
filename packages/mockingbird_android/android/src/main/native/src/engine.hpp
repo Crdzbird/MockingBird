@@ -1,8 +1,8 @@
-// The engine behind the opaque auris_engine_t handle: queues, threads,
+// The engine behind the opaque mockingbird_engine_t handle: queues, threads,
 // counters, and the live-tunable copy of the configuration.
 #pragma once
 
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 #include "capture/capture_backend.hpp"
 #include "encode/encoder.hpp"
 #include "packet_pool.hpp"
@@ -16,41 +16,41 @@
 #include <string>
 #include <thread>
 
-namespace auris {
+namespace mockingbird {
 class Worker;
 }
 
-struct auris_engine {
-    auris_config_t cfg;
+struct mockingbird_engine {
+    mockingbird_config_t cfg;
     std::string    neural_vad_model_path_storage;
     std::string    sound_class_model_path_storage;
 
-    auris::SpscRing<int16_t> pcm_ring;
-    auris::PacketPool        packets;
+    mockingbird::SpscRing<int16_t> pcm_ring;
+    mockingbird::PacketPool        packets;
 
-    std::unique_ptr<auris::CaptureBackend> capture_backend;
-    std::unique_ptr<auris::Encoder>        encoder;
+    std::unique_ptr<mockingbird::CaptureBackend> capture_backend;
+    std::unique_ptr<mockingbird::Encoder>        encoder;
 
     std::thread                    worker_thread;
-    std::unique_ptr<auris::Worker> inline_worker;
+    std::unique_ptr<mockingbird::Worker> inline_worker;
     std::atomic<bool> running{false};
     std::atomic<bool> stop_requested{false};
     std::atomic<bool> worker_fatal{false};
     std::mutex        lifecycle_mu;
 
     std::mutex            tune_mu;
-    auris_config_t        live_cfg{};
+    mockingbird_config_t        live_cfg{};
     std::atomic<uint64_t> tune_generation{0};
 
     std::atomic<uint64_t> wake_count{0};
     std::atomic<size_t>   wake_batch_samples{0};
 
     std::mutex     cb_mu;
-    auris_event_cb event_cb   = nullptr;
+    mockingbird_event_cb event_cb   = nullptr;
     void*          event_user = nullptr;
 
     std::mutex                evt_mu;
-    std::deque<auris_event_t> evt_queue;
+    std::deque<mockingbird_event_t> evt_queue;
 
     std::atomic<uint64_t> frames_captured{0};
     std::atomic<uint64_t> frames_dropped_capture{0};
@@ -65,7 +65,7 @@ struct auris_engine {
     std::atomic<float>    input_rms_dbfs{0.0f};
     std::atomic<float>    input_peak_dbfs{0.0f};
 
-    std::unique_ptr<auris::SpscRing<int16_t>> pcm_tap;
+    std::unique_ptr<mockingbird::SpscRing<int16_t>> pcm_tap;
     std::atomic<uint64_t>                     tap_samples_dropped{0};
 
     std::atomic<uint32_t> worker_busy_ppm{0};
@@ -76,9 +76,9 @@ struct auris_engine {
     std::atomic<uint64_t> preproc_frames_skipped{0};
     std::atomic<uint32_t> degradation_level{0};
 
-    auris_engine(const auris_config_t& c,
+    mockingbird_engine(const mockingbird_config_t& c,
                  size_t                ring_frames,
                  size_t                pool_capacity,
                  size_t                max_payload_bytes);
-    ~auris_engine();
+    ~mockingbird_engine();
 };

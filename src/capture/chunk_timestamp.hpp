@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-namespace auris {
+namespace mockingbird {
 
 inline uint64_t chunk_start_ts_us(uint32_t sample_rate_hz, uint32_t frame_count) noexcept {
     const uint64_t now = monotonic_now_us();
@@ -16,4 +16,4 @@ inline uint64_t chunk_start_ts_us(uint32_t sample_rate_hz, uint32_t frame_count)
     return (now > chunk_us) ? (now - chunk_us) : 0;
 }
 
-} // namespace auris
+} // namespace mockingbird

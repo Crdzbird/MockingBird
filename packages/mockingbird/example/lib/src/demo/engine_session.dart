@@ -9,12 +9,12 @@ final class EngineSession {
 
   /// Creates and starts an engine; the callbacks receive its streams.
   static Future<EngineSession> open(
-    AurisConfig config, {
-    required void Function(AurisEvent) onEvent,
-    required void Function(AurisStats) onStats,
-    required void Function(AurisPacket) onPacket,
+    MockingbirdConfig config, {
+    required void Function(MockingbirdEvent) onEvent,
+    required void Function(MockingbirdStats) onStats,
+    required void Function(MockingbirdPacket) onPacket,
   }) async {
-    final engine = AurisEngine.create(config);
+    final engine = MockingbirdEngine.create(config);
     final subscriptions = <StreamSubscription<Object>>[
       engine.events.listen(onEvent),
       engine.stats.listen(onStats),
@@ -22,14 +22,14 @@ final class EngineSession {
     ];
     try {
       engine.start();
-    } on AurisException {
+    } on MockingbirdException {
       await engine.dispose();
       rethrow;
     }
     return EngineSession._(engine, subscriptions);
   }
 
-  final AurisEngine engine;
+  final MockingbirdEngine engine;
   final List<StreamSubscription<Object>> _subscriptions;
 
   /// Cancels the subscriptions, then stops and destroys the engine.

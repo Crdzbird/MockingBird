@@ -1,4 +1,4 @@
-package auris
+package mockingbird
 
 // Sensitivity is one 0..1 dial that drives every detector's thresholds:
 // 0 is the least sensitive, 1 catches faint and borderline sounds.

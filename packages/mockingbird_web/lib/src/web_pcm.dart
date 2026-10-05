@@ -2,8 +2,8 @@ import 'dart:js_interop';
 import 'dart:typed_data';
 
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
-import 'package:mockingbird_web/src/auris_module.dart';
-import 'package:mockingbird_web/src/auris_record_api.dart';
+import 'package:mockingbird_web/src/mockingbird_module.dart';
+import 'package:mockingbird_web/src/mockingbird_record_api.dart';
 import 'package:mockingbird_web/src/web_engine_handle.dart';
 
 /// The PCM push and tap paths over the WebAssembly module.
@@ -11,14 +11,14 @@ final class WebPcm {
   /// Wraps the loaded module.
   const WebPcm(this._m);
 
-  final AurisModule _m;
+  final MockingbirdModule _m;
 
   /// Copies samples into linear memory and pushes them.
   int push(WebEngineHandle h, Int16List samples, int captureTsUs) {
     final buf = _m.malloc(samples.length * 2);
     try {
       _m.heap16.toDart.setAll(buf >> 1, samples);
-      return AurisRecordApi(
+      return MockingbirdRecordApi(
         _m,
       ).pushPcm(h.pointer, buf, samples.length, captureTsUs.toDouble());
     } finally {
@@ -27,12 +27,14 @@ final class WebPcm {
   }
 
   /// Reads the PCM tap into a Dart-owned list.
-  AurisPcmResult read(WebEngineHandle h, int maxSamples) {
+  MockingbirdPcmResult read(WebEngineHandle h, int maxSamples) {
     final buf = _m.malloc(maxSamples * 2);
     final written = _m.malloc(4);
     try {
       final s = _m.readPcm(h.pointer, buf, maxSamples, written);
-      if (s != AurisStatusCode.ok) return (status: s, samples: Int16List(0));
+      if (s != MockingbirdStatusCode.ok) {
+        return (status: s, samples: Int16List(0));
+      }
       final n = _m.heap32.toDart[written >> 2];
       final start = buf >> 1;
       return (

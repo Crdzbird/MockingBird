@@ -2,7 +2,7 @@
 // rate it is never contended.
 #include "packet_pool.hpp"
 
-namespace auris {
+namespace mockingbird {
 
 PacketPool::PacketPool(size_t pool_capacity, size_t queue_capacity, size_t max_payload_bytes)
     : max_payload_bytes_(max_payload_bytes),
@@ -54,7 +54,7 @@ bool PacketPool::commit(Slot* slot) {
     return overran;
 }
 
-bool PacketPool::drain(auris_packet_t* out) {
+bool PacketPool::drain(mockingbird_packet_t* out) {
     if (out == nullptr) return false;
     std::lock_guard lk(mu_);
     if (ready_.empty()) return false;
@@ -73,21 +73,21 @@ bool PacketPool::drain(auris_packet_t* out) {
     return true;
 }
 
-auris_status_t PacketPool::release(const auris_packet_t* pkt) {
-    if (pkt == nullptr) return AURIS_ERR_INVALID_ARG;
+mockingbird_status_t PacketPool::release(const mockingbird_packet_t* pkt) {
+    if (pkt == nullptr) return MOCKINGBIRD_ERR_INVALID_ARG;
     const uint32_t cookie = pkt->_reserved;
     const uint32_t idx    = cookie & 0xFFFFu;
     const uint32_t gen    = (cookie >> 16) & 0xFFFFu;
     std::lock_guard lk(mu_);
-    if (idx >= slots_.size()) return AURIS_ERR_INVALID_ARG;
+    if (idx >= slots_.size()) return MOCKINGBIRD_ERR_INVALID_ARG;
     Slot* s = slots_[idx].get();
-    if (pkt->data != s->buf.get()) return AURIS_ERR_INVALID_ARG;
-    if (!s->in_flight) return AURIS_ERR_INVALID_ARG;
-    if ((s->generation & 0xFFFFu) != gen) return AURIS_ERR_INVALID_ARG;
+    if (pkt->data != s->buf.get()) return MOCKINGBIRD_ERR_INVALID_ARG;
+    if (!s->in_flight) return MOCKINGBIRD_ERR_INVALID_ARG;
+    if ((s->generation & 0xFFFFu) != gen) return MOCKINGBIRD_ERR_INVALID_ARG;
     s->in_flight = false;
     s->size      = 0;
     free_list_.push_back(s);
-    return AURIS_OK;
+    return MOCKINGBIRD_OK;
 }
 
 size_t PacketPool::ready_size() const {
@@ -95,4 +95,4 @@ size_t PacketPool::ready_size() const {
     return ready_.size();
 }
 
-} // namespace auris
+} // namespace mockingbird

@@ -1,0 +1,1 @@
+../../assets/mockingbird_capture_worklet.js

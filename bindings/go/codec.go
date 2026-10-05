@@ -1,4 +1,4 @@
-package auris
+package mockingbird
 
 // Codec selects how packets are encoded.
 type Codec int

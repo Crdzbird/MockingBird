@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace auris {
+namespace mockingbird {
 
 constexpr AudioUnitElement kCoreAudioInputBus  = 1;
 constexpr AudioUnitElement kCoreAudioOutputBus = 0;
@@ -26,7 +26,7 @@ struct CoreAudioBackend::Impl {
     std::vector<int16_t>   scratch;
 };
 
-auris_status_t coreaudio_open_unit(CoreAudioBackend::Impl& impl, const auris_config_t& cfg);
+mockingbird_status_t coreaudio_open_unit(CoreAudioBackend::Impl& impl, const mockingbird_config_t& cfg);
 
 AudioComponentInstance coreaudio_create_unit();
 OSStatus coreaudio_enable_input_only(AudioComponentInstance unit);
@@ -36,4 +36,4 @@ OSStatus coreaudio_input_render(void* refCon, AudioUnitRenderActionFlags* ioActi
                                 const AudioTimeStamp* inTimeStamp, UInt32 inBusNumber,
                                 UInt32 inNumberFrames, AudioBufferList* ioData);
 
-} // namespace auris
+} // namespace mockingbird

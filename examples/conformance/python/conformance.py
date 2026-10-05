@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Python peer of the Auris cross-binding conformance harness.
+"""Python peer of the Mockingbird cross-binding conformance harness.
 
 Mirror of examples/conformance/{go/main.go,dart/conformance.dart}. It drives the
-SAME native libauris through the ctypes binding, exchanges deterministic audio
+SAME native libmockingbird through the ctypes binding, exchanges deterministic audio
 with another peer over TCP, and proves both produce byte-identical packets,
 events, and stats.
 
@@ -33,7 +33,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "bindings" / "python"))
 
-import auris  # noqa: E402
+import mockingbird  # noqa: E402
 
 SAMPLE_RATE = 16000
 FRAME_LEN = 320  # 20 ms @ 16 kHz
@@ -105,16 +105,16 @@ class Result:
 
 
 def process(pcm: array.array, debug: bool = False) -> Result:
-    cfg = auris.Config(
-        backend=auris.Backend.HOST_PCM,
-        vad=auris.VadConfig(tier=auris.VadTier.FAST, aggressiveness=2),
-        encoder=auris.EncoderConfig.opus(),
-        queues=auris.QueueConfig(pcm_ring_frames=1 << 17, packet_queue_capacity=4096),
+    cfg = mockingbird.Config(
+        backend=mockingbird.Backend.HOST_PCM,
+        vad=mockingbird.VadConfig(tier=mockingbird.VadTier.FAST, aggressiveness=2),
+        encoder=mockingbird.EncoderConfig.opus(),
+        queues=mockingbird.QueueConfig(pcm_ring_frames=1 << 17, packet_queue_capacity=4096),
     )
 
-    packets: list[auris.Packet] = []
-    events: list[auris.Event] = []
-    with auris.Engine(cfg) as engine:
+    packets: list[mockingbird.Packet] = []
+    events: list[mockingbird.Event] = []
+    with mockingbird.Engine(cfg) as engine:
         engine.start()
         n_frames = len(pcm) // FRAME_LEN
         for i in range(n_frames):

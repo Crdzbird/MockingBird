@@ -2,7 +2,7 @@
 // as the payload's address in linear memory.
 #ifdef __EMSCRIPTEN__
 
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 #include "web/web_fields.hpp"
 
 #include <emscripten/emscripten.h>
@@ -10,19 +10,19 @@
 #include <cstdint>
 #include <cstdlib>
 
-using namespace auris::web;
+using namespace mockingbird::web;
 
 extern "C" {
 
-EMSCRIPTEN_KEEPALIVE auris_packet_t* auris_web_packet_new(void) {
-    return static_cast<auris_packet_t*>(std::calloc(1, sizeof(auris_packet_t)));
+EMSCRIPTEN_KEEPALIVE mockingbird_packet_t* mockingbird_web_packet_new(void) {
+    return static_cast<mockingbird_packet_t*>(std::calloc(1, sizeof(mockingbird_packet_t)));
 }
 
-EMSCRIPTEN_KEEPALIVE void auris_web_packet_free(auris_packet_t* p) { std::free(p); }
+EMSCRIPTEN_KEEPALIVE void mockingbird_web_packet_free(mockingbird_packet_t* p) { std::free(p); }
 
-EMSCRIPTEN_KEEPALIVE int auris_web_packet_field_count(void) { return kPacketFieldCount; }
+EMSCRIPTEN_KEEPALIVE int mockingbird_web_packet_field_count(void) { return kPacketFieldCount; }
 
-EMSCRIPTEN_KEEPALIVE double auris_web_packet_get(const auris_packet_t* p, int field) {
+EMSCRIPTEN_KEEPALIVE double mockingbird_web_packet_get(const mockingbird_packet_t* p, int field) {
     if (p == nullptr) return 0;
     switch (field) {
         case kPacketSegmentId:   return static_cast<double>(p->segment_id);

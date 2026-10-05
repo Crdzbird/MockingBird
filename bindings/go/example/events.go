@@ -4,28 +4,28 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/auris-audio/auris"
+	"github.com/Crdzbird/MockingBird/bindings/go"
 )
 
-func printEvent(ev auris.Event, labels []string) {
+func printEvent(ev mockingbird.Event, labels []string) {
 	switch ev.Type {
-	case auris.EventSpeechBegin:
+	case mockingbird.EventSpeechBegin:
 		fmt.Println("voice   ▶ speech begin")
-	case auris.EventSpeechEnd:
+	case mockingbird.EventSpeechEnd:
 		fmt.Println("voice   ■ speech end")
-	case auris.EventAnomaly:
+	case mockingbird.EventAnomaly:
 		fmt.Printf("anomaly   %v conf=%.2f\n", ev.AnomalyReasons(), ev.Confidence)
-	case auris.EventSoundClass:
+	case mockingbird.EventSoundClass:
 		class := ev.SoundClass()
 		name := ""
 		if class >= 0 && class < len(labels) {
 			name = " " + labels[class]
 		}
 		fmt.Printf("sound   [%v]%s (class %d, conf %.2f)\n", ev.Category(), name, class, ev.Confidence)
-	case auris.EventDegradation:
+	case mockingbird.EventDegradation:
 		fmt.Printf("engine  degradation level %d (worker %.0f%% busy)\n",
 			ev.DegradationLevel(), ev.BusyFraction()*100)
-	case auris.EventBackendError:
+	case mockingbird.EventBackendError:
 		fmt.Fprintf(os.Stderr, "backend error: %v\n", ev.BackendError())
 	}
 }

@@ -9,15 +9,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import auris
+import mockingbird
 
 FIXTURES = Path(__file__).resolve().parents[3] / "tests" / "fixtures"
 FRAME = 320
 
 
-def host_config(**overrides: object) -> auris.Config:
+def host_config(**overrides: object) -> mockingbird.Config:
     """A HOST_PCM, PCM-passthrough config with every detector off unless given."""
-    cfg = auris.Config(backend=auris.Backend.HOST_PCM)
+    cfg = mockingbird.Config(backend=mockingbird.Backend.HOST_PCM)
     cfg.vad.enabled = False
     cfg.anomaly.enabled = False
     for key, value in overrides.items():
@@ -41,7 +41,7 @@ def read_wav(path: Path) -> tuple[array.array, int]:
         return pcm, w.getframerate()
 
 
-def push(engine: auris.Engine, frame: array.array, count: int, ts: int = 0) -> int:
+def push(engine: mockingbird.Engine, frame: array.array, count: int, ts: int = 0) -> int:
     """Push ``count`` copies of ``frame`` 20 ms apart; returns the next timestamp."""
     for _ in range(count):
         engine.push_pcm(frame, ts)

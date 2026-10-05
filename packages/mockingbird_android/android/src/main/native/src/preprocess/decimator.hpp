@@ -8,7 +8,7 @@
 #include <cstddef>
 #include <vector>
 
-namespace auris {
+namespace mockingbird {
 
 class Decimator {
 public:
@@ -61,4 +61,4 @@ private:
     std::vector<float> hist_;
 };
 
-} // namespace auris
+} // namespace mockingbird

@@ -5,8 +5,8 @@ import 'package:mockingbird_platform_interface/mockingbird_platform_interface.da
 /// Reads the engine version through whichever platform registered itself.
 /// Apps use the `mockingbird` package instead of this one.
 void main() {
-  final platform = AurisPlatform.instance;
+  final platform = MockingbirdPlatform.instance;
   stdout
-    ..writeln('Auris ${platform.version()}')
-    ..writeln(platform.statusName(AurisStatusCode.queueEmpty));
+    ..writeln('Mockingbird ${platform.version()}')
+    ..writeln(platform.statusName(MockingbirdStatusCode.queueEmpty));
 }

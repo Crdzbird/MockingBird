@@ -7,7 +7,7 @@
 #include <cmath>
 #include <cstdint>
 
-namespace auris {
+namespace mockingbird {
 
 class LevelMeter {
 public:
@@ -36,4 +36,4 @@ private:
     }
 };
 
-} // namespace auris
+} // namespace mockingbird

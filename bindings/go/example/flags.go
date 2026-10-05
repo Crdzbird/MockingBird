@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/auris-audio/auris"
+	"github.com/Crdzbird/MockingBird/bindings/go"
 )
 
 type flags struct {
@@ -14,25 +14,25 @@ type flags struct {
 	seconds                                           int
 }
 
-func (f flags) config() auris.Config {
+func (f flags) config() mockingbird.Config {
 	silero := firstNonEmpty(f.silero, locateFixture("silero_vad.onnx"))
 	yamnet := firstNonEmpty(f.yamnet, locateFixture("yamnet_3s.onnx"))
 	live := f.file == ""
 	cfg := presetConfig(f.preset, f.sensitivity, silero, yamnet)
 	if !live {
-		cfg.Backend = auris.BackendHostPCM
+		cfg.Backend = mockingbird.BackendHostPCM
 		cfg.Queues.PCMRingFrames = 1 << 17
 		cfg.Queues.PacketQueueCapacity = 4096
 	} else {
-		cfg.Performance = auris.MobilePerformance()
+		cfg.Performance = mockingbird.MobilePerformance()
 	}
 	switch f.vad {
 	case "off":
 		cfg.VAD.Enabled = false
 	case "fast":
-		cfg.VAD.Enabled, cfg.VAD.Tier = true, auris.VadFast
+		cfg.VAD.Enabled, cfg.VAD.Tier = true, mockingbird.VadFast
 	case "neural":
-		cfg.VAD.Enabled, cfg.VAD.Tier, cfg.VAD.ModelPath = true, auris.VadNeural, silero
+		cfg.VAD.Enabled, cfg.VAD.Tier, cfg.VAD.ModelPath = true, mockingbird.VadNeural, silero
 	}
 	setBool(&cfg.Anomaly.Enabled, f.anomaly)
 	if setBool(&cfg.SoundClass.Enabled, f.sound) {
@@ -41,9 +41,9 @@ func (f flags) config() auris.Config {
 	setBool(&cfg.Denoise, f.denoise)
 	switch f.codec {
 	case "pcm":
-		cfg.Encoder.Codec = auris.CodecPCMS16LE
+		cfg.Encoder.Codec = mockingbird.CodecPCMS16LE
 	case "opus":
-		cfg.Encoder.Codec = auris.CodecOpus
+		cfg.Encoder.Codec = mockingbird.CodecOpus
 	}
 	if f.gate != 0 {
 		cfg.Performance.SilenceGateDbfs = float32(f.gate)
@@ -51,10 +51,10 @@ func (f flags) config() auris.Config {
 	return sanitize(cfg, silero, yamnet)
 }
 
-func sanitize(cfg auris.Config, silero, yamnet string) auris.Config {
-	if cfg.VAD.Enabled && cfg.VAD.Tier == auris.VadNeural && silero == "" {
+func sanitize(cfg mockingbird.Config, silero, yamnet string) mockingbird.Config {
+	if cfg.VAD.Enabled && cfg.VAD.Tier == mockingbird.VadNeural && silero == "" {
 		fmt.Fprintln(os.Stderr, "note: no silero_vad.onnx found, using fast VAD")
-		cfg.VAD.Tier = auris.VadFast
+		cfg.VAD.Tier = mockingbird.VadFast
 	}
 	if cfg.SoundClass.Enabled && yamnet == "" {
 		fmt.Fprintln(os.Stderr, "note: no yamnet_3s.onnx found, sound classification off")

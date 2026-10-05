@@ -1,24 +1,24 @@
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
-import 'package:mockingbird_web/src/auris_module.dart';
+import 'package:mockingbird_web/src/mockingbird_module.dart';
 import 'package:mockingbird_web/src/web_assets.dart';
 
 extension type _EsModule(JSObject _) implements JSObject {
   @JS('default')
-  external AurisModuleFactory get defaultExport;
+  external MockingbirdModuleFactory get defaultExport;
 }
 
-/// Loads `auris.js` from the package assets and instantiates the module.
+/// Loads `mockingbird.js` from the package assets and instantiates the module.
 final class ModuleLoader {
   /// Creates the loader.
   const ModuleLoader();
 
   /// Imports the script as an ES module and runs its factory.
-  Future<AurisModule> load() async {
+  Future<MockingbirdModule> load() async {
     const assets = WebAssets();
-    final scripts = assets.candidates('auris.js');
-    final wasms = assets.candidates('auris.wasm');
+    final scripts = assets.candidates('mockingbird.js');
+    final wasms = assets.candidates('mockingbird.wasm');
     Object? failure;
     for (var i = 0; i < scripts.length; i++) {
       try {
@@ -31,6 +31,8 @@ final class ModuleLoader {
         failure = e;
       }
     }
-    throw StateError('mockingbird_web: could not load auris.js ($failure)');
+    throw StateError(
+      'mockingbird_web: could not load mockingbird.js ($failure)',
+    );
   }
 }

@@ -9,7 +9,7 @@
 //   5. The engine runs end-to-end with enable_rnnoise and still detects speech.
 
 #include "doctest.h"
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 #include "preprocess/resampler.hpp"
 
 #include <chrono>
@@ -47,8 +47,8 @@ struct Lcg {
 } // namespace
 
 TEST_CASE("Resampler: x3 up/down round-trip preserves a 1 kHz tone's energy") {
-    auris::Interpolator up;
-    auris::Decimator    down;
+    mockingbird::Interpolator up;
+    mockingbird::Decimator    down;
     up.configure(3);
     down.configure(3);
 
@@ -74,7 +74,7 @@ TEST_CASE("Resampler: x3 up/down round-trip preserves a 1 kHz tone's energy") {
 
 TEST_CASE("Resampler: an out-of-band 7 kHz tone survives the 8 kHz passband") {
     // 7 kHz is still below the 8 kHz working Nyquist, so it must pass.
-    auris::Interpolator up; auris::Decimator down;
+    mockingbird::Interpolator up; mockingbird::Decimator down;
     up.configure(3); down.configure(3);
     std::vector<float> in(4000);
     for (size_t i = 0; i < in.size(); ++i)
@@ -88,18 +88,18 @@ TEST_CASE("Resampler: an out-of-band 7 kHz tone survives the 8 kHz passband") {
     CHECK(e_back > 0.4 * e_in);          // band-edge rolloff tolerated
 }
 
-#ifdef AURIS_HAVE_RNNOISE
+#ifdef MOCKINGBIRD_HAVE_RNNOISE
 
 #include "preprocess/preprocessor.hpp"
 
 TEST_CASE("RNNoise: suppresses stationary noise") {
-    auto pp = auris::make_rnnoise_preprocessor();
+    auto pp = mockingbird::make_rnnoise_preprocessor();
     REQUIRE(pp != nullptr);
-    auris_config_t cfg{};
-    auris_config_defaults(&cfg);
+    mockingbird_config_t cfg{};
+    mockingbird_config_defaults(&cfg);
     cfg.sample_rate_hz = 16000;
     cfg.frame_ms       = 20;
-    REQUIRE(pp->init(cfg) == AURIS_OK);
+    REQUIRE(pp->init(cfg) == MOCKINGBIRD_OK);
 
     Lcg rng;
     constexpr uint32_t N = 320;          // 20 ms @ 16 kHz
@@ -154,15 +154,15 @@ Wav read_wav(const std::string& path) {
 } // namespace
 
 TEST_CASE("RNNoise: preserves speech energy (hello.wav)") {
-    const auto wav = read_wav(std::string(AURIS_TEST_FIXTURE_DIR) + "/hello.wav");
+    const auto wav = read_wav(std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/hello.wav");
     REQUIRE(wav.s.size() > 0);
     REQUIRE(wav.sr == 16000);
 
-    auto pp = auris::make_rnnoise_preprocessor();
+    auto pp = mockingbird::make_rnnoise_preprocessor();
     REQUIRE(pp != nullptr);
-    auris_config_t cfg{}; auris_config_defaults(&cfg);
+    mockingbird_config_t cfg{}; mockingbird_config_defaults(&cfg);
     cfg.sample_rate_hz = 16000; cfg.frame_ms = 20;
-    REQUIRE(pp->init(cfg) == AURIS_OK);
+    REQUIRE(pp->init(cfg) == MOCKINGBIRD_OK);
 
     constexpr uint32_t N = 320;
     const size_t frames = wav.s.size() / N;
@@ -181,29 +181,29 @@ TEST_CASE("RNNoise: preserves speech energy (hello.wav)") {
 }
 
 TEST_CASE("Config: enable_rnnoise accepts 16 kHz, rejects 32 kHz") {
-    auris_config_t cfg{}; auris_config_defaults(&cfg);
-    cfg.backend = AURIS_BACKEND_HOST_PCM;
-    cfg.codec   = AURIS_CODEC_PCM_S16LE;
+    mockingbird_config_t cfg{}; mockingbird_config_defaults(&cfg);
+    cfg.backend = MOCKINGBIRD_BACKEND_HOST_PCM;
+    cfg.codec   = MOCKINGBIRD_CODEC_PCM_S16LE;
     cfg.enable_rnnoise = 1;
 
     cfg.sample_rate_hz = 16000;
-    auris_engine_t* e = nullptr;
-    CHECK(auris_create(&cfg, &e) == AURIS_OK);
-    if (e) auris_destroy(e);
+    mockingbird_engine_t* e = nullptr;
+    CHECK(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
+    if (e) mockingbird_destroy(e);
 
     cfg.sample_rate_hz = 32000;          // 48000 % 32000 != 0
     e = nullptr;
-    CHECK(auris_create(&cfg, &e) == AURIS_ERR_INVALID_ARG);
+    CHECK(mockingbird_create(&cfg, &e) == MOCKINGBIRD_ERR_INVALID_ARG);
     CHECK(e == nullptr);
 }
 
 TEST_CASE("Engine: runs end-to-end with RNNoise and still detects speech") {
-    const auto wav = read_wav(std::string(AURIS_TEST_FIXTURE_DIR) + "/hello.wav");
+    const auto wav = read_wav(std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/hello.wav");
     REQUIRE(wav.s.size() > 0);
 
-    auris_config_t cfg{}; auris_config_defaults(&cfg);
-    cfg.backend            = AURIS_BACKEND_HOST_PCM;
-    cfg.codec              = AURIS_CODEC_PCM_S16LE;
+    mockingbird_config_t cfg{}; mockingbird_config_defaults(&cfg);
+    cfg.backend            = MOCKINGBIRD_BACKEND_HOST_PCM;
+    cfg.codec              = MOCKINGBIRD_CODEC_PCM_S16LE;
     cfg.sample_rate_hz     = 16000;
     cfg.frame_ms           = 20;
     cfg.enable_rnnoise     = 1;
@@ -212,21 +212,21 @@ TEST_CASE("Engine: runs end-to-end with RNNoise and still detects speech") {
     cfg.vad_aggressiveness = 1;
     cfg.pcm_ring_frames    = 1u << 15;
 
-    auris_engine_t* e = nullptr;
-    REQUIRE(auris_create(&cfg, &e) == AURIS_OK);
-    REQUIRE(auris_start(e) == AURIS_OK);
+    mockingbird_engine_t* e = nullptr;
+    REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
+    REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
 
     constexpr uint32_t N = 320;
     const size_t frames = wav.s.size() / N;
     uint32_t speech_begin = 0;
     auto drain = [&]{
-        auris_event_t ev{};
-        while (auris_poll_event(e, &ev) == AURIS_OK)
-            if (ev.type == AURIS_EVT_SPEECH_BEGIN) ++speech_begin;
+        mockingbird_event_t ev{};
+        while (mockingbird_poll_event(e, &ev) == MOCKINGBIRD_OK)
+            if (ev.type == MOCKINGBIRD_EVT_SPEECH_BEGIN) ++speech_begin;
     };
     for (size_t i = 0; i < frames; ++i) {
-        REQUIRE(auris_push_pcm(e, wav.s.data() + i * N, N,
-                               uint64_t(i) * 20'000ull) == AURIS_OK);
+        REQUIRE(mockingbird_push_pcm(e, wav.s.data() + i * N, N,
+                               uint64_t(i) * 20'000ull) == MOCKINGBIRD_OK);
         if ((i & 0x1Fu) == 0x1F) {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
             drain();
@@ -234,12 +234,12 @@ TEST_CASE("Engine: runs end-to-end with RNNoise and still detects speech") {
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
     drain();
-    REQUIRE(auris_stop(e) == AURIS_OK);
+    REQUIRE(mockingbird_stop(e) == MOCKINGBIRD_OK);
     drain();
 
-    auris_stats_t st{};
-    REQUIRE(auris_get_stats(e, &st) == AURIS_OK);
-    auris_destroy(e);
+    mockingbird_stats_t st{};
+    REQUIRE(mockingbird_get_stats(e, &st) == MOCKINGBIRD_OK);
+    mockingbird_destroy(e);
 
     INFO("rnnoise+vad speech_begin=" << speech_begin
          << " captured=" << st.frames_captured
@@ -253,8 +253,8 @@ TEST_CASE("Engine: runs end-to-end with RNNoise and still detects speech") {
 }
 
 #else
-TEST_CASE("RNNoise tests skipped: AURIS_HAVE_RNNOISE not defined") {
+TEST_CASE("RNNoise tests skipped: MOCKINGBIRD_HAVE_RNNOISE not defined") {
     MESSAGE("RNNoise not compiled in — skip");
     CHECK(true);
 }
-#endif  // AURIS_HAVE_RNNOISE
+#endif  // MOCKINGBIRD_HAVE_RNNOISE

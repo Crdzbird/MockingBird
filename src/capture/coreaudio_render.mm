@@ -7,7 +7,7 @@
 #include "capture/coreaudio_impl.hpp"
 #include "capture/mach_timebase.hpp"
 
-namespace auris {
+namespace mockingbird {
 
 OSStatus coreaudio_input_render(void* refCon, AudioUnitRenderActionFlags* ioActionFlags,
                                 const AudioTimeStamp* inTimeStamp, UInt32 inBusNumber,
@@ -36,6 +36,6 @@ OSStatus coreaudio_input_render(void* refCon, AudioUnitRenderActionFlags* ioActi
     return noErr;
 }
 
-} // namespace auris
+} // namespace mockingbird
 
 #endif

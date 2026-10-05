@@ -12,7 +12,7 @@ sync_into() {
   local dest="$1"
   rm -rf "$dest/include" "$dest/src" "$dest/third_party"
   mkdir -p "$dest/include" "$dest/third_party"
-  cp -R "$ROOT/include/auris" "$dest/include/"
+  cp -R "$ROOT/include/mockingbird" "$dest/include/"
   cp -R "$ROOT/src" "$dest/src"
   for part in "${PARTS[@]}"; do
     cp -R "$ROOT/third_party/$part" "$dest/third_party/"
@@ -21,6 +21,6 @@ sync_into() {
 }
 
 sync_into "$ROOT/packages/mockingbird_android/android/src/main/native"
-sync_into "$ROOT/packages/mockingbird_ios/ios/mockingbird_ios/Sources/auris_native"
-sync_into "$ROOT/packages/mockingbird_macos/macos/mockingbird_macos/Sources/auris_native"
+sync_into "$ROOT/packages/mockingbird_ios/ios/mockingbird_ios/Sources/mockingbird_native"
+sync_into "$ROOT/packages/mockingbird_macos/macos/mockingbird_macos/Sources/mockingbird_native"
 echo "native sources synced"

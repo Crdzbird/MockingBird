@@ -26,7 +26,7 @@ final class DemoState extends Equatable {
   final double sensitivity;
   final bool denoise;
   final String? error;
-  final AurisStats? stats;
+  final MockingbirdStats? stats;
   final int packetCount;
   final int packetBytes;
   final DetectionSummary detection;
@@ -36,12 +36,13 @@ final class DemoState extends Equatable {
 
   DemoPreset get preset => demoPresets[presetIndex];
 
-  DemoState withEvent(AurisEvent event, EventFormatter formatter) => copyWith(
-    detection: detection.applyEvent(event, formatter),
-    log: [formatter.format(event), ...log.take(_logMaxLines - 1)],
-  );
+  DemoState withEvent(MockingbirdEvent event, EventFormatter formatter) =>
+      copyWith(
+        detection: detection.applyEvent(event, formatter),
+        log: [formatter.format(event), ...log.take(_logMaxLines - 1)],
+      );
 
-  DemoState withPacket(AurisPacket packet) => copyWith(
+  DemoState withPacket(MockingbirdPacket packet) => copyWith(
     packetCount: packetCount + 1,
     packetBytes: packetBytes + packet.data.length,
   );
@@ -52,7 +53,7 @@ final class DemoState extends Equatable {
     double? sensitivity,
     bool? denoise,
     ValueGetter<String?>? error,
-    AurisStats? stats,
+    MockingbirdStats? stats,
     int? packetCount,
     int? packetBytes,
     DetectionSummary? detection,

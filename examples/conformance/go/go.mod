@@ -2,6 +2,6 @@ module conformance
 
 go 1.25
 
-require github.com/auris-audio/auris v0.0.0
+require github.com/Crdzbird/MockingBird/bindings/go v0.0.0
 
-replace github.com/auris-audio/auris => ../../../bindings/go
+replace github.com/Crdzbird/MockingBird/bindings/go => ../../../bindings/go

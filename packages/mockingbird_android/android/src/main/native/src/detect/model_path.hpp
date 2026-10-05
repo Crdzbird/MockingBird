@@ -5,7 +5,7 @@
 #include <cstdlib>
 #include <string>
 
-namespace auris {
+namespace mockingbird {
 
 inline std::string resolve_model_path(const char* configured, const char* env_var,
                                       const char* fallback) {
@@ -14,4 +14,4 @@ inline std::string resolve_model_path(const char* configured, const char* env_va
     return fallback;
 }
 
-} // namespace auris
+} // namespace mockingbird

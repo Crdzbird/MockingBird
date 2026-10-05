@@ -1,6 +1,6 @@
 // tests/test_anomaly_reason.cpp
 //
-// Invariant: every AURIS_EVT_ANOMALY event MUST carry a non-zero reason_mask.
+// Invariant: every MOCKINGBIRD_EVT_ANOMALY event MUST carry a non-zero reason_mask.
 // An anomaly with no trigger bits is meaningless to the host — the whole point
 // of the field is to say WHY the gate tripped (RMS / spectral flux / centroid).
 //
@@ -11,7 +11,7 @@
 // likely to surface a reason mask that was cleared during the hold.
 
 #include "doctest.h"
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 
 #include <chrono>
 #include <cmath>
@@ -22,9 +22,9 @@
 namespace {
 
 struct EngineGuard {
-    auris_engine_t* e = nullptr;
+    mockingbird_engine_t* e = nullptr;
     ~EngineGuard() {
-        if (e) { auris_stop(e); auris_destroy(e); }
+        if (e) { mockingbird_stop(e); mockingbird_destroy(e); }
     }
 };
 
@@ -41,10 +41,10 @@ std::vector<int16_t> loud_tone(double freq_hz, double amp01) {
     return v;
 }
 
-void push_n(auris_engine_t* e, const std::vector<int16_t>& f,
+void push_n(mockingbird_engine_t* e, const std::vector<int16_t>& f,
             uint32_t n, uint64_t& ts) {
     for (uint32_t i = 0; i < n; ++i) {
-        REQUIRE(auris_push_pcm(e, f.data(), 320, ts) == AURIS_OK);
+        REQUIRE(mockingbird_push_pcm(e, f.data(), 320, ts) == MOCKINGBIRD_OK);
         ts += 20'000ull;
         if ((i & 0x0Fu) == 0x0F) std::this_thread::sleep_for(std::chrono::milliseconds(30));
     }
@@ -54,10 +54,10 @@ void push_n(auris_engine_t* e, const std::vector<int16_t>& f,
 } // namespace
 
 TEST_CASE("Anomaly: every ANOMALY event carries a non-zero reason_mask") {
-    auris_config_t cfg{};
-    auris_config_defaults(&cfg);
-    cfg.backend           = AURIS_BACKEND_HOST_PCM;
-    cfg.codec             = AURIS_CODEC_PCM_S16LE;
+    mockingbird_config_t cfg{};
+    mockingbird_config_defaults(&cfg);
+    cfg.backend           = MOCKINGBIRD_BACKEND_HOST_PCM;
+    cfg.codec             = MOCKINGBIRD_CODEC_PCM_S16LE;
     cfg.sample_rate_hz    = 16000;
     cfg.frame_ms          = 20;
     cfg.enable_vad        = 0;     // anomaly only — deterministic
@@ -69,8 +69,8 @@ TEST_CASE("Anomaly: every ANOMALY event carries a non-zero reason_mask") {
     cfg.anomaly_background_ms = 2000;
 
     EngineGuard g;
-    REQUIRE(auris_create(&cfg, &g.e) == AURIS_OK);
-    REQUIRE(auris_start(g.e) == AURIS_OK);
+    REQUIRE(mockingbird_create(&cfg, &g.e) == MOCKINGBIRD_OK);
+    REQUIRE(mockingbird_start(g.e) == MOCKINGBIRD_OK);
 
     uint64_t ts = 0;
     const auto sil  = silence_frame();
@@ -80,11 +80,11 @@ TEST_CASE("Anomaly: every ANOMALY event carries a non-zero reason_mask") {
     uint32_t anomaly_zero    = 0;
     auto drain_events = [&]() {
         while (true) {
-            auris_event_t evt{};
-            const auris_status_t s = auris_poll_event(g.e, &evt);
-            if (s == AURIS_ERR_QUEUE_EMPTY) return;
-            REQUIRE(s == AURIS_OK);
-            if (evt.type == AURIS_EVT_ANOMALY) {
+            mockingbird_event_t evt{};
+            const mockingbird_status_t s = mockingbird_poll_event(g.e, &evt);
+            if (s == MOCKINGBIRD_ERR_QUEUE_EMPTY) return;
+            REQUIRE(s == MOCKINGBIRD_OK);
+            if (evt.type == MOCKINGBIRD_EVT_ANOMALY) {
                 ++anomaly_total;
                 if (evt.reason_mask == 0) ++anomaly_zero;
             }

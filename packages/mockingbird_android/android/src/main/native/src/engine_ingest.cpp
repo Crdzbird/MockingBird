@@ -3,9 +3,9 @@
 
 #include "engine.hpp"
 
-namespace auris {
+namespace mockingbird {
 
-void ingest_pcm(auris_engine* e, const int16_t* samples, uint32_t frame_count,
+void ingest_pcm(mockingbird_engine* e, const int16_t* samples, uint32_t frame_count,
                 uint64_t capture_ts_us) noexcept {
     e->last_capture_ts_us.store(capture_ts_us, std::memory_order_release);
     uint64_t expected_first = ~uint64_t{0};
@@ -30,7 +30,7 @@ void ingest_pcm(auris_engine* e, const int16_t* samples, uint32_t frame_count,
 
 void backend_pcm_callback(void* user, const int16_t* samples,
                           uint32_t frame_count, uint64_t capture_ts_us) noexcept {
-    ingest_pcm(static_cast<auris_engine*>(user), samples, frame_count, capture_ts_us);
+    ingest_pcm(static_cast<mockingbird_engine*>(user), samples, frame_count, capture_ts_us);
 }
 
-} // namespace auris
+} // namespace mockingbird

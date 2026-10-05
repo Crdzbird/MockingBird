@@ -1,7 +1,7 @@
-package auris
+package mockingbird
 
 /*
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 */
 import "C"
 
@@ -20,14 +20,14 @@ func (e *Engine) PushPCM(samples []int16, captureTsUs uint64) error {
 	}
 	e.pushMu.Lock()
 	defer e.pushMu.Unlock()
-	st := Status(C.auris_push_pcm(
+	st := Status(C.mockingbird_push_pcm(
 		e.c,
 		(*C.int16_t)(unsafe.Pointer(&samples[0])),
 		C.uint32_t(len(samples)),
 		C.uint64_t(captureTsUs),
 	))
 	if st != StatusOK {
-		return st.err("auris_push_pcm")
+		return st.err("mockingbird_push_pcm")
 	}
 	return nil
 }
@@ -44,14 +44,14 @@ func (e *Engine) ReadPCM(out []int16) (int, error) {
 		return 0, ErrClosed
 	}
 	var written C.uint32_t
-	st := Status(C.auris_read_pcm(
+	st := Status(C.mockingbird_read_pcm(
 		e.c,
 		(*C.int16_t)(unsafe.Pointer(&out[0])),
 		C.uint32_t(len(out)),
 		&written,
 	))
 	if st != StatusOK {
-		return 0, st.err("auris_read_pcm")
+		return 0, st.err("mockingbird_read_pcm")
 	}
 	return int(written), nil
 }

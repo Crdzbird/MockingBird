@@ -5,7 +5,7 @@ It is endorsed, so depending on `mockingbird` includes it automatically.
 
 ## What it bundles
 
-- The Auris engine compiled from source into the host app: capture, RNNoise,
+- The Mockingbird engine compiled from source into the host app: capture, RNNoise,
   libfvad, the anomaly gate, the Opus encoder, and the ONNX Runtime detectors
   (Silero VAD and YAMNet).
 - Microphone capture through a Core Audio RemoteIO unit, which supplies the
@@ -39,4 +39,4 @@ without a prompt:
 
 If you request the permission with `permission_handler`, add
 `PERMISSION_MICROPHONE=1` to the `post_install` block of your Podfile. Engines
-created with `AurisBackend.hostPcm` do not touch the microphone.
+created with `MockingbirdBackend.hostPcm` do not touch the microphone.

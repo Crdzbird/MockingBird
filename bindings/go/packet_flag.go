@@ -1,4 +1,4 @@
-package auris
+package mockingbird
 
 // PacketFlag bits describe a packet's place in its segment.
 type PacketFlag uint32

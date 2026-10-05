@@ -2,7 +2,7 @@
 // caller never needs the C struct layouts. Order is part of the contract.
 #pragma once
 
-namespace auris::web {
+namespace mockingbird::web {
 
 enum ConfigField : int {
     kBackend, kSampleRateHz, kFrameMs, kEnableRnnoise, kEnableVad, kVadTier,
@@ -34,4 +34,4 @@ enum StatsField : int {
     kStatsFieldCount
 };
 
-} // namespace auris::web
+} // namespace mockingbird::web

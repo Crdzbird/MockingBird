@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <vector>
 
-using auris::PrerollRing;
+using mockingbird::PrerollRing;
 
 TEST_CASE("PrerollRing init(0, n) keeps push as a no-op") {
     PrerollRing r;

@@ -13,7 +13,7 @@ extern "C" {
 #include <cstdint>
 #include <vector>
 
-namespace auris {
+namespace mockingbird {
 
 class AnomalyDetector final : public Detector {
 public:
@@ -22,15 +22,15 @@ public:
     AnomalyDetector() = default;
     ~AnomalyDetector() override;
 
-    auris_status_t  init(const auris_config_t& cfg) override;
+    mockingbird_status_t  init(const mockingbird_config_t& cfg) override;
     DetectionResult process(const int16_t* frame, uint32_t frame_count) override;
-    void            retune(const auris_config_t& cfg) override;
+    void            retune(const mockingbird_config_t& cfg) override;
 
 private:
-    auris_status_t  allocate_fft();
+    mockingbird_status_t  allocate_fft();
     void            build_window();
     void            teardown();
-    void            apply_thresholds(const auris_config_t& cfg);
+    void            apply_thresholds(const mockingbird_config_t& cfg);
     SpectralMetrics measure(const int16_t* frame, uint32_t n);
     uint32_t        trigger_bits(const SpectralMetrics& m, float z_rms, float z_flux,
                                  float z_centroid) const;
@@ -59,4 +59,4 @@ private:
     uint32_t max_freeze_frames_  = 0;
 };
 
-} // namespace auris
+} // namespace mockingbird

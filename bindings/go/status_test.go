@@ -1,4 +1,4 @@
-package auris
+package mockingbird
 
 import (
 	"errors"
@@ -22,10 +22,10 @@ func TestVersionAndStatusNames(t *testing.T) {
 	if Version() == "" {
 		t.Error("Version() is empty")
 	}
-	if StatusOK.String() == "" || StatusOK.String() == "AURIS_UNKNOWN" {
+	if StatusOK.String() == "" || StatusOK.String() == "MOCKINGBIRD_UNKNOWN" {
 		t.Errorf("StatusOK string = %q", StatusOK.String())
 	}
-	if got := Status(123456).String(); got != "AURIS_UNKNOWN" {
+	if got := Status(123456).String(); got != "MOCKINGBIRD_UNKNOWN" {
 		t.Errorf("unknown status string = %q", got)
 	}
 }

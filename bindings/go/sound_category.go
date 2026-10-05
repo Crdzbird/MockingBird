@@ -1,4 +1,4 @@
-package auris
+package mockingbird
 
 // SoundCategory folds YAMNet's 521 AudioSet classes into broad groups.
 // AudioSet is English-biased: non-English speech often lands on

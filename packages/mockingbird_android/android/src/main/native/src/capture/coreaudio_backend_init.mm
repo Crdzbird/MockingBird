@@ -10,24 +10,24 @@
 #import <AVFoundation/AVFoundation.h>
 #endif
 
-namespace auris {
+namespace mockingbird {
 
 namespace {
 
-auris_status_t activate_session(const auris_config_t& cfg) {
+mockingbird_status_t activate_session(const mockingbird_config_t& cfg) {
 #if TARGET_OS_IPHONE
     AVAudioSession* session = [AVAudioSession sharedInstance];
     NSError* err = nil;
-    if (![session setCategory:AVAudioSessionCategoryRecord error:&err]) return AURIS_ERR_BACKEND;
+    if (![session setCategory:AVAudioSessionCategoryRecord error:&err]) return MOCKINGBIRD_ERR_BACKEND;
     [session setPreferredSampleRate:static_cast<double>(cfg.sample_rate_hz) error:nil];
-    if (![session setActive:YES error:&err]) return AURIS_ERR_BACKEND;
+    if (![session setActive:YES error:&err]) return MOCKINGBIRD_ERR_BACKEND;
 #else
     (void)cfg;
 #endif
-    return AURIS_OK;
+    return MOCKINGBIRD_OK;
 }
 
-OSStatus set_stream_format(AudioComponentInstance unit, const auris_config_t& cfg) {
+OSStatus set_stream_format(AudioComponentInstance unit, const mockingbird_config_t& cfg) {
     AudioStreamBasicDescription fmt{};
     fmt.mSampleRate       = cfg.sample_rate_hz;
     fmt.mFormatID         = kAudioFormatLinearPCM;
@@ -44,22 +44,22 @@ OSStatus set_stream_format(AudioComponentInstance unit, const auris_config_t& cf
 
 } // namespace
 
-auris_status_t coreaudio_open_unit(CoreAudioBackend::Impl& impl, const auris_config_t& cfg) {
-    const auris_status_t session = activate_session(cfg);
-    if (session != AURIS_OK) return session;
+mockingbird_status_t coreaudio_open_unit(CoreAudioBackend::Impl& impl, const mockingbird_config_t& cfg) {
+    const mockingbird_status_t session = activate_session(cfg);
+    if (session != MOCKINGBIRD_OK) return session;
     impl.unit = coreaudio_create_unit();
-    if (impl.unit == nullptr) return AURIS_ERR_BACKEND;
+    if (impl.unit == nullptr) return MOCKINGBIRD_ERR_BACKEND;
     OSStatus s = coreaudio_enable_input_only(impl.unit);
     if (s == noErr) s = coreaudio_select_default_input(impl.unit);
     if (s == noErr) s = set_stream_format(impl.unit, cfg);
     if (s != noErr) {
         AudioComponentInstanceDispose(impl.unit);
         impl.unit = nullptr;
-        return AURIS_ERR_BACKEND;
+        return MOCKINGBIRD_ERR_BACKEND;
     }
-    return AURIS_OK;
+    return MOCKINGBIRD_OK;
 }
 
-} // namespace auris
+} // namespace mockingbird
 
 #endif

@@ -1,9 +1,9 @@
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
-import 'package:mockingbird_web/src/auris_module.dart';
-import 'package:mockingbird_web/src/auris_record_api.dart';
+import 'package:mockingbird_web/src/mockingbird_module.dart';
+import 'package:mockingbird_web/src/mockingbird_record_api.dart';
 import 'package:mockingbird_web/src/web_config_field.dart';
 
-/// Writes an [AurisNativeConfig] into a native config through the shim.
+/// Writes a [MockingbirdNativeConfig] into a native config through the shim.
 ///
 /// Capture is always host-pushed in the WebAssembly build; the platform
 /// drives the microphone itself when the caller asked for a capture backend.
@@ -13,13 +13,13 @@ final class WebConfigWriter {
 
   static const _hostPcm = 4;
 
-  final AurisModule _m;
+  final MockingbirdModule _m;
 
   /// Allocates and fills a config; the caller frees it.
-  int write(AurisNativeConfig c) {
+  int write(MockingbirdNativeConfig c) {
     final d = c.detectors;
     final o = c.output;
-    final cfg = AurisRecordApi(_m).configNew();
+    final cfg = MockingbirdRecordApi(_m).configNew();
     final values = <WebConfigField, num>{
       WebConfigField.backend: _hostPcm,
       WebConfigField.sampleRateHz: c.sampleRateHz,
@@ -56,7 +56,7 @@ final class WebConfigWriter {
       WebConfigField.workerBatchFrames: o.workerBatchFrames,
     };
     for (final MapEntry(:key, :value) in values.entries) {
-      AurisRecordApi(_m).configSet(cfg, key.index, value.toDouble());
+      MockingbirdRecordApi(_m).configSet(cfg, key.index, value.toDouble());
     }
     return cfg;
   }

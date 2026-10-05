@@ -1,43 +1,43 @@
-// Session setup, buffering and tuning; without AURIS_HAVE_NEURAL_VAD the
+// Session setup, buffering and tuning; without MOCKINGBIRD_HAVE_NEURAL_VAD the
 // factory returns null and the engine reports the tier as unsupported.
 #include "detect/neural_vad_detector.hpp"
 
-#ifdef AURIS_HAVE_NEURAL_VAD
+#ifdef MOCKINGBIRD_HAVE_NEURAL_VAD
 
-#include "auris_log.hpp"
+#include "mockingbird_log.hpp"
 #include "detect/model_path.hpp"
 #include "detect/ort_env.hpp"
 
 #include <algorithm>
 
-namespace auris {
+namespace mockingbird {
 
-auris_status_t NeuralVadDetector::load_session(const auris_config_t& cfg) {
+mockingbird_status_t NeuralVadDetector::load_session(const mockingbird_config_t& cfg) {
     try {
         const std::string path =
-            resolve_model_path(cfg.neural_vad_model_path, "AURIS_NEURAL_VAD_MODEL", "silero_vad.onnx");
+            resolve_model_path(cfg.neural_vad_model_path, "MOCKINGBIRD_NEURAL_VAD_MODEL", "silero_vad.onnx");
         Ort::SessionOptions opts;
         opts.SetIntraOpNumThreads(1);
         opts.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
         apply_execution_provider(opts);
-        AURIS_VLOG("neural-vad loading model: '%s'", path.c_str());
+        MOCKINGBIRD_VLOG("neural-vad loading model: '%s'", path.c_str());
         session_ = std::make_unique<Ort::Session>(shared_ort_env(), path.c_str(), opts);
-        return AURIS_OK;
+        return MOCKINGBIRD_OK;
     } catch (const Ort::Exception& ex) {
-        AURIS_VLOG("neural-vad ORT exception: %s", ex.what());
+        MOCKINGBIRD_VLOG("neural-vad ORT exception: %s", ex.what());
     } catch (const std::exception& ex) {
-        AURIS_VLOG("neural-vad exception: %s", ex.what());
+        MOCKINGBIRD_VLOG("neural-vad exception: %s", ex.what());
     } catch (...) {
     }
     session_.reset();
-    return AURIS_ERR_UNSUPPORTED;
+    return MOCKINGBIRD_ERR_UNSUPPORTED;
 }
 
-auris_status_t NeuralVadDetector::init(const auris_config_t& cfg) {
-    if (session_ != nullptr) return AURIS_ERR_INVALID_STATE;
-    if (cfg.sample_rate_hz != 16000 && cfg.sample_rate_hz != 8000) return AURIS_ERR_UNSUPPORTED;
-    const auris_status_t s = load_session(cfg);
-    if (s != AURIS_OK) return s;
+mockingbird_status_t NeuralVadDetector::init(const mockingbird_config_t& cfg) {
+    if (session_ != nullptr) return MOCKINGBIRD_ERR_INVALID_STATE;
+    if (cfg.sample_rate_hz != 16000 && cfg.sample_rate_hz != 8000) return MOCKINGBIRD_ERR_UNSUPPORTED;
+    const mockingbird_status_t s = load_session(cfg);
+    if (s != MOCKINGBIRD_OK) return s;
     sample_rate_   = cfg.sample_rate_hz;
     frame_samples_ = (cfg.sample_rate_hz / 1000u) * cfg.frame_ms;
     window_        = cfg.sample_rate_hz == 16000 ? size_t{512} : size_t{256};
@@ -50,7 +50,7 @@ auris_status_t NeuralVadDetector::init(const auris_config_t& cfg) {
     onset_count_   = 0;
     last_p_        = 0.0f;
     cached_active_ = false;
-    return AURIS_OK;
+    return MOCKINGBIRD_OK;
 }
 
 DetectionResult NeuralVadDetector::process(const int16_t* frame, uint32_t n) {
@@ -68,9 +68,9 @@ DetectionResult NeuralVadDetector::process(const int16_t* frame, uint32_t n) {
     return r;
 }
 
-void NeuralVadDetector::retune(const auris_config_t& cfg) { apply_thresholds(cfg); }
+void NeuralVadDetector::retune(const mockingbird_config_t& cfg) { apply_thresholds(cfg); }
 
-void NeuralVadDetector::apply_thresholds(const auris_config_t& cfg) {
+void NeuralVadDetector::apply_thresholds(const mockingbird_config_t& cfg) {
     threshold_ = (cfg.vad_neural_threshold > 0.0f && cfg.vad_neural_threshold < 1.0f)
         ? cfg.vad_neural_threshold
         : 0.5f;
@@ -79,12 +79,12 @@ void NeuralVadDetector::apply_thresholds(const auris_config_t& cfg) {
 
 std::unique_ptr<Detector> make_neural_vad() { return std::make_unique<NeuralVadDetector>(); }
 
-} // namespace auris
+} // namespace mockingbird
 
 #else
 
-namespace auris {
+namespace mockingbird {
 std::unique_ptr<Detector> make_neural_vad() { return nullptr; }
-} // namespace auris
+} // namespace mockingbird
 
 #endif

@@ -5,7 +5,7 @@
 #include "engine.hpp"
 #include "worker/level_meter.hpp"
 
-namespace auris {
+namespace mockingbird {
 
 void Worker::process_frame(uint64_t now_ts) {
     health_.begin_frame();
@@ -27,4 +27,4 @@ void Worker::process_frame(uint64_t now_ts) {
     health_.end_frame(e_, now_ts, tunables_);
 }
 
-} // namespace auris
+} // namespace mockingbird

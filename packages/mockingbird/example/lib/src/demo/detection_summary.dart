@@ -14,29 +14,31 @@ final class DetectionSummary extends Equatable {
 
   final bool voiceActive;
   final String lastSound;
-  final AurisSoundCategory lastCategory;
+  final MockingbirdSoundCategory lastCategory;
   final double lastConfidence;
 
   /// The summary after [event]. A human-voice classification also lights
   /// the voice lamp, so voice shows even before Silero fires.
-  DetectionSummary applyEvent(AurisEvent event, EventFormatter formatter) =>
-      switch (event) {
-        AurisSpeechBeginEvent() => copyWith(voiceActive: true),
-        AurisSpeechEndEvent() => copyWith(voiceActive: false),
-        AurisSoundClassEvent(
-          :final classId,
-          :final category,
-          :final confidence,
-          :final isHumanVoice,
-        ) =>
-          DetectionSummary(
-            voiceActive: voiceActive || isHumanVoice,
-            lastSound: formatter.labelFor(classId),
-            lastCategory: category,
-            lastConfidence: confidence,
-          ),
-        _ => this,
-      };
+  DetectionSummary applyEvent(
+    MockingbirdEvent event,
+    EventFormatter formatter,
+  ) => switch (event) {
+    MockingbirdSpeechBeginEvent() => copyWith(voiceActive: true),
+    MockingbirdSpeechEndEvent() => copyWith(voiceActive: false),
+    MockingbirdSoundClassEvent(
+      :final classId,
+      :final category,
+      :final confidence,
+      :final isHumanVoice,
+    ) =>
+      DetectionSummary(
+        voiceActive: voiceActive || isHumanVoice,
+        lastSound: formatter.labelFor(classId),
+        lastCategory: category,
+        lastConfidence: confidence,
+      ),
+    _ => this,
+  };
 
   DetectionSummary copyWith({bool? voiceActive}) => DetectionSummary(
     voiceActive: voiceActive ?? this.voiceActive,

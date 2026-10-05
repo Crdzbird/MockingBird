@@ -6,7 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
-import auris
+import mockingbird
 
 FIXTURES = Path(__file__).resolve().parents[2] / "tests" / "fixtures"
 
@@ -17,28 +17,28 @@ def locate(name: str) -> str | None:
     return str(p) if p.exists() else None
 
 
-def build_config(args: argparse.Namespace) -> auris.Config:
+def build_config(args: argparse.Namespace) -> mockingbird.Config:
     """One sensitivity dial, a preset, and the file-versus-mic adjustments."""
     silero, yamnet = locate("silero_vad.onnx"), locate("yamnet_3s.onnx")
     live = not args.file
-    cfg = auris.sensitive(
+    cfg = mockingbird.sensitive(
         args.sensitivity,
-        backend=auris.Backend.AUTO if live else auris.Backend.HOST_PCM,
+        backend=mockingbird.Backend.AUTO if live else mockingbird.Backend.HOST_PCM,
         denoise=args.preset in ("voice", "everything"),
         vad=args.preset not in ("anomaly", "music"),
-        vad_tier=auris.VadTier.NEURAL if silero else auris.VadTier.FAST,
+        vad_tier=mockingbird.VadTier.NEURAL if silero else mockingbird.VadTier.FAST,
         neural_vad_model_path=silero,
         anomaly=args.preset not in ("voice", "music"),
         sound_class=bool(yamnet) and args.preset not in ("voice", "anomaly"),
         sound_class_model_path=yamnet,
-        encoder=auris.EncoderConfig.opus() if args.preset in ("voice", "everything") else None,
-        queues=auris.QueueConfig(
+        encoder=mockingbird.EncoderConfig.opus() if args.preset in ("voice", "everything") else None,
+        queues=mockingbird.QueueConfig(
             pcm_ring_frames=1 << 17 if args.file else 1 << 14,
             packet_queue_capacity=4096 if args.file else 256,
             pcm_tap=args.tap,
             pcm_tap_frames=1 << 16,
         ),
-        performance=auris.PerformanceConfig.mobile() if live else None,
+        performance=mockingbird.PerformanceConfig.mobile() if live else None,
     )
     if args.preset == "anomaly":
         cfg.anomaly.rms_z = cfg.anomaly.flux_z = 2.0
@@ -51,7 +51,7 @@ def build_config(args: argparse.Namespace) -> auris.Config:
     return cfg
 
 
-def describe(cfg: auris.Config, preset: str) -> str:
+def describe(cfg: mockingbird.Config, preset: str) -> str:
     """A one-line summary of what the engine will run."""
     on = []
     if cfg.vad.enabled:
@@ -67,6 +67,6 @@ def describe(cfg: auris.Config, preset: str) -> str:
     if cfg.performance.adaptive_degradation:
         on.append("adaptive")
     tag = f"preset={preset} · " if preset else ""
-    backend = "host-pcm" if cfg.backend is auris.Backend.HOST_PCM else "mic"
+    backend = "host-pcm" if cfg.backend is mockingbird.Backend.HOST_PCM else "mic"
     codec = cfg.encoder.codec.name.lower()
     return f"{tag}{backend} · {cfg.sample_rate_hz} Hz · {codec} · [{' '.join(on)}]"

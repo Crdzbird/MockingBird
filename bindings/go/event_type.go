@@ -1,4 +1,4 @@
-package auris
+package mockingbird
 
 // EventType identifies what an Event reports.
 type EventType int

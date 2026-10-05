@@ -3,15 +3,15 @@
 import time
 import unittest
 
-from helpers import auris, host_config, push, silence, square
+from helpers import mockingbird, host_config, push, silence, square
 
 
 class SilenceGateTest(unittest.TestCase):
     def test_rnnoise_skips_quiet_frames_until_the_gate_is_disabled(self) -> None:
         cfg = host_config(denoise=True)
         try:
-            engine = auris.Engine(cfg)
-        except auris.AurisError as exc:
+            engine = mockingbird.Engine(cfg)
+        except mockingbird.MockingbirdError as exc:
             self.skipTest(f"RNNoise not compiled in: {exc}")
         loud = square(320, 3000, period=32)
         with engine:

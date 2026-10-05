@@ -7,21 +7,21 @@
 #include "engine.hpp"
 #include "worker/worker.hpp"
 
-namespace auris {
+namespace mockingbird {
 
-void driver_start(auris_engine* e) {
+void driver_start(mockingbird_engine* e) {
     e->worker_thread = std::thread(worker_loop, e);
 }
 
-void driver_pump(auris_engine*) noexcept {}
+void driver_pump(mockingbird_engine*) noexcept {}
 
-void driver_stop(auris_engine* e) {
+void driver_stop(mockingbird_engine* e) {
     e->stop_requested.store(true, std::memory_order_release);
     e->wake_count.fetch_add(1, std::memory_order_release);
     e->wake_count.notify_one();
     if (e->worker_thread.joinable()) e->worker_thread.join();
 }
 
-} // namespace auris
+} // namespace mockingbird
 
 #endif

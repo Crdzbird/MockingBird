@@ -10,7 +10,7 @@
 #include <CoreAudio/AudioHardware.h>
 #endif
 
-namespace auris {
+namespace mockingbird {
 
 AudioComponentInstance coreaudio_create_unit() {
     AudioComponentDescription desc{};
@@ -60,6 +60,6 @@ OSStatus coreaudio_select_default_input(AudioComponentInstance unit) {
 #endif
 }
 
-} // namespace auris
+} // namespace mockingbird
 
 #endif

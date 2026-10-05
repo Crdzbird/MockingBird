@@ -1,4 +1,4 @@
-package auris
+package mockingbird
 
 // SegmentConfig shapes how detections are cut into segments of audio.
 type SegmentConfig struct {

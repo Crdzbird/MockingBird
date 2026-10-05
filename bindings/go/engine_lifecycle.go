@@ -1,7 +1,7 @@
-package auris
+package mockingbird
 
 /*
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 */
 import "C"
 
@@ -13,10 +13,10 @@ func (e *Engine) Start() error {
 		return ErrClosed
 	}
 	if e.running {
-		return StatusErrAlreadyRunning.err("auris_start")
+		return StatusErrAlreadyRunning.err("mockingbird_start")
 	}
-	if st := Status(C.auris_start(e.c)); st != StatusOK {
-		return st.err("auris_start")
+	if st := Status(C.mockingbird_start(e.c)); st != StatusOK {
+		return st.err("mockingbird_start")
 	}
 	e.running = true
 	e.done = make(chan struct{})
@@ -34,14 +34,14 @@ func (e *Engine) Stop() error {
 		return ErrClosed
 	}
 	if !e.running {
-		return StatusErrNotRunning.err("auris_stop")
+		return StatusErrNotRunning.err("mockingbird_stop")
 	}
-	st := Status(C.auris_stop(e.c))
+	st := Status(C.mockingbird_stop(e.c))
 	close(e.done)
 	e.running = false
 	e.wg.Wait()
 	if st != StatusOK {
-		return st.err("auris_stop")
+		return st.err("mockingbird_stop")
 	}
 	return nil
 }

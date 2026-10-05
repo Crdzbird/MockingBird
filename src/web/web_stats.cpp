@@ -1,26 +1,26 @@
 // Stats record access for the WebAssembly shim.
 #ifdef __EMSCRIPTEN__
 
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 #include "web/web_fields.hpp"
 
 #include <emscripten/emscripten.h>
 
 #include <cstdlib>
 
-using namespace auris::web;
+using namespace mockingbird::web;
 
 extern "C" {
 
-EMSCRIPTEN_KEEPALIVE auris_stats_t* auris_web_stats_new(void) {
-    return static_cast<auris_stats_t*>(std::calloc(1, sizeof(auris_stats_t)));
+EMSCRIPTEN_KEEPALIVE mockingbird_stats_t* mockingbird_web_stats_new(void) {
+    return static_cast<mockingbird_stats_t*>(std::calloc(1, sizeof(mockingbird_stats_t)));
 }
 
-EMSCRIPTEN_KEEPALIVE void auris_web_stats_free(auris_stats_t* s) { std::free(s); }
+EMSCRIPTEN_KEEPALIVE void mockingbird_web_stats_free(mockingbird_stats_t* s) { std::free(s); }
 
-EMSCRIPTEN_KEEPALIVE int auris_web_stats_field_count(void) { return kStatsFieldCount; }
+EMSCRIPTEN_KEEPALIVE int mockingbird_web_stats_field_count(void) { return kStatsFieldCount; }
 
-EMSCRIPTEN_KEEPALIVE double auris_web_stats_get(const auris_stats_t* s, int field) {
+EMSCRIPTEN_KEEPALIVE double mockingbird_web_stats_get(const mockingbird_stats_t* s, int field) {
     if (s == nullptr) return 0;
     switch (field) {
         case kFramesCaptured:              return static_cast<double>(s->frames_captured);

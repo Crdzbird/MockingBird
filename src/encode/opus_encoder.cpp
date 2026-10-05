@@ -2,7 +2,7 @@
 // frame at 1275 bytes, and the slot size leaves headroom above that.
 #include "encode/encoder.hpp"
 
-#ifdef AURIS_HAVE_OPUS
+#ifdef MOCKINGBIRD_HAVE_OPUS
 
 extern "C" {
 #include <opus.h>
@@ -10,7 +10,7 @@ extern "C" {
 
 #include <cstdint>
 
-namespace auris {
+namespace mockingbird {
 
 namespace {
 
@@ -26,22 +26,22 @@ public:
         if (enc_ != nullptr) opus_encoder_destroy(enc_);
     }
 
-    auris_status_t init(const auris_config_t& cfg) override {
-        if (enc_ != nullptr) return AURIS_ERR_INVALID_STATE;
-        if (!opus_supports_rate(cfg.sample_rate_hz)) return AURIS_ERR_UNSUPPORTED;
+    mockingbird_status_t init(const mockingbird_config_t& cfg) override {
+        if (enc_ != nullptr) return MOCKINGBIRD_ERR_INVALID_STATE;
+        if (!opus_supports_rate(cfg.sample_rate_hz)) return MOCKINGBIRD_ERR_UNSUPPORTED;
 
         int err = 0;
         enc_ = opus_encoder_create(static_cast<opus_int32>(cfg.sample_rate_hz), cfg.channels,
                                    OPUS_APPLICATION_VOIP, &err);
-        if (enc_ == nullptr || err != OPUS_OK) return AURIS_ERR_BACKEND;
+        if (enc_ == nullptr || err != OPUS_OK) return MOCKINGBIRD_ERR_BACKEND;
 
         apply_settings(cfg);
 
         frame_samples_ = (cfg.sample_rate_hz / 1000u) * cfg.frame_ms;
-        return AURIS_OK;
+        return MOCKINGBIRD_OK;
     }
 
-    auris_codec_t codec() const override { return AURIS_CODEC_OPUS; }
+    mockingbird_codec_t codec() const override { return MOCKINGBIRD_CODEC_OPUS; }
     size_t max_packet_bytes() const override { return kOpusMaxPacketBytes; }
 
     int encode(const int16_t* in_samples, uint32_t n, uint8_t* out_buf,
@@ -54,7 +54,7 @@ public:
 private:
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wold-style-cast"
-    void apply_settings(const auris_config_t& cfg) {
+    void apply_settings(const mockingbird_config_t& cfg) {
         opus_encoder_ctl(enc_, OPUS_SET_BITRATE(static_cast<opus_int32>(cfg.opus_bitrate_bps)));
         opus_encoder_ctl(enc_, OPUS_SET_VBR(cfg.opus_vbr));
         opus_encoder_ctl(enc_, OPUS_SET_COMPLEXITY(cfg.opus_complexity));
@@ -71,12 +71,12 @@ std::unique_ptr<Encoder> make_opus_encoder() {
     return std::make_unique<LibOpusEncoder>();
 }
 
-} // namespace auris
+} // namespace mockingbird
 
 #else
 
-namespace auris {
+namespace mockingbird {
 std::unique_ptr<Encoder> make_opus_encoder() { return nullptr; }
-} // namespace auris
+} // namespace mockingbird
 
 #endif

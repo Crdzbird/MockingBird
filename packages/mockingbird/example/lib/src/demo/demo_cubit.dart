@@ -31,7 +31,7 @@ final class DemoCubit extends Cubit<DemoState> {
         onPacket: (p) => emit(state.withPacket(p)),
       );
       emit(state.copyWith(running: true));
-    } on AurisException catch (e) {
+    } on MockingbirdException catch (e) {
       emit(state.copyWith(error: () => '$e'));
     }
   }
@@ -54,7 +54,7 @@ final class DemoCubit extends Cubit<DemoState> {
     if (engine == null) return;
     try {
       engine.updateConfig(_config(value));
-    } on AurisException catch (e) {
+    } on MockingbirdException catch (e) {
       emit(state.copyWith(error: () => 'retune failed: $e'));
     }
   }
@@ -77,12 +77,12 @@ final class DemoCubit extends Cubit<DemoState> {
   }
 
   Future<void> _loadModels() async {
-    _formatter = EventFormatter(await AurisModels.yamnetLabels());
-    _neuralVadModelPath = await AurisModels.neuralVadPath();
-    _soundClassModelPath = await AurisModels.soundClassPath();
+    _formatter = EventFormatter(await MockingbirdModels.yamnetLabels());
+    _neuralVadModelPath = await MockingbirdModels.neuralVadPath();
+    _soundClassModelPath = await MockingbirdModels.soundClassPath();
   }
 
-  AurisConfig _config(double sensitivity) => state.preset.config(
+  MockingbirdConfig _config(double sensitivity) => state.preset.config(
     sensitivity: sensitivity,
     denoise: state.denoise,
     neuralVadModelPath: _neuralVadModelPath,

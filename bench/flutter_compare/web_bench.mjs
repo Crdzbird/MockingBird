@@ -8,8 +8,8 @@ import path from 'node:path';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..', '..');
-const { default: createAurisModule } = await import(path.join(root, 'packages', 'mockingbird_web', 'assets', 'auris.js'));
-const m = await createAurisModule();
+const { default: createMockingbirdModule } = await import(path.join(root, 'packages', 'mockingbird_web', 'assets', 'mockingbird.js'));
+const m = await createMockingbirdModule();
 
 function wavSamples(file) {
   const b = readFileSync(file);
@@ -49,42 +49,42 @@ const scenarios = [
 const pcm = fixture();
 const chunk = 320;
 const buf = m._malloc(chunk * 2);
-const evt = m._auris_web_event_new();
-const pkt = m._auris_web_packet_new();
-const stats = m._auris_web_stats_new();
+const evt = m._mockingbird_web_event_new();
+const pkt = m._mockingbird_web_packet_new();
+const stats = m._mockingbird_web_stats_new();
 const statusPtr = m._malloc(4);
 mkdirSync(path.join(here, 'results'), { recursive: true });
 const lines = [];
 for (const [name, fields] of scenarios) {
-  const cfg = m._auris_web_config_new();
-  m._auris_web_config_set(cfg, F.backend, 4);
-  m._auris_web_config_set(cfg, F.pcmRingFrames, 1 << 17);
-  m._auris_web_config_set(cfg, F.packetQueueCapacity, 4096);
-  for (const [k, v] of Object.entries(fields)) m._auris_web_config_set(cfg, Number(k), v);
-  const engine = m._auris_web_create(cfg, statusPtr);
-  m._auris_web_config_free(cfg);
+  const cfg = m._mockingbird_web_config_new();
+  m._mockingbird_web_config_set(cfg, F.backend, 4);
+  m._mockingbird_web_config_set(cfg, F.pcmRingFrames, 1 << 17);
+  m._mockingbird_web_config_set(cfg, F.packetQueueCapacity, 4096);
+  for (const [k, v] of Object.entries(fields)) m._mockingbird_web_config_set(cfg, Number(k), v);
+  const engine = m._mockingbird_web_create(cfg, statusPtr);
+  m._mockingbird_web_config_free(cfg);
   if (!engine) throw new Error(`${name}: create failed ${m.HEAP32[statusPtr >> 2]}`);
-  m._auris_start(engine);
+  m._mockingbird_start(engine);
   let packets = 0, speech = 0, segments = 0;
   const rss0 = process.memoryUsage().rss;
   let rssPeak = rss0;
   const t0 = performance.now();
   for (let i = 0, ts = 0, n = 0; i + chunk <= pcm.length; i += chunk, ts += 20000, n++) {
     m.HEAP16.set(pcm.subarray(i, i + chunk), buf >> 1);
-    m._auris_web_push_pcm(engine, buf, chunk, ts);
-    while (m._auris_poll_event(engine, evt) === 0) {
-      const t = m._auris_web_event_get(evt, 0);
+    m._mockingbird_web_push_pcm(engine, buf, chunk, ts);
+    while (m._mockingbird_poll_event(engine, evt) === 0) {
+      const t = m._mockingbird_web_event_get(evt, 0);
       if (t === 1) speech++;
       if (t === 4) segments++;
     }
-    while (m._auris_drain(engine, pkt) === 0) { packets++; m._auris_release(engine, pkt); }
+    while (m._mockingbird_drain(engine, pkt) === 0) { packets++; m._mockingbird_release(engine, pkt); }
     if (n % 250 === 0) rssPeak = Math.max(rssPeak, process.memoryUsage().rss);
   }
   const seconds = (performance.now() - t0) / 1000;
-  m._auris_stop(engine);
-  m._auris_get_stats(engine, stats);
-  const dropped = m._auris_web_stats_get(stats, 1);
-  m._auris_destroy(engine);
+  m._mockingbird_stop(engine);
+  m._mockingbird_get_stats(engine, stats);
+  const dropped = m._mockingbird_web_stats_get(stats, 1);
+  m._mockingbird_destroy(engine);
   const audio = pcm.length / 16000;
   const r = { library: 'mockingbird_web', scenario: name, audio_s: audio, cpu_s: seconds, wall_s: seconds, cpu_share: seconds / audio, rss_base_mb: rss0 / 1048576, rss_peak_mb: rssPeak / 1048576, counters: { frames_pushed: Math.floor(pcm.length / chunk), packets, speech_begin: speech, segments, frames_dropped_capture: dropped } };
   lines.push(JSON.stringify(r));

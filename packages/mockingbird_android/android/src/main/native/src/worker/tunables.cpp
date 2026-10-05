@@ -2,11 +2,11 @@
 // only on an actual retune, never while a detector is mid-frame.
 #include "worker/tunables.hpp"
 
-#include "auris_log.hpp"
+#include "mockingbird_log.hpp"
 #include "detect/detector.hpp"
 #include "engine.hpp"
 
-namespace auris {
+namespace mockingbird {
 
 namespace {
 
@@ -16,17 +16,17 @@ float gate_or(float v) { return v == 0.0f ? -60.0f : v; }
 
 } // namespace
 
-void Tunables::load(const auris_engine* e) {
+void Tunables::load(const mockingbird_engine* e) {
     frame_ms_        = e->cfg.frame_ms;
     seen_generation_ = e->tune_generation.load(std::memory_order_acquire);
     apply(e->cfg);
 }
 
-bool Tunables::refresh(auris_engine* e, Detector* vad, Detector* anomaly) {
+bool Tunables::refresh(mockingbird_engine* e, Detector* vad, Detector* anomaly) {
     const uint64_t gen = e->tune_generation.load(std::memory_order_acquire);
     if (gen == seen_generation_) return false;
     seen_generation_ = gen;
-    auris_config_t live;
+    mockingbird_config_t live;
     {
         std::lock_guard lk(e->tune_mu);
         live = e->live_cfg;
@@ -34,11 +34,11 @@ bool Tunables::refresh(auris_engine* e, Detector* vad, Detector* anomaly) {
     apply(live);
     if (vad)     vad->retune(live);
     if (anomaly) anomaly->retune(live);
-    AURIS_VLOG("retuned to generation %llu", static_cast<unsigned long long>(gen));
+    MOCKINGBIRD_VLOG("retuned to generation %llu", static_cast<unsigned long long>(gen));
     return true;
 }
 
-void Tunables::apply(const auris_config_t& c) {
+void Tunables::apply(const mockingbird_config_t& c) {
     vad_enabled          = c.enable_vad != 0;
     anomaly_enabled      = c.enable_anomaly != 0;
     sound_class_enabled  = c.enable_sound_class != 0;
@@ -51,4 +51,4 @@ void Tunables::apply(const auris_config_t& c) {
     degrade.configure(c.degrade_busy_ppm);
 }
 
-} // namespace auris
+} // namespace mockingbird

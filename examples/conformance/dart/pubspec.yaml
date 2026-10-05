@@ -1,5 +1,5 @@
-name: auris_conformance
-description: Dart peer of the Auris cross-binding conformance harness.
+name: mockingbird_conformance
+description: Dart peer of the Mockingbird cross-binding conformance harness.
 publish_to: none
 
 environment:

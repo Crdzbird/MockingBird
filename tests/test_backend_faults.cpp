@@ -3,15 +3,15 @@
 // Capture-backend fault injection via the make_backend() test seam. A mock
 // CaptureBackend lets us drive paths that real devices can't be made to hit
 // deterministically:
-//   - init() failure  -> auris_start returns the error, no worker spawned
-//   - start() failure -> auris_start tears the just-spawned worker back down
+//   - init() failure  -> mockingbird_start returns the error, no worker spawned
+//   - start() failure -> mockingbird_start tears the just-spawned worker back down
 //     cleanly and returns the error (no thread leak, no hang)
 //   - success + feed  -> the backend's own thread (T1) drives PCM through the
 //     callback into the ring and out as packets (the path HOST_PCM bypasses)
 //   - destroy while running -> teardown joins the worker AND stops the backend
 
 #include "doctest.h"
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 #include "capture/capture_backend.hpp"
 
 #include <atomic>
@@ -27,8 +27,8 @@ namespace {
 // serially, so non-atomic counters are safe; only the feeder touches the
 // backend's own atomic running flag.
 struct MockState {
-    auris_status_t init_result  = AURIS_OK;
-    auris_status_t start_result = AURIS_OK;
+    mockingbird_status_t init_result  = MOCKINGBIRD_OK;
+    mockingbird_status_t start_result = MOCKINGBIRD_OK;
     bool           feed         = false;
     int            init_calls   = 0;
     int            start_calls  = 0;
@@ -36,12 +36,12 @@ struct MockState {
 };
 MockState g_mock;
 
-class MockBackend final : public auris::CaptureBackend {
+class MockBackend final : public mockingbird::CaptureBackend {
 public:
     ~MockBackend() override { stop(); }
 
-    auris_status_t init(const auris_config_t& cfg,
-                        auris::PcmCallback     cb,
+    mockingbird_status_t init(const mockingbird_config_t& cfg,
+                        mockingbird::PcmCallback     cb,
                         void*                  user) override {
         ++g_mock.init_calls;
         cb_ = cb;
@@ -50,9 +50,9 @@ public:
         return g_mock.init_result;
     }
 
-    auris_status_t start() override {
+    mockingbird_status_t start() override {
         ++g_mock.start_calls;
-        if (g_mock.start_result != AURIS_OK) return g_mock.start_result;
+        if (g_mock.start_result != MOCKINGBIRD_OK) return g_mock.start_result;
         if (g_mock.feed) {
             running_.store(true, std::memory_order_relaxed);
             feeder_ = std::thread([this] {
@@ -65,25 +65,25 @@ public:
                 }
             });
         }
-        return AURIS_OK;
+        return MOCKINGBIRD_OK;
     }
 
-    auris_status_t stop() override {
+    mockingbird_status_t stop() override {
         ++g_mock.stop_calls;
         running_.store(false, std::memory_order_relaxed);
         if (feeder_.joinable()) feeder_.join();
-        return AURIS_OK;
+        return MOCKINGBIRD_OK;
     }
 
 private:
-    auris::PcmCallback cb_   = nullptr;
+    mockingbird::PcmCallback cb_   = nullptr;
     void*              user_ = nullptr;
     uint32_t           frame_samples_ = 320;
     std::atomic<bool>  running_{false};
     std::thread        feeder_;
 };
 
-std::unique_ptr<auris::CaptureBackend> mock_factory(auris_backend_t) {
+std::unique_ptr<mockingbird::CaptureBackend> mock_factory(mockingbird_backend_t) {
     return std::make_unique<MockBackend>();
 }
 
@@ -92,16 +92,16 @@ std::unique_ptr<auris::CaptureBackend> mock_factory(auris_backend_t) {
 struct MockGuard {
     MockGuard() {
         g_mock = MockState{};
-        auris::set_backend_factory_override(&mock_factory);
+        mockingbird::set_backend_factory_override(&mock_factory);
     }
-    ~MockGuard() { auris::set_backend_factory_override(nullptr); }
+    ~MockGuard() { mockingbird::set_backend_factory_override(nullptr); }
 };
 
-auris_config_t device_cfg() {
-    auris_config_t c{};
-    auris_config_defaults(&c);
-    c.backend            = AURIS_BACKEND_MINIAUDIO;   // non-HOST_PCM -> make_backend
-    c.codec              = AURIS_CODEC_PCM_S16LE;
+mockingbird_config_t device_cfg() {
+    mockingbird_config_t c{};
+    mockingbird_config_defaults(&c);
+    c.backend            = MOCKINGBIRD_BACKEND_MINIAUDIO;   // non-HOST_PCM -> make_backend
+    c.codec              = MOCKINGBIRD_CODEC_PCM_S16LE;
     c.sample_rate_hz     = 16000;
     c.frame_ms           = 20;
     c.enable_vad         = 0;        // passthrough
@@ -112,70 +112,70 @@ auris_config_t device_cfg() {
 
 } // namespace
 
-TEST_CASE("Backend fault: init() failure surfaces from auris_start, no worker spawned") {
+TEST_CASE("Backend fault: init() failure surfaces from mockingbird_start, no worker spawned") {
     MockGuard g;
-    g_mock.init_result = AURIS_ERR_PERMISSION;
+    g_mock.init_result = MOCKINGBIRD_ERR_PERMISSION;
 
-    auris_config_t cfg = device_cfg();
-    auris_engine_t* e = nullptr;
-    REQUIRE(auris_create(&cfg, &e) == AURIS_OK);     // create doesn't touch the device
+    mockingbird_config_t cfg = device_cfg();
+    mockingbird_engine_t* e = nullptr;
+    REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);     // create doesn't touch the device
 
-    CHECK(auris_start(e) == AURIS_ERR_PERMISSION);   // init failure propagates
+    CHECK(mockingbird_start(e) == MOCKINGBIRD_ERR_PERMISSION);   // init failure propagates
     CHECK(g_mock.init_calls == 1);
     CHECK(g_mock.start_calls == 0);                  // never reached start()
-    CHECK(auris_stop(e) == AURIS_ERR_NOT_RUNNING);   // engine never ran
+    CHECK(mockingbird_stop(e) == MOCKINGBIRD_ERR_NOT_RUNNING);   // engine never ran
 
-    auris_destroy(e);
+    mockingbird_destroy(e);
 }
 
 TEST_CASE("Backend fault: start() failure tears the worker back down cleanly") {
     MockGuard g;
-    g_mock.start_result = AURIS_ERR_BACKEND;
+    g_mock.start_result = MOCKINGBIRD_ERR_BACKEND;
 
-    auris_config_t cfg = device_cfg();
-    auris_engine_t* e = nullptr;
-    REQUIRE(auris_create(&cfg, &e) == AURIS_OK);
+    mockingbird_config_t cfg = device_cfg();
+    mockingbird_engine_t* e = nullptr;
+    REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
 
-    // init() succeeds, the worker is spawned, then start() fails — auris_start
+    // init() succeeds, the worker is spawned, then start() fails — mockingbird_start
     // must join the worker and report the error without leaking the thread.
-    CHECK(auris_start(e) == AURIS_ERR_BACKEND);
+    CHECK(mockingbird_start(e) == MOCKINGBIRD_ERR_BACKEND);
     CHECK(g_mock.init_calls == 1);
     CHECK(g_mock.start_calls == 1);
-    CHECK(auris_stop(e) == AURIS_ERR_NOT_RUNNING);   // not left running
+    CHECK(mockingbird_stop(e) == MOCKINGBIRD_ERR_NOT_RUNNING);   // not left running
 
     // And it can be started again (proves no half-torn-down state) — clear the
     // failure first.
-    g_mock.start_result = AURIS_OK;
+    g_mock.start_result = MOCKINGBIRD_OK;
     g_mock.feed = false;
-    CHECK(auris_start(e) == AURIS_OK);
-    CHECK(auris_stop(e) == AURIS_OK);
-    auris_destroy(e);
+    CHECK(mockingbird_start(e) == MOCKINGBIRD_OK);
+    CHECK(mockingbird_stop(e) == MOCKINGBIRD_OK);
+    mockingbird_destroy(e);
 }
 
 TEST_CASE("Backend success: T1 feed drives capture -> ring -> packets end to end") {
     MockGuard g;
     g_mock.feed = true;
 
-    auris_config_t cfg = device_cfg();
-    auris_engine_t* e = nullptr;
-    REQUIRE(auris_create(&cfg, &e) == AURIS_OK);
-    REQUIRE(auris_start(e) == AURIS_OK);
+    mockingbird_config_t cfg = device_cfg();
+    mockingbird_engine_t* e = nullptr;
+    REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
+    REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
 
     uint32_t packets = 0;
     for (int i = 0; i < 8; ++i) {
         std::this_thread::sleep_for(std::chrono::milliseconds(25));
-        auris_packet_t pkt{};
-        while (auris_drain(e, &pkt) == AURIS_OK) {
+        mockingbird_packet_t pkt{};
+        while (mockingbird_drain(e, &pkt) == MOCKINGBIRD_OK) {
             ++packets;
-            REQUIRE(auris_release(e, &pkt) == AURIS_OK);
+            REQUIRE(mockingbird_release(e, &pkt) == MOCKINGBIRD_OK);
         }
     }
 
-    auris_stats_t st{};
-    REQUIRE(auris_get_stats(e, &st) == AURIS_OK);
-    REQUIRE(auris_stop(e) == AURIS_OK);
+    mockingbird_stats_t st{};
+    REQUIRE(mockingbird_get_stats(e, &st) == MOCKINGBIRD_OK);
+    REQUIRE(mockingbird_stop(e) == MOCKINGBIRD_OK);
     CHECK(g_mock.stop_calls >= 1);                   // engine stopped the backend
-    auris_destroy(e);
+    mockingbird_destroy(e);
 
     INFO("captured=" << st.frames_captured << " emitted=" << st.packets_emitted
          << " drained=" << packets);
@@ -187,13 +187,13 @@ TEST_CASE("Backend teardown: destroy while running stops the backend and joins")
     MockGuard g;
     g_mock.feed = true;
 
-    auris_config_t cfg = device_cfg();
-    auris_engine_t* e = nullptr;
-    REQUIRE(auris_create(&cfg, &e) == AURIS_OK);
-    REQUIRE(auris_start(e) == AURIS_OK);
+    mockingbird_config_t cfg = device_cfg();
+    mockingbird_engine_t* e = nullptr;
+    REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
+    REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
     std::this_thread::sleep_for(std::chrono::milliseconds(30));
 
     // No explicit stop — destroy must stop the backend and join the worker.
-    auris_destroy(e);
+    mockingbird_destroy(e);
     CHECK(g_mock.stop_calls >= 1);
 }

@@ -8,7 +8,7 @@
 #include <cstddef>
 #include <vector>
 
-namespace auris {
+namespace mockingbird {
 
 class Interpolator {
 public:
@@ -60,4 +60,4 @@ private:
     std::vector<float> hist_;
 };
 
-} // namespace auris
+} // namespace mockingbird

@@ -1,7 +1,7 @@
 // Oboe capture backend for Android.
 #include "capture/oboe_backend.hpp"
 
-#ifdef AURIS_HAVE_OBOE
+#ifdef MOCKINGBIRD_HAVE_OBOE
 
 #include "capture/chunk_timestamp.hpp"
 
@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <memory>
 
-namespace auris {
+namespace mockingbird {
 
 struct OboeBackend::Impl : public oboe::AudioStreamDataCallback,
                            public oboe::AudioStreamErrorCallback {
@@ -40,9 +40,9 @@ OboeBackend::~OboeBackend() {
     if (impl_->stream) impl_->stream->close();
 }
 
-auris_status_t OboeBackend::init(const auris_config_t& cfg, PcmCallback cb, void* user) {
-    if (impl_->stream != nullptr) return AURIS_ERR_INVALID_STATE;
-    if (cb == nullptr) return AURIS_ERR_INVALID_ARG;
+mockingbird_status_t OboeBackend::init(const mockingbird_config_t& cfg, PcmCallback cb, void* user) {
+    if (impl_->stream != nullptr) return MOCKINGBIRD_ERR_INVALID_STATE;
+    if (cb == nullptr) return MOCKINGBIRD_ERR_INVALID_ARG;
 
     impl_->cb          = cb;
     impl_->user        = user;
@@ -61,26 +61,26 @@ auris_status_t OboeBackend::init(const auris_config_t& cfg, PcmCallback cb, void
     b.setInputPreset(oboe::InputPreset::VoiceRecognition);
 
     std::shared_ptr<oboe::AudioStream> stream;
-    if (b.openStream(stream) != oboe::Result::OK) return AURIS_ERR_BACKEND;
+    if (b.openStream(stream) != oboe::Result::OK) return MOCKINGBIRD_ERR_BACKEND;
     impl_->stream = std::move(stream);
-    return AURIS_OK;
+    return MOCKINGBIRD_OK;
 }
 
-auris_status_t OboeBackend::start() {
-    if (!impl_->stream) return AURIS_ERR_INVALID_STATE;
-    if (impl_->running) return AURIS_ERR_ALREADY_RUNNING;
-    if (impl_->stream->requestStart() != oboe::Result::OK) return AURIS_ERR_BACKEND;
+mockingbird_status_t OboeBackend::start() {
+    if (!impl_->stream) return MOCKINGBIRD_ERR_INVALID_STATE;
+    if (impl_->running) return MOCKINGBIRD_ERR_ALREADY_RUNNING;
+    if (impl_->stream->requestStart() != oboe::Result::OK) return MOCKINGBIRD_ERR_BACKEND;
     impl_->running = true;
-    return AURIS_OK;
+    return MOCKINGBIRD_OK;
 }
 
-auris_status_t OboeBackend::stop() {
-    if (!impl_->running) return AURIS_OK;
+mockingbird_status_t OboeBackend::stop() {
+    if (!impl_->running) return MOCKINGBIRD_OK;
     impl_->stream->requestStop();
     impl_->running = false;
-    return AURIS_OK;
+    return MOCKINGBIRD_OK;
 }
 
-} // namespace auris
+} // namespace mockingbird
 
 #endif

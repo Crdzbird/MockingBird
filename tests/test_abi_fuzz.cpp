@@ -3,15 +3,15 @@
 // ABI robustness / fuzz. The C surface must NEVER crash on hostile or
 // malformed input — every call returns a status code, and on failure the
 // out-params are left in a defined state. We throw thousands of random and
-// structurally-invalid configs at auris_create and assert the contract holds:
+// structurally-invalid configs at mockingbird_create and assert the contract holds:
 //   - no crash (implicit: a crash fails the run under ASan/UBSan)
 //   - status != OK  =>  *out_engine == nullptr
 //   - status == OK  =>  *out_engine != nullptr  (and destroy succeeds)
-//   - auris_status_str accepts any int and returns a non-null string
+//   - mockingbird_status_str accepts any int and returns a non-null string
 //   - null pointers are rejected with INVALID_ARG, never dereferenced
 
 #include "doctest.h"
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 
 #include <chrono>
 #include <cstdint>
@@ -38,16 +38,16 @@ struct Rng {
 // Randomize every scalar field but keep the borrowed string pointers null —
 // a host passing a garbage char* is undefined by contract (unvalidatable), so
 // the fuzz models the realistic surface: null or valid paths only.
-void random_config(auris_config_t& c, Rng& r) {
+void random_config(mockingbird_config_t& c, Rng& r) {
     std::memset(&c, 0, sizeof(c));
-    c.backend             = static_cast<auris_backend_t>(r.u32() % 7);
+    c.backend             = static_cast<mockingbird_backend_t>(r.u32() % 7);
     c.sample_rate_hz      = r.u32() % 5 == 0 ? r.u32() : (r.u32() % 64000);
     c.channels            = static_cast<uint16_t>(r.u32() % 4);
-    c.sample_format       = static_cast<auris_sample_format_t>(r.u32() % 3);
+    c.sample_format       = static_cast<mockingbird_sample_format_t>(r.u32() % 3);
     c.frame_ms            = r.u32() % 50;
     c.enable_rnnoise      = r.i32();
     c.enable_vad          = r.i32();
-    c.vad_tier            = static_cast<auris_vad_tier_t>(r.u32() % 4);
+    c.vad_tier            = static_cast<mockingbird_vad_tier_t>(r.u32() % 4);
     c.vad_aggressiveness  = r.i32() % 8 - 2;
     c.vad_neural_threshold= r.f();
     c.vad_hangover_ms     = r.u32() % 4000;
@@ -58,7 +58,7 @@ void random_config(auris_config_t& c, Rng& r) {
     c.pre_roll_ms         = r.u32() % 4000;
     c.post_roll_ms        = r.u32() % 4000;
     c.segment_max_ms      = r.u32();
-    c.codec               = static_cast<auris_codec_t>(r.u32() % 5);
+    c.codec               = static_cast<mockingbird_codec_t>(r.u32() % 5);
     c.opus_bitrate_bps    = r.u32() % 600000;
     c.opus_vbr            = r.i32();
     c.opus_complexity     = r.i32() % 14 - 2;
@@ -78,52 +78,52 @@ void random_config(auris_config_t& c, Rng& r) {
 } // namespace
 
 TEST_CASE("ABI fuzz: null-pointer arguments are rejected, never dereferenced") {
-    auris_config_t cfg{};
-    CHECK(auris_config_defaults(nullptr) == AURIS_ERR_INVALID_ARG);
-    CHECK(auris_config_defaults(&cfg)    == AURIS_OK);
+    mockingbird_config_t cfg{};
+    CHECK(mockingbird_config_defaults(nullptr) == MOCKINGBIRD_ERR_INVALID_ARG);
+    CHECK(mockingbird_config_defaults(&cfg)    == MOCKINGBIRD_OK);
 
-    auris_engine_t* e = reinterpret_cast<auris_engine_t*>(0xdeadbeef);
-    CHECK(auris_create(nullptr, &e) == AURIS_ERR_INVALID_ARG);
+    mockingbird_engine_t* e = reinterpret_cast<mockingbird_engine_t*>(0xdeadbeef);
+    CHECK(mockingbird_create(nullptr, &e) == MOCKINGBIRD_ERR_INVALID_ARG);
     CHECK(e == nullptr);                       // out is nulled even on bad cfg
-    CHECK(auris_create(&cfg, nullptr) == AURIS_ERR_INVALID_ARG);
+    CHECK(mockingbird_create(&cfg, nullptr) == MOCKINGBIRD_ERR_INVALID_ARG);
 
     // Lifecycle calls on null must not crash.
-    CHECK(auris_start(nullptr)  == AURIS_ERR_INVALID_ARG);
-    CHECK(auris_stop(nullptr)   == AURIS_ERR_INVALID_ARG);
-    auris_destroy(nullptr);                    // no-op, no crash
-    auris_packet_t pkt{};
-    CHECK(auris_drain(nullptr, &pkt) == AURIS_ERR_INVALID_ARG);
-    auris_event_t evt{};
-    CHECK(auris_poll_event(nullptr, &evt) == AURIS_ERR_INVALID_ARG);
-    auris_stats_t st{};
-    CHECK(auris_get_stats(nullptr, &st) == AURIS_ERR_INVALID_ARG);
+    CHECK(mockingbird_start(nullptr)  == MOCKINGBIRD_ERR_INVALID_ARG);
+    CHECK(mockingbird_stop(nullptr)   == MOCKINGBIRD_ERR_INVALID_ARG);
+    mockingbird_destroy(nullptr);                    // no-op, no crash
+    mockingbird_packet_t pkt{};
+    CHECK(mockingbird_drain(nullptr, &pkt) == MOCKINGBIRD_ERR_INVALID_ARG);
+    mockingbird_event_t evt{};
+    CHECK(mockingbird_poll_event(nullptr, &evt) == MOCKINGBIRD_ERR_INVALID_ARG);
+    mockingbird_stats_t st{};
+    CHECK(mockingbird_get_stats(nullptr, &st) == MOCKINGBIRD_ERR_INVALID_ARG);
 }
 
-TEST_CASE("ABI fuzz: auris_status_str accepts ANY int, returns a non-null string") {
+TEST_CASE("ABI fuzz: mockingbird_status_str accepts ANY int, returns a non-null string") {
     Rng r(0xA5A5A5A5u);
     for (int i = 0; i < 5000; ++i) {
-        const char* s = auris_status_str(r.i32());
+        const char* s = mockingbird_status_str(r.i32());
         REQUIRE(s != nullptr);
         CHECK(std::strlen(s) > 0);             // and is a real C string
     }
     // Known codes resolve to stable strings.
-    CHECK(std::string(auris_status_str(AURIS_OK)) != "AURIS_UNKNOWN");
-    CHECK(std::string(auris_status_str(123456))   == "AURIS_UNKNOWN");
+    CHECK(std::string(mockingbird_status_str(MOCKINGBIRD_OK)) != "MOCKINGBIRD_UNKNOWN");
+    CHECK(std::string(mockingbird_status_str(123456))   == "MOCKINGBIRD_UNKNOWN");
 }
 
 TEST_CASE("ABI fuzz: thousands of random configs never crash and honor the out-null contract") {
     Rng r(0xC0FFEEu);
     int created = 0, rejected = 0;
     for (int i = 0; i < 20000; ++i) {
-        auris_config_t cfg;
+        mockingbird_config_t cfg;
         random_config(cfg, r);
 
-        auris_engine_t* e = reinterpret_cast<auris_engine_t*>(0x1);  // poison
-        const auris_status_t s = auris_create(&cfg, &e);
+        mockingbird_engine_t* e = reinterpret_cast<mockingbird_engine_t*>(0x1);  // poison
+        const mockingbird_status_t s = mockingbird_create(&cfg, &e);
 
-        if (s == AURIS_OK) {
+        if (s == MOCKINGBIRD_OK) {
             REQUIRE(e != nullptr);             // success => valid handle
-            auris_destroy(e);
+            mockingbird_destroy(e);
             ++created;
         } else {
             REQUIRE(e == nullptr);             // failure => out nulled
@@ -136,58 +136,58 @@ TEST_CASE("ABI fuzz: thousands of random configs never crash and honor the out-n
     INFO("fuzz created=" << created << " rejected=" << rejected);
 }
 
-TEST_CASE("ABI fuzz: auris_release rejects null / foreign / double-release safely") {
-    auris_config_t cfg{};
-    auris_config_defaults(&cfg);
-    cfg.backend        = AURIS_BACKEND_HOST_PCM;
-    cfg.codec          = AURIS_CODEC_PCM_S16LE;
+TEST_CASE("ABI fuzz: mockingbird_release rejects null / foreign / double-release safely") {
+    mockingbird_config_t cfg{};
+    mockingbird_config_defaults(&cfg);
+    cfg.backend        = MOCKINGBIRD_BACKEND_HOST_PCM;
+    cfg.codec          = MOCKINGBIRD_CODEC_PCM_S16LE;
     cfg.enable_vad     = 0;          // passthrough: every frame becomes a packet
     cfg.enable_anomaly = 0;
-    auris_engine_t* e = nullptr;
-    REQUIRE(auris_create(&cfg, &e) == AURIS_OK);
-    REQUIRE(auris_start(e) == AURIS_OK);
+    mockingbird_engine_t* e = nullptr;
+    REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
+    REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
 
-    CHECK(auris_release(e, nullptr) == AURIS_ERR_INVALID_ARG);
+    CHECK(mockingbird_release(e, nullptr) == MOCKINGBIRD_ERR_INVALID_ARG);
 
     // Foreign/garbage packets: random cookie + random data pointer. release()
     // only COMPARES the pointer (never dereferences it), so this is safe and
     // must always be rejected.
     Rng r(0xBADF00Du);
     for (int i = 0; i < 2000; ++i) {
-        auris_packet_t pkt{};
+        mockingbird_packet_t pkt{};
         pkt._reserved = r.u32();
         pkt.data = reinterpret_cast<const uint8_t*>(
                        static_cast<uintptr_t>(r.next()));
         pkt.size = r.u32();
-        CHECK(auris_release(e, &pkt) == AURIS_ERR_INVALID_ARG);
+        CHECK(mockingbird_release(e, &pkt) == MOCKINGBIRD_ERR_INVALID_ARG);
     }
 
     // Real packet: first release succeeds, a second (double) release is rejected
     // instead of corrupting the free list.
     std::vector<int16_t> frame(320, 1500);
     for (int k = 0; k < 4; ++k) {
-        auris_push_pcm(e, frame.data(), 320, static_cast<uint64_t>(k) * 20'000ull);
+        mockingbird_push_pcm(e, frame.data(), 320, static_cast<uint64_t>(k) * 20'000ull);
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(40));
-    auris_packet_t pkt{};
-    if (auris_drain(e, &pkt) == AURIS_OK) {
-        CHECK(auris_release(e, &pkt) == AURIS_OK);                 // first
-        CHECK(auris_release(e, &pkt) == AURIS_ERR_INVALID_ARG);    // double
+    mockingbird_packet_t pkt{};
+    if (mockingbird_drain(e, &pkt) == MOCKINGBIRD_OK) {
+        CHECK(mockingbird_release(e, &pkt) == MOCKINGBIRD_OK);                 // first
+        CHECK(mockingbird_release(e, &pkt) == MOCKINGBIRD_ERR_INVALID_ARG);    // double
     }
 
-    auris_stop(e);
-    auris_destroy(e);
+    mockingbird_stop(e);
+    mockingbird_destroy(e);
 }
 
 TEST_CASE("ABI fuzz: pathological queue sizes degrade to NO_MEMORY, never crash") {
-    auris_config_t cfg{};
-    auris_config_defaults(&cfg);
-    cfg.backend = AURIS_BACKEND_HOST_PCM;
-    cfg.codec   = AURIS_CODEC_PCM_S16LE;
+    mockingbird_config_t cfg{};
+    mockingbird_config_defaults(&cfg);
+    cfg.backend = MOCKINGBIRD_BACKEND_HOST_PCM;
+    cfg.codec   = MOCKINGBIRD_CODEC_PCM_S16LE;
     cfg.pcm_ring_frames = 0xFFFFFFFFu;         // ~4 G samples => alloc fails
-    auris_engine_t* e = nullptr;
-    const auris_status_t s = auris_create(&cfg, &e);
-    CHECK((s == AURIS_ERR_NO_MEMORY || s == AURIS_ERR_INVALID_ARG));
+    mockingbird_engine_t* e = nullptr;
+    const mockingbird_status_t s = mockingbird_create(&cfg, &e);
+    CHECK((s == MOCKINGBIRD_ERR_NO_MEMORY || s == MOCKINGBIRD_ERR_INVALID_ARG));
     CHECK(e == nullptr);
-    if (s == AURIS_OK && e) auris_destroy(e);  // defensive
+    if (s == MOCKINGBIRD_OK && e) mockingbird_destroy(e);  // defensive
 }

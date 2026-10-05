@@ -5,16 +5,16 @@
 #include "engine.hpp"
 #include "engine_events.hpp"
 
-namespace auris {
+namespace mockingbird {
 
-void PacketEmitter::init(auris_engine* e, uint32_t frame_samples) {
+void PacketEmitter::init(mockingbird_engine* e, uint32_t frame_samples) {
     e_             = e;
     frame_samples_ = frame_samples;
 }
 
 void PacketEmitter::overrun(uint64_t now_ts) {
     e_->packets_dropped.fetch_add(1, std::memory_order_relaxed);
-    emit_event(e_, make_event(AURIS_EVT_OVERRUN, 0, now_ts));
+    emit_event(e_, make_event(MOCKINGBIRD_EVT_OVERRUN, 0, now_ts));
 }
 
 void PacketEmitter::emit(const int16_t* samples, uint64_t now_ts, uint32_t flags,
@@ -37,7 +37,7 @@ void PacketEmitter::emit(const int16_t* samples, uint64_t now_ts, uint32_t flags
     slot->segment_id    = segment_id;
     slot->capture_ts_us = now_ts;
     slot->pts_us        = (now_ts >= segment_start_us) ? (now_ts - segment_start_us) : 0;
-    slot->flags         = segment_pkt_index == 0 ? (flags | AURIS_PKT_FLAG_KEYFRAME) : flags;
+    slot->flags         = segment_pkt_index == 0 ? (flags | MOCKINGBIRD_PKT_FLAG_KEYFRAME) : flags;
     slot->size          = static_cast<uint32_t>(n);
 
     const bool overran = e_->packets.commit(slot);
@@ -46,4 +46,4 @@ void PacketEmitter::emit(const int16_t* samples, uint64_t now_ts, uint32_t flags
     if (overran) overrun(now_ts);
 }
 
-} // namespace auris
+} // namespace mockingbird

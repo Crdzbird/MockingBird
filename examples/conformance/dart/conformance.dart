@@ -1,12 +1,12 @@
-// Dart peer of the Auris cross-binding conformance harness. Mirror of
-// examples/conformance/go/main.go. It drives the SAME native libauris through
+// Dart peer of the Mockingbird cross-binding conformance harness. Mirror of
+// examples/conformance/go/main.go. It drives the SAME native libmockingbird through
 // the Dart FFI bindings (the exact code path the Flutter plugin uses), exchanges
 // deterministic audio with the Go peer over TCP, and proves both bindings turn
 // identical input PCM into byte-identical packets, events, and stats.
 //
 // Run the Go peer first, then:
-//   dart run conformance.dart 127.0.0.1:9999            # auto-locate libauris
-//   dart run conformance.dart 127.0.0.1:9999 /path/to/libauris.dylib
+//   dart run conformance.dart 127.0.0.1:9999            # auto-locate libmockingbird
+//   dart run conformance.dart 127.0.0.1:9999 /path/to/libmockingbird.dylib
 //
 // The determinism contract (signal generator, config, processing order, and the
 // FNV-1a/64 canonical digest) is identical to the Go peer.
@@ -96,18 +96,18 @@ class ProcResult {
   ProcResult(this.digest, this.nPackets, this.nEvents, this.nBytes);
 }
 
-// --- processing (drives libauris through the FFI bindings) --------------------
+// --- processing (drives libmockingbird through the FFI bindings) --------------------
 
-ProcResult process(AurisBindings b, Int16List pcm) {
-  final cfg = calloc<auris_config_t>();
+ProcResult process(MockingbirdBindings b, Int16List pcm) {
+  final cfg = calloc<mockingbird_config_t>();
   final native = calloc<Int16>(pcm.length);
-  final outEngine = calloc<Pointer<auris_engine_t>>();
-  final pkt = calloc<auris_packet_t>();
-  final ev = calloc<auris_event_t>();
-  final stats = calloc<auris_stats_t>();
+  final outEngine = calloc<Pointer<mockingbird_engine_t>>();
+  final pkt = calloc<mockingbird_packet_t>();
+  final ev = calloc<mockingbird_event_t>();
+  final stats = calloc<mockingbird_stats_t>();
   try {
-    if (b.auris_config_defaults(cfg) != auris_status.AURIS_OK) {
-      throw StateError('auris_config_defaults failed');
+    if (b.mockingbird_config_defaults(cfg) != mockingbird_status.MOCKINGBIRD_OK) {
+      throw StateError('mockingbird_config_defaults failed');
     }
     cfg.ref.backendAsInt = 4; // HOST_PCM
     cfg.ref.codecAsInt = 1; // OPUS
@@ -115,37 +115,37 @@ ProcResult process(AurisBindings b, Int16List pcm) {
     cfg.ref.packet_queue_capacity = 4096;
     // VAD(fast)+anomaly are already the C defaults; the rest match too.
 
-    if (b.auris_create(cfg, outEngine) != auris_status.AURIS_OK) {
-      throw StateError('auris_create failed');
+    if (b.mockingbird_create(cfg, outEngine) != mockingbird_status.MOCKINGBIRD_OK) {
+      throw StateError('mockingbird_create failed');
     }
     final engine = outEngine.value;
 
-    if (b.auris_start(engine) != auris_status.AURIS_OK) {
-      b.auris_destroy(engine);
-      throw StateError('auris_start failed');
+    if (b.mockingbird_start(engine) != mockingbird_status.MOCKINGBIRD_OK) {
+      b.mockingbird_destroy(engine);
+      throw StateError('mockingbird_start failed');
     }
 
     native.asTypedList(pcm.length).setAll(0, pcm);
     final nFrames = pcm.length ~/ frameLen;
     for (int f = 0; f < nFrames; f++) {
       final ptr = Pointer<Int16>.fromAddress(native.address + f * frameLen * 2);
-      if (b.auris_push_pcm(engine, ptr, frameLen, f * 20000) !=
-          auris_status.AURIS_OK) {
-        throw StateError('auris_push_pcm failed');
+      if (b.mockingbird_push_pcm(engine, ptr, frameLen, f * 20000) !=
+          mockingbird_status.MOCKINGBIRD_OK) {
+        throw StateError('mockingbird_push_pcm failed');
       }
     }
 
-    b.auris_stop(engine); // flushes the worker's tail
+    b.mockingbird_stop(engine); // flushes the worker's tail
 
     final h = Hasher();
     final packets = <List<int>>[]; // each: [seg,pts,cap,flags,codec,size]
     final datas = <Uint8List>[];
-    while (b.auris_drain(engine, pkt) == auris_status.AURIS_OK) {
+    while (b.mockingbird_drain(engine, pkt) == mockingbird_status.MOCKINGBIRD_OK) {
       final r = pkt.ref;
       final data = Uint8List.fromList(r.data.asTypedList(r.size));
       packets.add([r.segment_id, r.pts_us, r.capture_ts_us, r.flags, r.codecAsInt, r.size]);
       datas.add(data);
-      b.auris_release(engine, pkt);
+      b.mockingbird_release(engine, pkt);
     }
     int nBytes = 0;
     h.u32(packets.length);
@@ -162,7 +162,7 @@ ProcResult process(AurisBindings b, Int16List pcm) {
     }
 
     final events = <List<int>>[];
-    while (b.auris_poll_event(engine, ev) == auris_status.AURIS_OK) {
+    while (b.mockingbird_poll_event(engine, ev) == mockingbird_status.MOCKINGBIRD_OK) {
       final r = ev.ref;
       events.add([r.typeAsInt, r.segment_id, r.timestamp_us, r.reason_mask, float32bits(r.confidence)]);
     }
@@ -175,7 +175,7 @@ ProcResult process(AurisBindings b, Int16List pcm) {
       h.u32(e[4]);
     }
 
-    b.auris_get_stats(engine, stats);
+    b.mockingbird_get_stats(engine, stats);
     final s = stats.ref;
     h.u64(s.frames_captured);
     h.u64(s.packets_emitted);
@@ -198,7 +198,7 @@ ProcResult process(AurisBindings b, Int16List pcm) {
           'segOpen=${s.segments_opened} segClose=${s.segments_closed}');
     }
 
-    b.auris_destroy(engine);
+    b.mockingbird_destroy(engine);
     return ProcResult(h.h, packets.length, events.length, nBytes);
   } finally {
     calloc.free(cfg);
@@ -302,24 +302,24 @@ String resolveLib(List<String> args) {
   if (positional.length >= 2) return positional[1];
   final ext = Platform.isMacOS ? 'dylib' : (Platform.isWindows ? 'dll' : 'so');
   final base = Platform.script.resolve('../../../build/');
-  for (final name in ['libauris.$ext', 'libauris.0.1.0.$ext']) {
+  for (final name in ['libmockingbird.$ext', 'libmockingbird.0.1.0.$ext']) {
     final p = base.resolve(name).toFilePath();
     if (File(p).existsSync()) return p;
   }
-  return base.resolve('libauris.$ext').toFilePath();
+  return base.resolve('libmockingbird.$ext').toFilePath();
 }
 
 bool debug = false;
 
 Future<void> main(List<String> args) async {
   if (args.isEmpty) {
-    stderr.writeln('usage: dart run conformance.dart host:port [libauris-path]');
+    stderr.writeln('usage: dart run conformance.dart host:port [libmockingbird-path]');
     exit(2);
   }
   if (args[0] == 'dump') {
     debug = true;
     final libPath = args.length >= 2 ? args[1] : resolveLib(['dump']);
-    final b = AurisBindings(DynamicLibrary.open(libPath));
+    final b = MockingbirdBindings(DynamicLibrary.open(libPath));
     process(b, genSignal(goSeed));
     return;
   }
@@ -328,7 +328,7 @@ Future<void> main(List<String> args) async {
   final port = int.parse(hp[1]);
 
   final libPath = resolveLib(args);
-  final b = AurisBindings(DynamicLibrary.open(libPath));
+  final b = MockingbirdBindings(DynamicLibrary.open(libPath));
 
   final socket = await Socket.connect(host, port);
   socket.setOption(SocketOption.tcpNoDelay, true);

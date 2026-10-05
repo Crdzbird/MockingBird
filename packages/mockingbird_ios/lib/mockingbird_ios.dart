@@ -1,4 +1,4 @@
-/// The ios implementation of the auris plugin.
+/// The ios implementation of the mockingbird plugin.
 library;
 
 import 'dart:ffi' as ffi;
@@ -7,13 +7,13 @@ import 'package:mockingbird_platform_interface/ffi.dart';
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
 
 /// Registers the FFI platform over the library this platform links.
-class AurisIOS extends AurisFfiPlatform {
+class MockingbirdIOS extends MockingbirdFfiPlatform {
   /// Creates the platform; [registerWith] installs it.
-  AurisIOS();
+  MockingbirdIOS();
 
   /// Called by the Flutter plugin registrant.
   static void registerWith() {
-    AurisPlatform.instance = AurisIOS();
+    MockingbirdPlatform.instance = MockingbirdIOS();
   }
 
   ffi.DynamicLibrary? _library;

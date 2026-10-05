@@ -6,7 +6,7 @@
 #include "doctest.h"
 #include "degrade.hpp"
 
-using auris::DegradationPolicy;
+using mockingbird::DegradationPolicy;
 
 TEST_CASE("degrade: defaults and derived calm threshold") {
     DegradationPolicy p;

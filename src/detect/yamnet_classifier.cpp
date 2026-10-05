@@ -2,36 +2,36 @@
 // dimension is the class count; other heads carry embeddings.
 #include "detect/yamnet_classifier.hpp"
 
-#ifdef AURIS_HAVE_SOUND_CLASS
+#ifdef MOCKINGBIRD_HAVE_SOUND_CLASS
 
-#include "auris_log.hpp"
+#include "mockingbird_log.hpp"
 #include "detect/model_path.hpp"
 #include "detect/ort_env.hpp"
 
 #include <algorithm>
 
-namespace auris {
+namespace mockingbird {
 
-auris_status_t YamnetClassifier::load_session(const auris_config_t& cfg) {
+mockingbird_status_t YamnetClassifier::load_session(const mockingbird_config_t& cfg) {
     try {
         const std::string path = resolve_model_path(cfg.sound_class_model_path,
-                                                    "AURIS_SOUND_CLASS_MODEL", "yamnet_3s.onnx");
-        AURIS_VLOG("yamnet loading model: '%s'", path.c_str());
+                                                    "MOCKINGBIRD_SOUND_CLASS_MODEL", "yamnet_3s.onnx");
+        MOCKINGBIRD_VLOG("yamnet loading model: '%s'", path.c_str());
         Ort::SessionOptions opts;
         opts.SetIntraOpNumThreads(1);
         opts.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
         apply_execution_provider(opts);
         session_ = std::make_unique<Ort::Session>(shared_ort_env(), path.c_str(), opts);
         select_output_head();
-        return AURIS_OK;
+        return MOCKINGBIRD_OK;
     } catch (const Ort::Exception& ex) {
-        AURIS_VLOG("yamnet ORT exception: %s", ex.what());
+        MOCKINGBIRD_VLOG("yamnet ORT exception: %s", ex.what());
     } catch (const std::exception& ex) {
-        AURIS_VLOG("yamnet exception: %s", ex.what());
+        MOCKINGBIRD_VLOG("yamnet exception: %s", ex.what());
     } catch (...) {
     }
     session_.reset();
-    return AURIS_ERR_UNSUPPORTED;
+    return MOCKINGBIRD_ERR_UNSUPPORTED;
 }
 
 void YamnetClassifier::select_output_head() {
@@ -50,11 +50,11 @@ void YamnetClassifier::select_output_head() {
     }
 }
 
-auris_status_t YamnetClassifier::init(const auris_config_t& cfg) {
-    if (session_ != nullptr) return AURIS_ERR_INVALID_STATE;
-    if (cfg.sample_rate_hz != 16000) return AURIS_ERR_UNSUPPORTED;
-    const auris_status_t s = load_session(cfg);
-    if (s != AURIS_OK) return s;
+mockingbird_status_t YamnetClassifier::init(const mockingbird_config_t& cfg) {
+    if (session_ != nullptr) return MOCKINGBIRD_ERR_INVALID_STATE;
+    if (cfg.sample_rate_hz != 16000) return MOCKINGBIRD_ERR_UNSUPPORTED;
+    const mockingbird_status_t s = load_session(cfg);
+    if (s != MOCKINGBIRD_OK) return s;
 
     frame_samples_ = (cfg.sample_rate_hz / 1000u) * cfg.frame_ms;
     buf_.assign(kSampleCount, 0.0f);
@@ -68,19 +68,19 @@ auris_status_t YamnetClassifier::init(const auris_config_t& cfg) {
     const uint32_t step_ms = cfg.sound_class_interval_ms == 0 ? 1000u : cfg.sound_class_interval_ms;
     frames_per_inference_   = (step_ms + cfg.frame_ms - 1u) / cfg.frame_ms;
     frames_since_inference_ = 0;
-    return AURIS_OK;
+    return MOCKINGBIRD_OK;
 }
 
 std::unique_ptr<SoundClassifier> make_sound_classifier() {
     return std::make_unique<YamnetClassifier>();
 }
 
-} // namespace auris
+} // namespace mockingbird
 
 #else
 
-namespace auris {
+namespace mockingbird {
 std::unique_ptr<SoundClassifier> make_sound_classifier() { return nullptr; }
-} // namespace auris
+} // namespace mockingbird
 
 #endif

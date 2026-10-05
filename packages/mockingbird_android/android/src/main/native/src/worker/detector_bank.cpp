@@ -2,36 +2,36 @@
 // dropped; the worker keeps running with it disabled.
 #include "worker/detector_bank.hpp"
 
-#include "auris_log.hpp"
+#include "mockingbird_log.hpp"
 #include "engine.hpp"
 #include "engine_events.hpp"
 #include "worker/tunables.hpp"
 
-namespace auris {
+namespace mockingbird {
 
 template <typename Component>
-bool DetectorBank::prepare(auris_engine* e, std::unique_ptr<Component>& c,
+bool DetectorBank::prepare(mockingbird_engine* e, std::unique_ptr<Component>& c,
                            [[maybe_unused]] const char* tag) {
     if (!c) {
-        AURIS_LOG("'%s' factory returned null (feature not compiled in?)", tag);
+        MOCKINGBIRD_LOG("'%s' factory returned null (feature not compiled in?)", tag);
         return false;
     }
-    const auris_status_t s = c->init(e->cfg);
-    AURIS_LOG("'%s' init %s (%d)", tag, s == AURIS_OK ? "OK" : "FAILED", static_cast<int>(s));
-    if (s == AURIS_OK) return true;
+    const mockingbird_status_t s = c->init(e->cfg);
+    MOCKINGBIRD_LOG("'%s' init %s (%d)", tag, s == MOCKINGBIRD_OK ? "OK" : "FAILED", static_cast<int>(s));
+    if (s == MOCKINGBIRD_OK) return true;
     emit_backend_error(e, s);
     c.reset();
     return false;
 }
 
-void DetectorBank::init(auris_engine* e) {
+void DetectorBank::init(mockingbird_engine* e) {
     if (e->cfg.enable_rnnoise) {
         preproc_ = make_rnnoise_preprocessor();
         prepare(e, preproc_, "rnnoise");
     }
     if (e->cfg.enable_vad) {
         vad_ = make_vad(e->cfg.vad_tier);
-        prepare(e, vad_, e->cfg.vad_tier == AURIS_VAD_NEURAL ? "neural-vad" : "fast-vad");
+        prepare(e, vad_, e->cfg.vad_tier == MOCKINGBIRD_VAD_NEURAL ? "neural-vad" : "fast-vad");
     }
     if (e->cfg.enable_anomaly) {
         anomaly_ = make_anomaly();
@@ -43,7 +43,7 @@ void DetectorBank::init(auris_engine* e) {
     }
 }
 
-void DetectorBank::denoise(auris_engine* e, int16_t* frame, uint32_t n, bool quiet) {
+void DetectorBank::denoise(mockingbird_engine* e, int16_t* frame, uint32_t n, bool quiet) {
     if (!preproc_) return;
     if (quiet) {
         e->preproc_frames_skipped.fetch_add(1, std::memory_order_relaxed);
@@ -61,7 +61,7 @@ DetectionPair DetectorBank::detect(const int16_t* frame, uint32_t n, const Tunab
     return d;
 }
 
-void DetectorBank::classify(auris_engine* e, const int16_t* frame, uint32_t n, bool quiet,
+void DetectorBank::classify(mockingbird_engine* e, const int16_t* frame, uint32_t n, bool quiet,
                             const Tunables& t, uint64_t segment_id, uint64_t now_ts) {
     if (!classifier_ || !t.sound_class_enabled) return;
     FeedHints hints;
@@ -72,9 +72,9 @@ void DetectorBank::classify(auris_engine* e, const int16_t* frame, uint32_t n, b
     if (r.ran)     e->sound_class_inferences.fetch_add(1, std::memory_order_relaxed);
     if (r.skipped) e->sound_class_inferences_skipped.fetch_add(1, std::memory_order_relaxed);
     if (r.ready && r.confidence >= t.classifier_threshold && r.class_id >= 0) {
-        emit_event(e, make_event(AURIS_EVT_SOUND_CLASS, segment_id, now_ts,
+        emit_event(e, make_event(MOCKINGBIRD_EVT_SOUND_CLASS, segment_id, now_ts,
                                  static_cast<uint32_t>(r.class_id), r.confidence));
     }
 }
 
-} // namespace auris
+} // namespace mockingbird

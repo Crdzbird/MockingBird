@@ -12,7 +12,7 @@ class StatsCard extends StatelessWidget {
     super.key,
   });
 
-  final AurisStats? stats;
+  final MockingbirdStats? stats;
   final bool running;
   final int packetsReceived;
   final int bytesReceived;

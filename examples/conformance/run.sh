@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build libauris + every peer, then run the conformance exchange across all
+# Build libmockingbird + every peer, then run the conformance exchange across all
 # three binding pairs:
 #
 #   Go     (listen) <-> Dart   (dial)
@@ -20,8 +20,8 @@ PORT="${PORT:-9999}"
 PAIRS="${PAIRS:-go-dart go-python python-dart}"
 PYTHON="${PYTHON:-python3}"
 
-echo "==> building libauris (shared)"
-cmake -S "$ROOT" -B "$ROOT/build" -DAURIS_BUILD_SHARED=ON >/dev/null || exit 1
+echo "==> building libmockingbird (shared)"
+cmake -S "$ROOT" -B "$ROOT/build" -DMOCKINGBIRD_BUILD_SHARED=ON >/dev/null || exit 1
 cmake --build "$ROOT/build" -j >/dev/null || exit 1
 
 echo "==> building Go peer"

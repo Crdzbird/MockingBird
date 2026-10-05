@@ -6,7 +6,7 @@
 #include <cstddef>
 #include <vector>
 
-namespace auris {
+namespace mockingbird {
 
 inline std::vector<float> design_lowpass(size_t taps, double fc, double dc_gain) {
     std::vector<float> h(taps, 0.0f);
@@ -29,4 +29,4 @@ inline std::vector<float> design_lowpass(size_t taps, double fc, double dc_gain)
     return h;
 }
 
-} // namespace auris
+} // namespace mockingbird

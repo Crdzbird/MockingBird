@@ -1,19 +1,23 @@
 import 'dart:ffi' as ffi;
 
 import 'package:ffi/ffi.dart';
-import 'package:mockingbird_platform_interface/src/auris_native_config.dart';
 import 'package:mockingbird_platform_interface/src/bindings.dart';
+import 'package:mockingbird_platform_interface/src/mockingbird_native_config.dart';
 
-/// An `auris_config_t` in native memory filled from an [AurisNativeConfig].
+/// A `mockingbird_config_t` in native memory filled from a
+/// [MockingbirdNativeConfig].
 final class FfiConfig {
   FfiConfig._(this.pointer, this._neuralPath, this._soundPath);
 
   /// Allocates the struct, applies the engine defaults, then every field.
-  factory FfiConfig.from(AurisBindings bindings, AurisNativeConfig c) {
+  factory FfiConfig.from(
+    MockingbirdBindings bindings,
+    MockingbirdNativeConfig c,
+  ) {
     final d = c.detectors;
     final o = c.output;
-    final p = calloc<auris_config_t>();
-    bindings.auris_config_defaults(p);
+    final p = calloc<mockingbird_config_t>();
+    bindings.mockingbird_config_defaults(p);
     final neural = _utf8(d.neuralVadModelPath);
     final sound = _utf8(d.soundClassModelPath);
     p.ref
@@ -54,7 +58,7 @@ final class FfiConfig {
   }
 
   /// The filled struct.
-  final ffi.Pointer<auris_config_t> pointer;
+  final ffi.Pointer<mockingbird_config_t> pointer;
   final ffi.Pointer<Utf8>? _neuralPath;
   final ffi.Pointer<Utf8>? _soundPath;
 

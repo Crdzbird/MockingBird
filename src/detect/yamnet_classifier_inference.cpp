@@ -2,13 +2,13 @@
 // max-pooled per class so momentary events register, then smoothed.
 #include "detect/yamnet_classifier.hpp"
 
-#ifdef AURIS_HAVE_SOUND_CLASS
+#ifdef MOCKINGBIRD_HAVE_SOUND_CLASS
 
 #include <algorithm>
 #include <array>
 #include <limits>
 
-namespace auris {
+namespace mockingbird {
 
 ClassificationResult YamnetClassifier::pick_top(const float* scores, size_t total) {
     const size_t classes = total >= kClassCount ? kClassCount : total;
@@ -58,6 +58,6 @@ ClassificationResult YamnetClassifier::run_inference(const float* samples) {
     }
 }
 
-} // namespace auris
+} // namespace mockingbird
 
 #endif

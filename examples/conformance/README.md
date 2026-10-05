@@ -1,7 +1,7 @@
 # Cross-binding conformance harness (Go ⇄ Dart ⇄ Python)
 
 Proves that the **Go**, **Dart/Flutter**, and **Python** bindings — all driving
-the same native `libauris` — turn identical input audio into **byte-identical**
+the same native `libmockingbird` — turn identical input audio into **byte-identical**
 output: same encoded audio (quality), same events (information), same timestamps
 and stats (sync). It's a bidirectional cross-language differential test, run
 across every pair.
@@ -115,6 +115,6 @@ python3 python/conformance.py dump   # ...from Python
 `diff` two dumps to localize a divergence to a specific field — that is exactly
 how the non-deterministic packet timestamps were found and fixed.
 
-Every peer auto-locates `build/libauris.{dylib,so}`. Override with an explicit
-path (Dart: second positional argument; Python: the `AURIS_LIBRARY_PATH`
+Every peer auto-locates `build/libmockingbird.{dylib,so}`. Override with an explicit
+path (Dart: second positional argument; Python: the `MOCKINGBIRD_LIBRARY_PATH`
 environment variable).

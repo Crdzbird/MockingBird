@@ -14,12 +14,12 @@ class LastSoundCard extends StatelessWidget {
   final bool running;
 
   Color get _color => switch (detection.lastCategory) {
-    AurisSoundCategory.speech => Colors.lightBlueAccent,
-    AurisSoundCategory.humanOther => Colors.cyanAccent,
-    AurisSoundCategory.animal => Colors.orangeAccent,
-    AurisSoundCategory.music => Colors.purpleAccent,
-    AurisSoundCategory.nature => Colors.tealAccent,
-    AurisSoundCategory.other => Colors.grey,
+    MockingbirdSoundCategory.speech => Colors.lightBlueAccent,
+    MockingbirdSoundCategory.humanOther => Colors.cyanAccent,
+    MockingbirdSoundCategory.animal => Colors.orangeAccent,
+    MockingbirdSoundCategory.music => Colors.purpleAccent,
+    MockingbirdSoundCategory.nature => Colors.tealAccent,
+    MockingbirdSoundCategory.other => Colors.grey,
   };
 
   @override

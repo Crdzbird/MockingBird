@@ -6,7 +6,7 @@
 // what we already established for FAST.
 
 #include "doctest.h"
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 
 #include <chrono>
 #include <cstdint>
@@ -17,7 +17,7 @@
 #include <thread>
 #include <vector>
 
-#ifdef AURIS_HAVE_NEURAL_VAD
+#ifdef MOCKINGBIRD_HAVE_NEURAL_VAD
 
 namespace {
 
@@ -78,11 +78,11 @@ struct VadResult {
     uint64_t frames_dropped  = 0;
 };
 
-VadResult run_vad_through_fixture(const WavInts16& wav, auris_vad_tier_t tier) {
-    auris_config_t cfg{};
-    auris_config_defaults(&cfg);
-    cfg.backend            = AURIS_BACKEND_HOST_PCM;
-    cfg.codec              = AURIS_CODEC_PCM_S16LE;
+VadResult run_vad_through_fixture(const WavInts16& wav, mockingbird_vad_tier_t tier) {
+    mockingbird_config_t cfg{};
+    mockingbird_config_defaults(&cfg);
+    cfg.backend            = MOCKINGBIRD_BACKEND_HOST_PCM;
+    cfg.codec              = MOCKINGBIRD_CODEC_PCM_S16LE;
     cfg.sample_rate_hz     = 16000;
     cfg.frame_ms           = 20;
     cfg.enable_vad         = 1;
@@ -94,9 +94,9 @@ VadResult run_vad_through_fixture(const WavInts16& wav, auris_vad_tier_t tier) {
     // test's batched pushes do not overflow while inference catches up.
     cfg.pcm_ring_frames = 1u << 16;       // 65536 samples = 4 s @ 16 kHz
 
-    auris_engine_t* e = nullptr;
-    REQUIRE(auris_create(&cfg, &e) == AURIS_OK);
-    REQUIRE(auris_start(e) == AURIS_OK);
+    mockingbird_engine_t* e = nullptr;
+    REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
+    REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
 
     constexpr uint32_t kFrameSamples = 320;
     const size_t total_frames = wav.samples.size() / kFrameSamples;
@@ -104,31 +104,31 @@ VadResult run_vad_through_fixture(const WavInts16& wav, auris_vad_tier_t tier) {
 
     auto drain_events = [&]() {
         while (true) {
-            auris_event_t evt{};
-            const auris_status_t s = auris_poll_event(e, &evt);
-            if (s == AURIS_ERR_QUEUE_EMPTY) return;
-            REQUIRE(s == AURIS_OK);
-            if (evt.type == AURIS_EVT_SPEECH_BEGIN)  ++vr.speech_begin;
-            if (evt.type == AURIS_EVT_SPEECH_END)    ++vr.speech_end;
-            if (evt.type == AURIS_EVT_SEGMENT_BEGIN) ++vr.segment_begin;
-            if (evt.type == AURIS_EVT_SEGMENT_END)   ++vr.segment_end;
+            mockingbird_event_t evt{};
+            const mockingbird_status_t s = mockingbird_poll_event(e, &evt);
+            if (s == MOCKINGBIRD_ERR_QUEUE_EMPTY) return;
+            REQUIRE(s == MOCKINGBIRD_OK);
+            if (evt.type == MOCKINGBIRD_EVT_SPEECH_BEGIN)  ++vr.speech_begin;
+            if (evt.type == MOCKINGBIRD_EVT_SPEECH_END)    ++vr.speech_end;
+            if (evt.type == MOCKINGBIRD_EVT_SEGMENT_BEGIN) ++vr.segment_begin;
+            if (evt.type == MOCKINGBIRD_EVT_SEGMENT_END)   ++vr.segment_end;
         }
     };
     auto drain_packets = [&]() {
         while (true) {
-            auris_packet_t pkt{};
-            const auris_status_t s = auris_drain(e, &pkt);
-            if (s == AURIS_ERR_QUEUE_EMPTY) return;
-            REQUIRE(s == AURIS_OK);
+            mockingbird_packet_t pkt{};
+            const mockingbird_status_t s = mockingbird_drain(e, &pkt);
+            if (s == MOCKINGBIRD_ERR_QUEUE_EMPTY) return;
+            REQUIRE(s == MOCKINGBIRD_OK);
             ++vr.packets;
-            REQUIRE(auris_release(e, &pkt) == AURIS_OK);
+            REQUIRE(mockingbird_release(e, &pkt) == MOCKINGBIRD_OK);
         }
     };
 
     for (size_t i = 0; i < total_frames; ++i) {
         const int16_t* p = wav.samples.data() + i * kFrameSamples;
-        REQUIRE(auris_push_pcm(e, p, kFrameSamples,
-                               static_cast<uint64_t>(i) * 20'000ull) == AURIS_OK);
+        REQUIRE(mockingbird_push_pcm(e, p, kFrameSamples,
+                               static_cast<uint64_t>(i) * 20'000ull) == MOCKINGBIRD_OK);
         if ((i & 0x1Fu) == 0x1F) {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
             drain_events();
@@ -138,49 +138,49 @@ VadResult run_vad_through_fixture(const WavInts16& wav, auris_vad_tier_t tier) {
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
     drain_events();
     drain_packets();
-    REQUIRE(auris_stop(e) == AURIS_OK);
+    REQUIRE(mockingbird_stop(e) == MOCKINGBIRD_OK);
     drain_events();
 
-    auris_stats_t stats{};
-    auris_get_stats(e, &stats);
+    mockingbird_stats_t stats{};
+    mockingbird_get_stats(e, &stats);
     vr.frames_captured = stats.frames_captured;
     vr.frames_dropped  = stats.frames_dropped_capture;
-    auris_destroy(e);
+    mockingbird_destroy(e);
     return vr;
 }
 
 bool neural_vad_available() {
-    auris_config_t cfg{};
-    auris_config_defaults(&cfg);
-    cfg.backend  = AURIS_BACKEND_HOST_PCM;
-    cfg.codec    = AURIS_CODEC_PCM_S16LE;
-    cfg.vad_tier = AURIS_VAD_NEURAL;
-    auris_engine_t* e = nullptr;
-    const auris_status_t s = auris_create(&cfg, &e);
-    if (s != AURIS_OK) return false;
-    auris_destroy(e);
+    mockingbird_config_t cfg{};
+    mockingbird_config_defaults(&cfg);
+    cfg.backend  = MOCKINGBIRD_BACKEND_HOST_PCM;
+    cfg.codec    = MOCKINGBIRD_CODEC_PCM_S16LE;
+    cfg.vad_tier = MOCKINGBIRD_VAD_NEURAL;
+    mockingbird_engine_t* e = nullptr;
+    const mockingbird_status_t s = mockingbird_create(&cfg, &e);
+    if (s != MOCKINGBIRD_OK) return false;
+    mockingbird_destroy(e);
     return true;
 }
 
 } // namespace
 
-TEST_CASE("Neural VAD: model loads when AURIS_NEURAL_VAD_MODEL points at the fixture") {
-    setenv("AURIS_NEURAL_VAD_MODEL",
-           (std::string(AURIS_TEST_FIXTURE_DIR) + "/silero_vad.onnx").c_str(),
+TEST_CASE("Neural VAD: model loads when MOCKINGBIRD_NEURAL_VAD_MODEL points at the fixture") {
+    setenv("MOCKINGBIRD_NEURAL_VAD_MODEL",
+           (std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/silero_vad.onnx").c_str(),
            1);
     CHECK(neural_vad_available());
 }
 
 TEST_CASE("Neural VAD: detects speech in hello.wav, balanced events") {
-    setenv("AURIS_NEURAL_VAD_MODEL",
-           (std::string(AURIS_TEST_FIXTURE_DIR) + "/silero_vad.onnx").c_str(),
+    setenv("MOCKINGBIRD_NEURAL_VAD_MODEL",
+           (std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/silero_vad.onnx").c_str(),
            1);
     const auto wav = read_wav_int16(
-        std::string(AURIS_TEST_FIXTURE_DIR) + "/hello.wav");
+        std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/hello.wav");
     REQUIRE(wav.samples.size() > 0);
     REQUIRE(wav.sample_rate_hz == 16000);
 
-    const auto neural = run_vad_through_fixture(wav, AURIS_VAD_NEURAL);
+    const auto neural = run_vad_through_fixture(wav, MOCKINGBIRD_VAD_NEURAL);
 
     INFO("NEURAL speech_begin=" << neural.speech_begin
          << " speech_end="     << neural.speech_end
@@ -189,7 +189,7 @@ TEST_CASE("Neural VAD: detects speech in hello.wav, balanced events") {
          << " dropped="        << neural.frames_dropped);
 
     CHECK(neural.speech_begin >= 1);
-    // SPEECH_END from the final utterance can fire during auris_stop's
+    // SPEECH_END from the final utterance can fire during mockingbird_stop's
     // worker drain; allow at most 1 difference depending on event-poll
     // timing. Segment shape MUST balance because the worker emits
     // SEGMENT_END unconditionally on stop.
@@ -200,11 +200,11 @@ TEST_CASE("Neural VAD: detects speech in hello.wav, balanced events") {
 }
 
 TEST_CASE("Neural VAD: 8 kHz uses the 256-sample Silero window (detects speech)") {
-    setenv("AURIS_NEURAL_VAD_MODEL",
-           (std::string(AURIS_TEST_FIXTURE_DIR) + "/silero_vad.onnx").c_str(),
+    setenv("MOCKINGBIRD_NEURAL_VAD_MODEL",
+           (std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/silero_vad.onnx").c_str(),
            1);
     const auto wav16 = read_wav_int16(
-        std::string(AURIS_TEST_FIXTURE_DIR) + "/hello.wav");
+        std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/hello.wav");
     REQUIRE(wav16.samples.size() > 0);
     REQUIRE(wav16.sample_rate_hz == 16000);
 
@@ -217,37 +217,37 @@ TEST_CASE("Neural VAD: 8 kHz uses the 256-sample Silero window (detects speech)"
             (static_cast<int32_t>(wav16.samples[i]) + wav16.samples[i + 1]) / 2));
     }
 
-    auris_config_t cfg{};
-    auris_config_defaults(&cfg);
-    cfg.backend              = AURIS_BACKEND_HOST_PCM;
-    cfg.codec                = AURIS_CODEC_PCM_S16LE;
+    mockingbird_config_t cfg{};
+    mockingbird_config_defaults(&cfg);
+    cfg.backend              = MOCKINGBIRD_BACKEND_HOST_PCM;
+    cfg.codec                = MOCKINGBIRD_CODEC_PCM_S16LE;
     cfg.sample_rate_hz       = 8000;
     cfg.frame_ms             = 20;      // 160 samples/frame
     cfg.enable_vad           = 1;
     cfg.enable_anomaly       = 0;
-    cfg.vad_tier             = AURIS_VAD_NEURAL;
+    cfg.vad_tier             = MOCKINGBIRD_VAD_NEURAL;
     cfg.vad_neural_threshold = 0.5f;
     cfg.pcm_ring_frames      = 1u << 16;
 
-    auris_engine_t* e = nullptr;
-    REQUIRE(auris_create(&cfg, &e) == AURIS_OK);
-    REQUIRE(auris_start(e) == AURIS_OK);
+    mockingbird_engine_t* e = nullptr;
+    REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
+    REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
 
     constexpr uint32_t kFrame = 160;
     uint32_t speech_begin = 0;
     auto drain = [&]() {
-        auris_event_t evt{};
-        while (auris_poll_event(e, &evt) == AURIS_OK) {
-            if (evt.type == AURIS_EVT_SPEECH_BEGIN) ++speech_begin;
+        mockingbird_event_t evt{};
+        while (mockingbird_poll_event(e, &evt) == MOCKINGBIRD_OK) {
+            if (evt.type == MOCKINGBIRD_EVT_SPEECH_BEGIN) ++speech_begin;
         }
-        auris_packet_t pkt{};
-        while (auris_drain(e, &pkt) == AURIS_OK) auris_release(e, &pkt);
+        mockingbird_packet_t pkt{};
+        while (mockingbird_drain(e, &pkt) == MOCKINGBIRD_OK) mockingbird_release(e, &pkt);
     };
 
     const size_t frames = s8.size() / kFrame;
     for (size_t i = 0; i < frames; ++i) {
-        REQUIRE(auris_push_pcm(e, s8.data() + i * kFrame, kFrame,
-                               static_cast<uint64_t>(i) * 20'000ull) == AURIS_OK);
+        REQUIRE(mockingbird_push_pcm(e, s8.data() + i * kFrame, kFrame,
+                               static_cast<uint64_t>(i) * 20'000ull) == MOCKINGBIRD_OK);
         if ((i & 0x1Fu) == 0x1F) {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
             drain();
@@ -255,9 +255,9 @@ TEST_CASE("Neural VAD: 8 kHz uses the 256-sample Silero window (detects speech)"
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
     drain();
-    REQUIRE(auris_stop(e) == AURIS_OK);
+    REQUIRE(mockingbird_stop(e) == MOCKINGBIRD_OK);
     drain();
-    auris_destroy(e);
+    mockingbird_destroy(e);
 
     // With a hard-coded 512-sample window, 8 kHz fed Silero the wrong shape;
     // every inference threw (caught -> VAD stuck inactive -> 0). The per-rate
@@ -267,15 +267,15 @@ TEST_CASE("Neural VAD: 8 kHz uses the 256-sample Silero window (detects speech)"
 }
 
 TEST_CASE("Neural VAD vs FAST VAD: differential on hello.wav, both detect speech") {
-    setenv("AURIS_NEURAL_VAD_MODEL",
-           (std::string(AURIS_TEST_FIXTURE_DIR) + "/silero_vad.onnx").c_str(),
+    setenv("MOCKINGBIRD_NEURAL_VAD_MODEL",
+           (std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/silero_vad.onnx").c_str(),
            1);
     const auto wav = read_wav_int16(
-        std::string(AURIS_TEST_FIXTURE_DIR) + "/hello.wav");
+        std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/hello.wav");
     REQUIRE(wav.samples.size() > 0);
 
-    const auto fast   = run_vad_through_fixture(wav, AURIS_VAD_FAST);
-    const auto neural = run_vad_through_fixture(wav, AURIS_VAD_NEURAL);
+    const auto fast   = run_vad_through_fixture(wav, MOCKINGBIRD_VAD_FAST);
+    const auto neural = run_vad_through_fixture(wav, MOCKINGBIRD_VAD_NEURAL);
 
     INFO("FAST   begin/end=" << fast.speech_begin   << "/" << fast.speech_end
          << " packets="      << fast.packets);
@@ -291,9 +291,9 @@ TEST_CASE("Neural VAD vs FAST VAD: differential on hello.wav, both detect speech
 
 #else
 
-TEST_CASE("Neural VAD tests skipped: AURIS_HAVE_NEURAL_VAD not defined in this build") {
+TEST_CASE("Neural VAD tests skipped: MOCKINGBIRD_HAVE_NEURAL_VAD not defined in this build") {
     MESSAGE("ONNX Runtime not linked — skip");
     CHECK(true);
 }
 
-#endif  // AURIS_HAVE_NEURAL_VAD
+#endif  // MOCKINGBIRD_HAVE_NEURAL_VAD

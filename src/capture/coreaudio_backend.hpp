@@ -6,7 +6,7 @@
 
 #include <memory>
 
-namespace auris {
+namespace mockingbird {
 
 #if defined(__APPLE__)
 
@@ -15,9 +15,9 @@ public:
     CoreAudioBackend();
     ~CoreAudioBackend() override;
 
-    auris_status_t init(const auris_config_t& cfg, PcmCallback cb, void* user) override;
-    auris_status_t start() override;
-    auris_status_t stop() override;
+    mockingbird_status_t init(const mockingbird_config_t& cfg, PcmCallback cb, void* user) override;
+    mockingbird_status_t start() override;
+    mockingbird_status_t stop() override;
 
     struct Impl;
 
@@ -27,4 +27,4 @@ private:
 
 #endif
 
-} // namespace auris
+} // namespace mockingbird

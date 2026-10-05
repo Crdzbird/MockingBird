@@ -5,7 +5,8 @@ import 'dart:ui_web' as ui_web;
 /// By default the files come from the app's asset bundle, under
 /// `packages/mockingbird_web/` inside an app and at the top level when this
 /// package is the root, as in its own tests. [baseUrl] overrides both, for
-/// apps that host `auris.js`, `auris.wasm` and the worklet elsewhere.
+/// apps that host `mockingbird.js`, `mockingbird.wasm` and the worklet
+/// elsewhere.
 final class WebAssets {
   /// Creates the resolver.
   const WebAssets();

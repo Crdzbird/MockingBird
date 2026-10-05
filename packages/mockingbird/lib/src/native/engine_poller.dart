@@ -1,7 +1,7 @@
-import 'package:mockingbird/src/auris_exception.dart';
-import 'package:mockingbird/src/auris_packet.dart';
-import 'package:mockingbird/src/auris_stats.dart';
-import 'package:mockingbird/src/events/auris_event.dart';
+import 'package:mockingbird/src/events/mockingbird_event.dart';
+import 'package:mockingbird/src/mockingbird_exception.dart';
+import 'package:mockingbird/src/mockingbird_packet.dart';
+import 'package:mockingbird/src/mockingbird_stats.dart';
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
 
 /// Drains the engine's queues through the platform and decodes each record.
@@ -16,16 +16,16 @@ final class EnginePoller {
   });
 
   /// Receives each decoded event.
-  final void Function(AurisEvent) onEvent;
+  final void Function(MockingbirdEvent) onEvent;
 
   /// Receives each packet, whose bytes the receiver owns.
-  final void Function(AurisPacket) onPacket;
+  final void Function(MockingbirdPacket) onPacket;
 
   /// Receives one stats snapshot per poll.
-  final void Function(AurisStats) onStats;
+  final void Function(MockingbirdStats) onStats;
 
-  final AurisPlatform _platform;
-  final AurisEngineHandle _handle;
+  final MockingbirdPlatform _platform;
+  final MockingbirdEngineHandle _handle;
 
   /// Empties both queues, then reads the stats.
   void poll() {
@@ -37,24 +37,24 @@ final class EnginePoller {
   void _drainEvents() {
     while (true) {
       final r = _platform.pollEvent(_handle);
-      if (r.status == AurisStatusCode.queueEmpty) return;
-      AurisException.check(r.status, 'auris_poll_event');
-      onEvent(AurisEvent.fromNative(r.event!));
+      if (r.status == MockingbirdStatusCode.queueEmpty) return;
+      MockingbirdException.check(r.status, 'mockingbird_poll_event');
+      onEvent(MockingbirdEvent.fromNative(r.event!));
     }
   }
 
   void _drainPackets() {
     while (true) {
       final r = _platform.drainPacket(_handle);
-      if (r.status == AurisStatusCode.queueEmpty) return;
-      AurisException.check(r.status, 'auris_drain');
-      onPacket(AurisPacket.fromNative(r.packet!));
+      if (r.status == MockingbirdStatusCode.queueEmpty) return;
+      MockingbirdException.check(r.status, 'mockingbird_drain');
+      onPacket(MockingbirdPacket.fromNative(r.packet!));
     }
   }
 
   void _readStats() {
     final r = _platform.stats(_handle);
-    AurisException.check(r.status, 'auris_get_stats');
-    onStats(AurisStats.fromNative(r.stats!));
+    MockingbirdException.check(r.status, 'mockingbird_get_stats');
+    onStats(MockingbirdStats.fromNative(r.stats!));
   }
 }

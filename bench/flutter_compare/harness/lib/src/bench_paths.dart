@@ -4,9 +4,9 @@ class BenchPaths {
   BenchPaths._(this.root);
 
   factory BenchPaths.fromEnvironment() {
-    const root = String.fromEnvironment('AURIS_ROOT');
+    const root = String.fromEnvironment('MOCKINGBIRD_ROOT');
     if (root.isEmpty) {
-      throw StateError('pass --dart-define=AURIS_ROOT=<repository root>');
+      throw StateError('pass --dart-define=MOCKINGBIRD_ROOT=<repository root>');
     }
     return BenchPaths._(root);
   }

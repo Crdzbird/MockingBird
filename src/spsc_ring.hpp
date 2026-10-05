@@ -9,7 +9,7 @@
 #include <memory>
 #include <type_traits>
 
-namespace auris {
+namespace mockingbird {
 
 inline constexpr size_t kCacheLine = 64;
 
@@ -96,4 +96,4 @@ private:
     alignas(kCacheLine) std::atomic<size_t> tail_{0};
 };
 
-} // namespace auris
+} // namespace mockingbird

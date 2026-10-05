@@ -5,7 +5,7 @@
 
 #include <cstdint>
 
-namespace auris {
+namespace mockingbird {
 
 class DegradationPolicy {
 public:
@@ -44,4 +44,4 @@ private:
     uint32_t calm_  = 0;
 };
 
-} // namespace auris
+} // namespace mockingbird

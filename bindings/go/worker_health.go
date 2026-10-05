@@ -1,7 +1,7 @@
-package auris
+package mockingbird
 
 /*
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 */
 import "C"
 
@@ -29,7 +29,7 @@ type WorkerHealth struct {
 // BusyFraction is BusyPpm as 0..1.
 func (w WorkerHealth) BusyFraction() float64 { return float64(w.BusyPpm) / 1e6 }
 
-func workerHealthFromC(s C.auris_stats_t) WorkerHealth {
+func workerHealthFromC(s C.mockingbird_stats_t) WorkerHealth {
 	return WorkerHealth{
 		BusyPpm:                     uint32(s.worker_busy_ppm),
 		MaxFrameUs:                  uint32(s.worker_max_frame_us),

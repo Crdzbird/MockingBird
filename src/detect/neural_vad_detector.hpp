@@ -6,7 +6,7 @@
 
 #include "detect/detector.hpp"
 
-#ifdef AURIS_HAVE_NEURAL_VAD
+#ifdef MOCKINGBIRD_HAVE_NEURAL_VAD
 
 #include "detect/ort_headers.hpp"
 
@@ -14,19 +14,19 @@
 #include <memory>
 #include <vector>
 
-namespace auris {
+namespace mockingbird {
 
 class NeuralVadDetector final : public Detector {
 public:
     NeuralVadDetector() = default;
 
-    auris_status_t  init(const auris_config_t& cfg) override;
+    mockingbird_status_t  init(const mockingbird_config_t& cfg) override;
     DetectionResult process(const int16_t* frame, uint32_t n) override;
-    void            retune(const auris_config_t& cfg) override;
+    void            retune(const mockingbird_config_t& cfg) override;
 
 private:
-    auris_status_t load_session(const auris_config_t& cfg);
-    void           apply_thresholds(const auris_config_t& cfg);
+    mockingbird_status_t load_session(const mockingbird_config_t& cfg);
+    void           apply_thresholds(const mockingbird_config_t& cfg);
     bool           run_inference(const float* window);
     bool           decide(float p_speech);
 
@@ -46,6 +46,6 @@ private:
     bool                          cached_active_ = false;
 };
 
-} // namespace auris
+} // namespace mockingbird
 
 #endif

@@ -3,7 +3,7 @@
 
 #include "detect/detection_result.hpp"
 
-namespace auris {
+namespace mockingbird {
 
 struct DetectionPair {
     DetectionResult vad;
@@ -14,4 +14,4 @@ struct DetectionPair {
     bool running() const { return vad_on || anomaly_on; }
 };
 
-} // namespace auris
+} // namespace mockingbird

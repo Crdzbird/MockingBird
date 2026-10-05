@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
-import 'package:mockingbird_web/src/auris_module.dart';
+import 'package:mockingbird_web/src/mockingbird_module.dart';
 import 'package:mockingbird_web/src/web_capture.dart';
 import 'package:mockingbird_web/src/web_capture_worklet.dart';
 import 'package:mockingbird_web/src/web_engine_handle.dart';
@@ -13,14 +13,14 @@ final class WebLifecycle {
   /// the platform's push.
   WebLifecycle(this._module, this._pushPcm);
 
-  final AurisModule Function() _module;
+  final MockingbirdModule Function() _module;
   final int Function(WebEngineHandle, Int16List, int) _pushPcm;
-  final List<AurisNativeEvent> _pending = [];
+  final List<MockingbirdNativeEvent> _pending = [];
 
   /// Starts the engine and, for a capture engine, the microphone.
   int start(WebEngineHandle h) {
     final s = _module().start(h.pointer);
-    if (s == AurisStatusCode.ok && h.captures) {
+    if (s == MockingbirdStatusCode.ok && h.captures) {
       final capture = WebCapture(
         h.sampleRateHz,
         (pcm, ts) => _pushPcm(h, pcm, ts),
@@ -40,7 +40,7 @@ final class WebLifecycle {
   }
 
   /// The next capture failure to report, if any.
-  AurisNativeEvent? takePending() =>
+  MockingbirdNativeEvent? takePending() =>
       _pending.isEmpty ? null : _pending.removeAt(0);
 
   void _failed(Object error) {

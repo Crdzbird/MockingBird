@@ -3,4 +3,4 @@
 library;
 
 export 'package:mockingbird_platform_interface/src/bindings.dart';
-export 'package:mockingbird_platform_interface/src/ffi/auris_ffi_platform.dart';
+export 'package:mockingbird_platform_interface/src/ffi/mockingbird_ffi_platform.dart';

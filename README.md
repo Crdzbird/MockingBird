@@ -1,6 +1,6 @@
-# Auris
+# Mockingbird
 
-Auris is a native audio engine with a plain C ABI. It captures microphone audio,
+Mockingbird is a native audio engine with a plain C ABI. It captures microphone audio,
 optionally denoises it, detects human voice in any language and non-speech
 acoustic events, classifies what it hears, and streams only the relevant audio
 out as encoded packets. The same engine is used from Dart/Flutter, Go and
@@ -44,7 +44,7 @@ Other things the engine provides:
 
 - One sensitivity dial. A single value in `0..1` maps onto every detector's
   thresholds; each threshold can also be set individually.
-- Live retuning. `auris_update_config` changes thresholds on a running engine
+- Live retuning. `mockingbird_update_config` changes thresholds on a running engine
   with no teardown, no model reload and no loss of detector state.
 - Level meter and PCM tap. Per-frame input level in dBFS, plus an optional
   ungated PCM stream for waveforms or full archives alongside the gated packets.
@@ -63,7 +63,7 @@ Other things the engine provides:
 Every binding needs the native library built once. From the repository root:
 
 ```bash
-cmake -S . -B build -DAURIS_ENABLE_NEURAL_VAD=ON
+cmake -S . -B build -DMOCKINGBIRD_ENABLE_NEURAL_VAD=ON
 cmake --build build -j
 ```
 
@@ -74,31 +74,31 @@ prerequisites and options.
 ### C
 
 ```c
-#include <auris/auris.h>
+#include <mockingbird/mockingbird.h>
 
-auris_config_t cfg;
-auris_config_defaults(&cfg);
-cfg.backend = AURIS_BACKEND_HOST_PCM;   /* or AURIS_BACKEND_AUTO for the microphone */
+mockingbird_config_t cfg;
+mockingbird_config_defaults(&cfg);
+cfg.backend = MOCKINGBIRD_BACKEND_HOST_PCM;   /* or MOCKINGBIRD_BACKEND_AUTO for the microphone */
 cfg.enable_vad = 1;
 
-auris_engine_t* e = NULL;
-if (auris_create(&cfg, &e) != AURIS_OK) { /* handle */ }
-auris_start(e);
+mockingbird_engine_t* e = NULL;
+if (mockingbird_create(&cfg, &e) != MOCKINGBIRD_OK) { /* handle */ }
+mockingbird_start(e);
 
-auris_packet_t pkt;
-while (auris_drain(e, &pkt) == AURIS_OK) {
+mockingbird_packet_t pkt;
+while (mockingbird_drain(e, &pkt) == MOCKINGBIRD_OK) {
     /* use pkt.data[0..pkt.size), then release the borrowed slot */
-    auris_release(e, &pkt);
+    mockingbird_release(e, &pkt);
 }
-auris_event_t ev;
-while (auris_poll_event(e, &ev) == AURIS_OK) { /* SPEECH_BEGIN, ANOMALY, ... */ }
+mockingbird_event_t ev;
+while (mockingbird_poll_event(e, &ev) == MOCKINGBIRD_OK) { /* SPEECH_BEGIN, ANOMALY, ... */ }
 
-auris_stop(e);
-auris_destroy(e);
+mockingbird_stop(e);
+mockingbird_destroy(e);
 ```
 
-Rules the ABI enforces: one `auris_destroy` per `auris_create`; packet data is
-borrowed until the matching `auris_release`; no C++ exception crosses the
+Rules the ABI enforces: one `mockingbird_destroy` per `mockingbird_create`; packet data is
+borrowed until the matching `mockingbird_release`; no C++ exception crosses the
 boundary; invalid input returns a status code and never crashes.
 
 ### Flutter
@@ -110,19 +110,19 @@ streams.
 ```dart
 import 'package:mockingbird/mockingbird.dart';
 
-final engine = AurisEngine.create(
-  AurisConfig.sensitive(
+final engine = MockingbirdEngine.create(
+  MockingbirdConfig.sensitive(
     0.6,
-    neuralVadModelPath: await AurisModels.neuralVadPath(),
-    soundClassModelPath: await AurisModels.soundClassPath(),
+    neuralVadModelPath: await MockingbirdModels.neuralVadPath(),
+    soundClassModelPath: await MockingbirdModels.soundClassPath(),
     denoise: true,
-    performance: const AurisPerformanceConfig.mobile(),
+    performance: const MockingbirdPerformanceConfig.mobile(),
   ),
 )..start();
 
 engine.events.listen((event) => switch (event) {
-      AurisSpeechBeginEvent() => print('voice'),
-      AurisSoundClassEvent(:final category, :final confidence) =>
+      MockingbirdSpeechBeginEvent() => print('voice'),
+      MockingbirdSoundClassEvent(:final category, :final confidence) =>
         print('$category ${(confidence * 100).round()}%'),
       _ => null,
     });
@@ -139,13 +139,13 @@ go run ./example -preset everything -file ../../tests/fixtures/hello.wav
 ```
 
 ```go
-e, _ := auris.New(auris.Sensitive(0.6,
-    auris.WithNeuralVADModel("silero_vad.onnx"),
-    auris.WithSoundClassModel("yamnet_3s.onnx"),
-    auris.WithPerformance(auris.MobilePerformance())))
+e, _ := mockingbird.New(mockingbird.Sensitive(0.6,
+    mockingbird.WithNeuralVADModel("silero_vad.onnx"),
+    mockingbird.WithSoundClassModel("yamnet_3s.onnx"),
+    mockingbird.WithPerformance(mockingbird.MobilePerformance())))
 e.Start()
 for ev := range e.Events() {
-    if ev.Type == auris.EventSpeechBegin { /* voice, any language */ }
+    if ev.Type == mockingbird.EventSpeechBegin { /* voice, any language */ }
 }
 ```
 
@@ -166,13 +166,13 @@ python3 example.py --preset everything --file ../../tests/fixtures/hello.wav --t
 ```
 
 ```python
-import auris
+import mockingbird
 
-with auris.Engine(auris.sensitive(0.6)) as engine:
+with mockingbird.Engine(mockingbird.sensitive(0.6)) as engine:
     engine.start()
     for event in engine.events(timeout=10):
         match event:
-            case auris.Event(type=auris.EventType.SPEECH_BEGIN):
+            case mockingbird.Event(type=mockingbird.EventType.SPEECH_BEGIN):
                 print("voice, any language")
 ```
 
@@ -195,30 +195,30 @@ libopus and RNNoise are compiled into the library on every build.
 ### Build, test, benchmark
 
 ```bash
-cmake -S . -B build -DAURIS_ENABLE_TESTS=ON -DAURIS_ENABLE_NEURAL_VAD=ON
+cmake -S . -B build -DMOCKINGBIRD_ENABLE_TESTS=ON -DMOCKINGBIRD_ENABLE_NEURAL_VAD=ON
 cmake --build build -j
-./build/test_auris
-./build/bench_auris 20
+./build/test_mockingbird
+./build/bench_mockingbird 20
 ```
 
-`test_auris` runs 118 doctest cases, including fuzz, stress and fault-injection
-cases. `bench_auris` pushes synthetic audio through the engine faster than real
+`test_mockingbird` runs 118 doctest cases, including fuzz, stress and fault-injection
+cases. `bench_mockingbird` pushes synthetic audio through the engine faster than real
 time and prints the CPU share per feature; the optional argument is the number
-of seconds of audio per configuration (default 30). `AURIS_BENCH_ONLY=<text>`
+of seconds of audio per configuration (default 30). `MOCKINGBIRD_BENCH_ONLY=<text>`
 runs only the configurations whose name contains that text.
 
 ### Options
 
 | Option | Default | Effect |
 |---|---|---|
-| `AURIS_BUILD_SHARED` | ON | build `libauris.dylib` / `libauris.so` (the bindings need this) |
-| `AURIS_BUILD_STATIC` | ON | build `libauris.a` (the tests link this) |
-| `AURIS_ENABLE_NEURAL_VAD` | OFF | compile Silero VAD and YAMNet; needs ONNX Runtime on the system |
-| `AURIS_ENABLE_TESTS` | OFF | build `test_auris` and `bench_auris` |
-| `AURIS_ENABLE_EXAMPLES` | ON | build `examples/smoke.cpp` |
-| `AURIS_ENABLE_LOG` | OFF | print init, model and backend diagnostics to stderr or logcat; release builds are silent without it |
+| `MOCKINGBIRD_BUILD_SHARED` | ON | build `libmockingbird.dylib` / `libmockingbird.so` (the bindings need this) |
+| `MOCKINGBIRD_BUILD_STATIC` | ON | build `libmockingbird.a` (the tests link this) |
+| `MOCKINGBIRD_ENABLE_NEURAL_VAD` | OFF | compile Silero VAD and YAMNet; needs ONNX Runtime on the system |
+| `MOCKINGBIRD_ENABLE_TESTS` | OFF | build `test_mockingbird` and `bench_mockingbird` |
+| `MOCKINGBIRD_ENABLE_EXAMPLES` | ON | build `examples/smoke.cpp` |
+| `MOCKINGBIRD_ENABLE_LOG` | OFF | print init, model and backend diagnostics to stderr or logcat; release builds are silent without it |
 
-If `AURIS_ENABLE_NEURAL_VAD` is on but ONNX Runtime is not found, CMake prints a
+If `MOCKINGBIRD_ENABLE_NEURAL_VAD` is on but ONNX Runtime is not found, CMake prints a
 warning and builds without the neural detectors. On macOS the Homebrew install
 is found automatically; elsewhere make sure `onnxruntime_cxx_api.h` and the
 library are under `/usr/local`.
@@ -226,17 +226,17 @@ library are under `/usr/local`.
 ### Sanitizers
 
 ```bash
-cmake -S . -B build-asan -DAURIS_ENABLE_TESTS=ON \
+cmake -S . -B build-asan -DMOCKINGBIRD_ENABLE_TESTS=ON \
       -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g" \
       -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g"
-cmake --build build-asan -j && ./build-asan/test_auris
+cmake --build build-asan -j && ./build-asan/test_mockingbird
 ```
 
 ```bash
-cmake -S . -B build-tsan -DAURIS_ENABLE_TESTS=ON \
+cmake -S . -B build-tsan -DMOCKINGBIRD_ENABLE_TESTS=ON \
       -DCMAKE_CXX_FLAGS="-fsanitize=thread -fno-omit-frame-pointer -g" \
       -DCMAKE_C_FLAGS="-fsanitize=thread -fno-omit-frame-pointer -g"
-cmake --build build-tsan -j && ./build-tsan/test_auris
+cmake --build build-tsan -j && ./build-tsan/test_mockingbird
 ```
 
 ## Models
@@ -250,16 +250,16 @@ cmake --build build-tsan -j && ./build-tsan/test_auris
 Copies live in `tests/fixtures/` for the core tests and the Go and Python
 examples, and in `packages/mockingbird/assets/` as Flutter assets. The Flutter
 package extracts them to an app-writable path at runtime through
-`AurisModels`.
+`MockingbirdModels`.
 
 The engine resolves a model path in this order:
 
 1. The path in the config (`neural_vad_model_path`, `sound_class_model_path`).
-2. The environment variable `AURIS_NEURAL_VAD_MODEL` or `AURIS_SOUND_CLASS_MODEL`.
+2. The environment variable `MOCKINGBIRD_NEURAL_VAD_MODEL` or `MOCKINGBIRD_SOUND_CLASS_MODEL`.
 3. A file named `silero_vad.onnx` or `yamnet_3s.onnx` in the working directory.
 
 The YAMNet class names are in `tests/fixtures/yamnet_class_map.txt` and, for
-Flutter, through `AurisModels.yamnetLabels()`.
+Flutter, through `MockingbirdModels.yamnetLabels()`.
 
 ## Building for the web
 
@@ -269,7 +269,7 @@ the build leaves out the capture backends and the ONNX detectors; the Flutter
 web package captures through Web Audio and pushes PCM in.
 
 ```bash
-scripts/build_wasm.sh                 # writes packages/mockingbird_web/assets/auris.{js,wasm}
+scripts/build_wasm.sh                 # writes packages/mockingbird_web/assets/mockingbird.{js,wasm}
 node tests/wasm/smoke.mjs             # pushes the speech fixture through the build
 ```
 
@@ -320,7 +320,7 @@ Notes for Android devices:
   on space, build `flutter build apk --release --split-per-abi` and install
   `build/app/outputs/flutter-apk/app-arm64-v8a-release.apk` (about 70 MB).
 - Grant the microphone before launching if you want to skip the prompt:
-  `adb shell pm grant io.auris.example android.permission.RECORD_AUDIO`.
+  `adb shell pm grant io.mockingbird.example android.permission.RECORD_AUDIO`.
 
 Unit tests and analysis for the Dart package:
 
@@ -338,7 +338,7 @@ are the only coupling between real-time work and the host.
 ```mermaid
 flowchart TB
     MIC["Microphone<br/>miniaudio / Oboe / Core Audio"] --> RING
-    HOST["Host PCM<br/>auris_push_pcm"] --> RING
+    HOST["Host PCM<br/>mockingbird_push_pcm"] --> RING
     RING(["SPSC PCM ring<br/>lock-free, drops newest when full"])
 
     subgraph WORKER["T2: worker thread"]
@@ -357,13 +357,13 @@ flowchart TB
     SEG --> EVQ(["Event queue"])
     YAM --> EVQ
 
-    POOL --> DRAIN["auris_drain"]
-    EVQ --> POLL["auris_poll_event"]
+    POOL --> DRAIN["mockingbird_drain"]
+    EVQ --> POLL["mockingbird_poll_event"]
 
     subgraph HOSTAPP["T3: host (Go channels, Dart streams, Python iterators)"]
         DRAIN --> PKT["packets, zero-copy until release"]
         POLL --> EV["events"]
-        STATS["auris_get_stats"] --> ST["stats"]
+        STATS["mockingbird_get_stats"] --> ST["stats"]
     end
 ```
 
@@ -375,16 +375,16 @@ flowchart TB
   identical input gives identical output on every run.
 - T3, the host, drains at its own pace. A slow host never applies backpressure
   to T1 or T2; the packet pool drops the oldest packet and raises
-  `AURIS_EVT_OVERRUN`.
+  `MOCKINGBIRD_EVT_OVERRUN`.
 
-The C ABI in `include/auris/auris.h` is the contract: an opaque handle, plain
+The C ABI in `include/mockingbird/mockingbird.h` is the contract: an opaque handle, plain
 structs, status codes, no C++ types or exceptions across the boundary, and
 borrowed packets guarded by a generation cookie against stale or double release.
 
 ## Repository layout
 
 ```
-include/auris/auris.h       the C ABI; the bindings are generated from it
+include/mockingbird/mockingbird.h       the C ABI; the bindings are generated from it
 src/
   api/                      one translation unit per C entry point group
   worker/                   the worker thread: drain loop, detector bank, tunables,
@@ -399,7 +399,7 @@ src/
 third_party/                vendored, permissive-only dependencies
 tests/                      118 doctest cases and the audio and model fixtures
 bench/                      the throughput benchmark and the package comparison
-packages/                   Flutter federated plugin (auris, platform interface,
+packages/                   Flutter federated plugin (mockingbird, platform interface,
                             android, ios, macos, web) and the example app
 bindings/go/                cgo binding, example and tests
 bindings/python/            ctypes binding, example and tests
@@ -413,7 +413,7 @@ bodies; the structure is meant to carry that information.
 
 ## Performance
 
-`bench_auris` on a Release build, Apple M3 Max, one core, 16 kHz input:
+`bench_mockingbird` on a Release build, Apple M3 Max, one core, 16 kHz input:
 
 | Configuration | Share of one core |
 |---|---|
@@ -452,7 +452,7 @@ Measured and not adopted, with the same harness so the numbers can be rechecked:
 
 - The CoreML execution provider for the ONNX detectors. YAMNet went from 1.5%
   to 26% of wall time from per-inference dispatch overhead, and Silero from
-  0.6% to 2.4% with unsupported-dimension errors. `AURIS_ORT_EP=coreml`
+  0.6% to 2.4% with unsupported-dimension errors. `MOCKINGBIRD_ORT_EP=coreml`
   re-measures with a newer ONNX Runtime; the CPU provider stays the default.
 - Opus NEON intrinsics against the portable path: 0.37% to 0.40% either way,
   within run-to-run noise, so the Apple builds keep `OPUS_DISABLE_INTRINSICS`.
@@ -475,7 +475,7 @@ correctly on each platform. They are already encoded in the build files under
   no Prefab metadata.
 - `abiFilters arm64-v8a, x86_64`.
 - The shared C and C++ sources live at the repository root and are reached
-  through `AURIS_ROOT`. The plugin's CMake file lists them explicitly, so a new
+  through `MOCKINGBIRD_ROOT`. The plugin's CMake file lists them explicitly, so a new
   source file must be added there as well as to the root `CMakeLists.txt`.
 
 ### iOS and macOS (`packages/mockingbird_ios`, `packages/mockingbird_macos`)
@@ -487,17 +487,17 @@ correctly on each platform. They are already encoded in the build files under
 - FFI symbol export. `DynamicLibrary.process()` searches the executable's
   dynamic symbol table. With static linkage the linker keeps only objects
   referenced at link time, and the C ABI is only referenced at runtime from
-  Dart. Two pieces keep the symbols: `AurisPlugin.register()` references the
+  Dart. Two pieces keep the symbols: `MockingbirdPlugin.register()` references the
   ABI under a never-true guard, and the podspec adds `-Wl,-export_dynamic` to
   the consumer target.
 - Swift Package Manager. Each plugin ships a `Package.swift` next to its
   podspec. SwiftPM needs a target's sources inside the package, so
-  `Sources/auris_native/` holds symlinks to the shared tree. Three details are
+  `Sources/mockingbird_native/` holds symlinks to the shared tree. Three details are
   load-bearing:
   - `rnnoise/src` must not be on the header search path. RNNoise vendors a fork
     of celt whose headers shadow those of opus and miscompile it silently.
-  - Under SwiftPM the C engine is its own module, so `AurisPlugin.swift` does
-    `#if canImport(auris_native) import auris_native`.
+  - Under SwiftPM the C engine is its own module, so `MockingbirdPlugin.swift` does
+    `#if canImport(mockingbird_native) import mockingbird_native`.
   - Neural VAD and YAMNet come from Microsoft's
     [onnxruntime-swift-package-manager](https://github.com/microsoft/onnxruntime-swift-package-manager)
     pinned to 1.24.2, which wraps the same artifact as the `onnxruntime-c` pod.
@@ -543,10 +543,10 @@ Run what your change touches. The full set the maintainers run before a core
 change is:
 
 ```bash
-cmake --build build --target auris test_auris bench_auris -j && ./build/test_auris
-./build-asan/test_auris
-./build-tsan/test_auris
-./build/bench_auris
+cmake --build build --target mockingbird test_mockingbird bench_mockingbird -j && ./build/test_mockingbird
+./build-asan/test_mockingbird
+./build-tsan/test_mockingbird
+./build/bench_mockingbird
 examples/conformance/run.sh
 ```
 
@@ -564,7 +564,7 @@ and the conformance harness.
 
 ### Regenerating the Dart FFI bindings
 
-The Dart binding is generated from `include/auris/auris.h`. After changing the
+The Dart binding is generated from `include/mockingbird/mockingbird.h`. After changing the
 header:
 
 ```bash
@@ -573,7 +573,7 @@ cd packages/mockingbird_platform_interface && dart run ffigen --config ffigen.ya
 
 ### Adding a C++ source file
 
-Add it to `AURIS_SOURCES` in the root `CMakeLists.txt` and to the Android
+Add it to `MOCKINGBIRD_SOURCES` in the root `CMakeLists.txt` and to the Android
 plugin's `packages/mockingbird_android/android/src/main/cpp/CMakeLists.txt`. The
 podspecs and Swift packages glob the tree and pick it up on their own. A file
 meant for one build only must be guarded (`#ifdef __EMSCRIPTEN__` or its
@@ -607,14 +607,14 @@ WebAssembly build and the native copies must be synced first.
 
 ### Adding a C ABI entry point
 
-Declare it in `include/auris/auris.h`, name it in the Swift anchor of both
+Declare it in `include/mockingbird/mockingbird.h`, name it in the Swift anchor of both
 Apple plugins so the static linker keeps its object, add it to
 `scripts/wasm_exports.txt`, regenerate the Dart bindings, and give the web
 package a `dart:js_interop` member for it.
 
 ## Licensing
 
-Auris is released under the MIT license (see `LICENSE`). Its dependencies are
+Mockingbird is released under the MIT license (see `LICENSE`). Its dependencies are
 permissive-only, with no GPL or LGPL code:
 
 | Dependency | Version | License |

@@ -1,4 +1,4 @@
-package auris
+package mockingbird
 
 // SoundClassConfig drives YAMNet classification over all 521 AudioSet classes.
 type SoundClassConfig struct {

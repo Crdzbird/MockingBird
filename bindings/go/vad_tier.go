@@ -1,4 +1,4 @@
-package auris
+package mockingbird
 
 // VadTier selects the voice-activity detector. Both are language-agnostic.
 type VadTier int

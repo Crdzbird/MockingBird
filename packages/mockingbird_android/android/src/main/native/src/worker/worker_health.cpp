@@ -2,12 +2,12 @@
 // audio flows; an idle engine keeps reporting its last busy share.
 #include "worker/worker_health.hpp"
 
-#include "auris_log.hpp"
+#include "mockingbird_log.hpp"
 #include "engine.hpp"
 #include "engine_events.hpp"
 #include "worker/tunables.hpp"
 
-namespace auris {
+namespace mockingbird {
 
 namespace {
 
@@ -20,14 +20,14 @@ uint64_t ns_between(std::chrono::steady_clock::time_point a,
 
 } // namespace
 
-void WorkerHealth::start(const auris_engine* e) {
+void WorkerHealth::start(const mockingbird_engine* e) {
     win_start_  = clock::now();
     drops_seen_ = e->frames_dropped_capture.load(std::memory_order_relaxed);
 }
 
 void WorkerHealth::begin_frame() { frame_t0_ = clock::now(); }
 
-void WorkerHealth::end_frame(auris_engine* e, uint64_t now_ts, Tunables& t) {
+void WorkerHealth::end_frame(mockingbird_engine* e, uint64_t now_ts, Tunables& t) {
     const auto     t1 = clock::now();
     const uint64_t ns = ns_between(frame_t0_, t1);
     win_busy_ns_ += ns;
@@ -43,7 +43,7 @@ void WorkerHealth::end_frame(auris_engine* e, uint64_t now_ts, Tunables& t) {
     win_busy_ns_ = 0;
 }
 
-void WorkerHealth::close_window(auris_engine* e, uint64_t now_ts, Tunables& t,
+void WorkerHealth::close_window(mockingbird_engine* e, uint64_t now_ts, Tunables& t,
                                 uint64_t window_ns) {
     uint64_t ppm = (win_busy_ns_ * 1000000ull) / window_ns;
     if (ppm > 1000000ull) ppm = 1000000ull;
@@ -55,10 +55,10 @@ void WorkerHealth::close_window(auris_engine* e, uint64_t now_ts, Tunables& t,
 
     if (!t.adaptive_on || !t.degrade.update(static_cast<uint32_t>(ppm), dropped)) return;
     e->degradation_level.store(t.degrade.level(), std::memory_order_relaxed);
-    emit_event(e, make_event(AURIS_EVT_DEGRADATION, 0, now_ts, t.degrade.level(),
+    emit_event(e, make_event(MOCKINGBIRD_EVT_DEGRADATION, 0, now_ts, t.degrade.level(),
                              static_cast<float>(ppm) / 1000000.0f));
-    AURIS_VLOG("degradation level -> %u (busy %llu ppm%s)", t.degrade.level(),
+    MOCKINGBIRD_VLOG("degradation level -> %u (busy %llu ppm%s)", t.degrade.level(),
                static_cast<unsigned long long>(ppm), dropped ? ", drops" : "");
 }
 
-} // namespace auris
+} // namespace mockingbird

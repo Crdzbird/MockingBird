@@ -1,13 +1,13 @@
-// auris_get_stats: relaxed loads of the worker's counters.
-#include "auris/auris.h"
+// mockingbird_get_stats: relaxed loads of the worker's counters.
+#include "mockingbird/mockingbird.h"
 #include "engine.hpp"
 
 #include <cstring>
 
 extern "C" {
 
-AURIS_API auris_status_t auris_get_stats(auris_engine_t* e, auris_stats_t* out) {
-    if (e == nullptr || out == nullptr) return AURIS_ERR_INVALID_ARG;
+MOCKINGBIRD_API mockingbird_status_t mockingbird_get_stats(mockingbird_engine_t* e, mockingbird_stats_t* out) {
+    if (e == nullptr || out == nullptr) return MOCKINGBIRD_ERR_INVALID_ARG;
     try {
         constexpr auto relaxed = std::memory_order_relaxed;
         out->frames_captured                = e->frames_captured.load(relaxed);
@@ -29,9 +29,9 @@ AURIS_API auris_status_t auris_get_stats(auris_engine_t* e, auris_stats_t* out) 
         out->preproc_frames_skipped         = e->preproc_frames_skipped.load(relaxed);
         out->degradation_level              = e->degradation_level.load(relaxed);
         std::memset(out->_reserved, 0, sizeof(out->_reserved));
-        return AURIS_OK;
+        return MOCKINGBIRD_OK;
     } catch (...) {
-        return AURIS_ERR_INTERNAL;
+        return MOCKINGBIRD_ERR_INTERNAL;
     }
 }
 

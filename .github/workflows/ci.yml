@@ -25,11 +25,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Configure
-        run: cmake -S . -B build -DAURIS_ENABLE_TESTS=ON
+        run: cmake -S . -B build -DMOCKINGBIRD_ENABLE_TESTS=ON
       - name: Build
         run: cmake --build build -j
       - name: Test
-        run: ./build/test_auris --no-intro
+        run: ./build/test_mockingbird --no-intro
       - name: Native copies in the platform packages match the root
         run: scripts/sync_native.sh && git diff --exit-code --stat -- packages
 
@@ -51,16 +51,16 @@ jobs:
       - uses: actions/checkout@v7
       - name: Configure (${{ matrix.name }})
         run: >
-          cmake -S . -B build-san -DAURIS_ENABLE_TESTS=ON
+          cmake -S . -B build-san -DMOCKINGBIRD_ENABLE_TESTS=ON
           -DCMAKE_CXX_FLAGS="${{ matrix.flags }}"
           -DCMAKE_C_FLAGS="${{ matrix.flags }}"
       - name: Build
         run: cmake --build build-san -j
       - name: Test (${{ matrix.name }})
-        run: ./build-san/test_auris --no-intro
+        run: ./build-san/test_mockingbird --no-intro
 
   # ---------------------------------------------------------------------------
-  # Go binding: build libauris (shared, dependency-light), then test the cgo
+  # Go binding: build libmockingbird (shared, dependency-light), then test the cgo
   # wrapper functionally and under the race detector.
   # ---------------------------------------------------------------------------
   go:
@@ -71,9 +71,9 @@ jobs:
       - uses: actions/setup-go@v7
         with:
           go-version: stable
-      - name: Build libauris (shared)
+      - name: Build libmockingbird (shared)
         run: |
-          cmake -S . -B build -DAURIS_BUILD_SHARED=ON
+          cmake -S . -B build -DMOCKINGBIRD_BUILD_SHARED=ON
           cmake --build build -j
       - name: Test
         working-directory: bindings/go
@@ -83,7 +83,7 @@ jobs:
         run: go test -race ./...
 
   # ---------------------------------------------------------------------------
-  # Python binding: pure ctypes, so it only needs libauris + stdlib unittest.
+  # Python binding: pure ctypes, so it only needs libmockingbird + stdlib unittest.
   # ---------------------------------------------------------------------------
   python:
     name: test (Python)
@@ -93,9 +93,9 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
-      - name: Build libauris (shared)
+      - name: Build libmockingbird (shared)
         run: |
-          cmake -S . -B build -DAURIS_BUILD_SHARED=ON
+          cmake -S . -B build -DMOCKINGBIRD_BUILD_SHARED=ON
           cmake --build build -j
       - name: Test
         working-directory: bindings/python

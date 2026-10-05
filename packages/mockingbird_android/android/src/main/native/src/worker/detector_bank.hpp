@@ -10,21 +10,21 @@
 #include <cstdint>
 #include <memory>
 
-struct auris_engine;
+struct mockingbird_engine;
 
-namespace auris {
+namespace mockingbird {
 
 class Tunables;
 
 class DetectorBank {
 public:
-    void init(auris_engine* e);
+    void init(mockingbird_engine* e);
 
-    void denoise(auris_engine* e, int16_t* frame, uint32_t n, bool quiet);
+    void denoise(mockingbird_engine* e, int16_t* frame, uint32_t n, bool quiet);
 
     DetectionPair detect(const int16_t* frame, uint32_t n, const Tunables& t);
 
-    void classify(auris_engine* e, const int16_t* frame, uint32_t n, bool quiet,
+    void classify(mockingbird_engine* e, const int16_t* frame, uint32_t n, bool quiet,
                   const Tunables& t, uint64_t segment_id, uint64_t now_ts);
 
     Detector* vad() { return vad_.get(); }
@@ -32,7 +32,7 @@ public:
 
 private:
     template <typename Component>
-    static bool prepare(auris_engine* e, std::unique_ptr<Component>& c, const char* tag);
+    static bool prepare(mockingbird_engine* e, std::unique_ptr<Component>& c, const char* tag);
 
     std::unique_ptr<Preprocessor>    preproc_;
     std::unique_ptr<Detector>        vad_;
@@ -40,4 +40,4 @@ private:
     std::unique_ptr<SoundClassifier> classifier_;
 };
 
-} // namespace auris
+} // namespace mockingbird

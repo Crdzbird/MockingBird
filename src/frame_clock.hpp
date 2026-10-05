@@ -6,7 +6,7 @@
 #include <atomic>
 #include <cstdint>
 
-namespace auris {
+namespace mockingbird {
 
 class FrameClock {
 public:
@@ -34,4 +34,4 @@ private:
     uint64_t                     index_ = 0;
 };
 
-} // namespace auris
+} // namespace mockingbird

@@ -1,7 +1,7 @@
-package auris
+package mockingbird
 
 /*
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 */
 import "C"
 
@@ -25,7 +25,7 @@ type Stats struct {
 	Worker WorkerHealth
 }
 
-func statsFromC(s C.auris_stats_t) Stats {
+func statsFromC(s C.mockingbird_stats_t) Stats {
 	return Stats{
 		FramesCaptured:       uint64(s.frames_captured),
 		FramesDroppedCapture: uint64(s.frames_dropped_capture),

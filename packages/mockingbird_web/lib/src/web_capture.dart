@@ -40,7 +40,7 @@ final class WebCapture {
     await const WebCaptureWorklet().add(context);
     final node = web.AudioWorkletNode(
       context,
-      'auris-capture',
+      'mockingbird-capture',
       web.AudioWorkletNodeOptions(
         processorOptions: _options(context.sampleRate.toInt()),
       ),

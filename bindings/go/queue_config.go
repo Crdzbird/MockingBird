@@ -1,4 +1,4 @@
-package auris
+package mockingbird
 
 // QueueConfig sizes the queues between capture, the worker and the host.
 type QueueConfig struct {

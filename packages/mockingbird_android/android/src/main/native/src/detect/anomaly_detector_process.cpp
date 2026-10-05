@@ -6,7 +6,7 @@
 #include <cmath>
 #include <cstring>
 
-namespace auris {
+namespace mockingbird {
 
 SpectralMetrics AnomalyDetector::measure(const int16_t* frame, uint32_t n) {
     double sumsq = 0.0;
@@ -45,10 +45,10 @@ SpectralMetrics AnomalyDetector::measure(const int16_t* frame, uint32_t n) {
 uint32_t AnomalyDetector::trigger_bits(const SpectralMetrics& m, float z_rms, float z_flux,
                                        float z_centroid) const {
     uint32_t reason = 0;
-    if (z_rms > rms_threshold_) reason |= AURIS_ANOMALY_RMS;
+    if (z_rms > rms_threshold_) reason |= MOCKINGBIRD_ANOMALY_RMS;
     if (m.rms > silence_rms_floor_) {
-        if (z_flux > flux_threshold_)         reason |= AURIS_ANOMALY_SPECTRAL_FLUX;
-        if (z_centroid > centroid_threshold_) reason |= AURIS_ANOMALY_CENTROID;
+        if (z_flux > flux_threshold_)         reason |= MOCKINGBIRD_ANOMALY_SPECTRAL_FLUX;
+        if (z_centroid > centroid_threshold_) reason |= MOCKINGBIRD_ANOMALY_CENTROID;
     }
     return reason;
 }
@@ -91,4 +91,4 @@ DetectionResult AnomalyDetector::process(const int16_t* frame, uint32_t frame_co
     return r;
 }
 
-} // namespace auris
+} // namespace mockingbird

@@ -2,8 +2,8 @@ import 'dart:js_interop';
 import 'dart:typed_data';
 
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
-import 'package:mockingbird_web/src/auris_module.dart';
-import 'package:mockingbird_web/src/auris_record_api.dart';
+import 'package:mockingbird_web/src/mockingbird_module.dart';
+import 'package:mockingbird_web/src/mockingbird_record_api.dart';
 import 'package:mockingbird_web/src/web_record_field.dart';
 
 /// Reads native records through the shim's field getters.
@@ -11,15 +11,17 @@ final class WebDecoders {
   /// Wraps the loaded module.
   const WebDecoders(this._m);
 
-  final AurisModule _m;
+  final MockingbirdModule _m;
 
-  double _e(int p, WebEventField f) => AurisRecordApi(_m).eventGet(p, f.index);
+  double _e(int p, WebEventField f) =>
+      MockingbirdRecordApi(_m).eventGet(p, f.index);
   double _p(int p, WebPacketField f) =>
-      AurisRecordApi(_m).packetGet(p, f.index);
-  double _s(int p, WebStatsField f) => AurisRecordApi(_m).statsGet(p, f.index);
+      MockingbirdRecordApi(_m).packetGet(p, f.index);
+  double _s(int p, WebStatsField f) =>
+      MockingbirdRecordApi(_m).statsGet(p, f.index);
 
   /// Reads the event record at [p].
-  AurisNativeEvent event(int p) => AurisNativeEvent(
+  MockingbirdNativeEvent event(int p) => MockingbirdNativeEvent(
     type: _e(p, WebEventField.type).toInt(),
     segmentId: _e(p, WebEventField.segmentId).toInt(),
     timestampUs: _e(p, WebEventField.timestampUs).toInt(),
@@ -28,13 +30,13 @@ final class WebDecoders {
   );
 
   /// Reads the packet record at [p], copying its payload.
-  AurisNativePacket packet(int p) {
+  MockingbirdNativePacket packet(int p) {
     final size = _p(p, WebPacketField.size).toInt();
     final data = _p(p, WebPacketField.data).toInt();
     final bytes = size > 0 && data != 0
         ? Uint8List.fromList(_m.heapU8.toDart.sublist(data, data + size))
         : Uint8List(0);
-    return AurisNativePacket(
+    return MockingbirdNativePacket(
       segmentId: _p(p, WebPacketField.segmentId).toInt(),
       ptsUs: _p(p, WebPacketField.ptsUs).toInt(),
       captureTsUs: _p(p, WebPacketField.captureTsUs).toInt(),
@@ -45,7 +47,7 @@ final class WebDecoders {
   }
 
   /// Reads the stats record at [p].
-  AurisNativeStats stats(int p) => AurisNativeStats(
+  MockingbirdNativeStats stats(int p) => MockingbirdNativeStats(
     framesCaptured: _s(p, WebStatsField.framesCaptured).toInt(),
     framesDroppedCapture: _s(p, WebStatsField.framesDroppedCapture).toInt(),
     packetsEmitted: _s(p, WebStatsField.packetsEmitted).toInt(),

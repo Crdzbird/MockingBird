@@ -11,13 +11,13 @@
 #include <cstdint>
 #include <vector>
 
-struct auris_engine;
+struct mockingbird_engine;
 
-namespace auris {
+namespace mockingbird {
 
 class Worker {
 public:
-    explicit Worker(auris_engine* e);
+    explicit Worker(mockingbird_engine* e);
 
     void run();
     bool drain_ring();
@@ -28,7 +28,7 @@ private:
     void tap(const int16_t* samples);
     void park();
 
-    auris_engine*        e_;
+    mockingbird_engine*        e_;
     uint32_t             frame_samples_;
     std::vector<int16_t> scratch_;
     FrameClock           clock_;
@@ -39,6 +39,6 @@ private:
     uint64_t             last_seen_wake_ = 0;
 };
 
-void worker_loop(auris_engine* e) noexcept;
+void worker_loop(mockingbird_engine* e) noexcept;
 
-} // namespace auris
+} // namespace mockingbird

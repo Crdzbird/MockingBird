@@ -4,14 +4,14 @@
 // classes the user pinned as MUST: voice, animals, anomaly-class events.
 //
 // Strategy: for each real-audio fixture, run the engine with the classifier
-// enabled, collect AURIS_EVT_SOUND_CLASS events, and assert that the
+// enabled, collect MOCKINGBIRD_EVT_SOUND_CLASS events, and assert that the
 // dominant class falls inside the expected AudioSet category for that
 // fixture. Each test asserts ON THE DOMINANT class — not on every
 // inference window — because YAMNet samples 3 s windows and a short clip
 // gives the test 1–2 inferences max.
 
 #include "doctest.h"
-#include "auris/auris.h"
+#include "mockingbird/mockingbird.h"
 
 #include <algorithm>
 #include <chrono>
@@ -24,7 +24,7 @@
 #include <unordered_map>
 #include <vector>
 
-#ifdef AURIS_HAVE_SOUND_CLASS
+#ifdef MOCKINGBIRD_HAVE_SOUND_CLASS
 
 namespace {
 
@@ -85,15 +85,15 @@ struct ClassifierTally {
 
 ClassifierTally run_classifier_over_fixture(const WavInts16& wav,
                                             float threshold) {
-    // // VERIFY  Keep the path string alive for the entire auris_create
+    // // VERIFY  Keep the path string alive for the entire mockingbird_create
     // call. c_str() on a temporary is undefined behavior.
     const std::string model_path =
-        std::string(AURIS_TEST_FIXTURE_DIR) + "/yamnet_3s.onnx";
+        std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/yamnet_3s.onnx";
 
-    auris_config_t cfg{};
-    auris_config_defaults(&cfg);
-    cfg.backend                  = AURIS_BACKEND_HOST_PCM;
-    cfg.codec                    = AURIS_CODEC_PCM_S16LE;
+    mockingbird_config_t cfg{};
+    mockingbird_config_defaults(&cfg);
+    cfg.backend                  = MOCKINGBIRD_BACKEND_HOST_PCM;
+    cfg.codec                    = MOCKINGBIRD_CODEC_PCM_S16LE;
     cfg.sample_rate_hz           = 16000;
     cfg.frame_ms                 = 20;
     cfg.enable_vad               = 0;
@@ -106,9 +106,9 @@ ClassifierTally run_classifier_over_fixture(const WavInts16& wav,
     // does not overflow while it catches up.
     cfg.pcm_ring_frames           = 1u << 17;   // 131072 samples = 8 s
 
-    auris_engine_t* e = nullptr;
-    REQUIRE(auris_create(&cfg, &e) == AURIS_OK);
-    REQUIRE(auris_start(e) == AURIS_OK);
+    mockingbird_engine_t* e = nullptr;
+    REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
+    REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
 
     constexpr uint32_t kFrameSamples = 320;
     const size_t total_frames = wav.samples.size() / kFrameSamples;
@@ -116,11 +116,11 @@ ClassifierTally run_classifier_over_fixture(const WavInts16& wav,
 
     auto drain_events = [&]() {
         while (true) {
-            auris_event_t evt{};
-            const auris_status_t s = auris_poll_event(e, &evt);
-            if (s == AURIS_ERR_QUEUE_EMPTY) return;
-            REQUIRE(s == AURIS_OK);
-            if (evt.type != AURIS_EVT_SOUND_CLASS) continue;
+            mockingbird_event_t evt{};
+            const mockingbird_status_t s = mockingbird_poll_event(e, &evt);
+            if (s == MOCKINGBIRD_ERR_QUEUE_EMPTY) return;
+            REQUIRE(s == MOCKINGBIRD_OK);
+            if (evt.type != MOCKINGBIRD_EVT_SOUND_CLASS) continue;
             const int cls = static_cast<int>(evt.reason_mask);
             t.class_counts[cls] += 1;
             if (evt.confidence > t.class_max_conf[cls]) {
@@ -130,18 +130,18 @@ ClassifierTally run_classifier_over_fixture(const WavInts16& wav,
     };
     auto drain_packets = [&]() {
         while (true) {
-            auris_packet_t pkt{};
-            const auris_status_t s = auris_drain(e, &pkt);
-            if (s == AURIS_ERR_QUEUE_EMPTY) return;
-            REQUIRE(s == AURIS_OK);
-            REQUIRE(auris_release(e, &pkt) == AURIS_OK);
+            mockingbird_packet_t pkt{};
+            const mockingbird_status_t s = mockingbird_drain(e, &pkt);
+            if (s == MOCKINGBIRD_ERR_QUEUE_EMPTY) return;
+            REQUIRE(s == MOCKINGBIRD_OK);
+            REQUIRE(mockingbird_release(e, &pkt) == MOCKINGBIRD_OK);
         }
     };
 
     for (size_t i = 0; i < total_frames; ++i) {
         const int16_t* p = wav.samples.data() + i * kFrameSamples;
-        REQUIRE(auris_push_pcm(e, p, kFrameSamples,
-                               static_cast<uint64_t>(i) * 20'000ull) == AURIS_OK);
+        REQUIRE(mockingbird_push_pcm(e, p, kFrameSamples,
+                               static_cast<uint64_t>(i) * 20'000ull) == MOCKINGBIRD_OK);
         if ((i & 0x1Fu) == 0x1F) {
             std::this_thread::sleep_for(std::chrono::milliseconds(80));
             drain_events();
@@ -152,9 +152,9 @@ ClassifierTally run_classifier_over_fixture(const WavInts16& wav,
     std::this_thread::sleep_for(std::chrono::milliseconds(800));
     drain_events();
     drain_packets();
-    REQUIRE(auris_stop(e) == AURIS_OK);
+    REQUIRE(mockingbird_stop(e) == MOCKINGBIRD_OK);
     drain_events();
-    auris_destroy(e);
+    mockingbird_destroy(e);
 
     // Pick the most-fired class.
     for (auto& [cls, count] : t.class_counts) {
@@ -187,16 +187,16 @@ bool is_music_class(int c) {
 
 bool sound_class_available() {
     const std::string model_path =
-        std::string(AURIS_TEST_FIXTURE_DIR) + "/yamnet_3s.onnx";
-    auris_config_t cfg{};
-    auris_config_defaults(&cfg);
-    cfg.backend             = AURIS_BACKEND_HOST_PCM;
-    cfg.codec               = AURIS_CODEC_PCM_S16LE;
+        std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/yamnet_3s.onnx";
+    mockingbird_config_t cfg{};
+    mockingbird_config_defaults(&cfg);
+    cfg.backend             = MOCKINGBIRD_BACKEND_HOST_PCM;
+    cfg.codec               = MOCKINGBIRD_CODEC_PCM_S16LE;
     cfg.enable_sound_class   = 1;
     cfg.sound_class_model_path = model_path.c_str();
-    auris_engine_t* e = nullptr;
-    if (auris_create(&cfg, &e) != AURIS_OK) return false;
-    auris_destroy(e);
+    mockingbird_engine_t* e = nullptr;
+    if (mockingbird_create(&cfg, &e) != MOCKINGBIRD_OK) return false;
+    mockingbird_destroy(e);
     return true;
 }
 
@@ -208,7 +208,7 @@ TEST_CASE("Sound classifier: model loads when path is set") {
 
 TEST_CASE("Sound classifier: cat fixture is classified as an animal sound") {
     const auto wav = read_wav_int16(
-        std::string(AURIS_TEST_FIXTURE_DIR) + "/miaow_16k.wav");
+        std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/miaow_16k.wav");
     REQUIRE(wav.samples.size() > 0);
     REQUIRE(wav.sample_rate_hz == 16000);
 
@@ -223,7 +223,7 @@ TEST_CASE("Sound classifier: cat fixture is classified as an animal sound") {
 
 TEST_CASE("Sound classifier: voice fixture is classified as speech") {
     const auto wav = read_wav_int16(
-        std::string(AURIS_TEST_FIXTURE_DIR) + "/hello.wav");
+        std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/hello.wav");
     REQUIRE(wav.samples.size() > 0);
 
     const auto t = run_classifier_over_fixture(wav, /*threshold=*/ 0.1f);
@@ -237,7 +237,7 @@ TEST_CASE("Sound classifier: voice fixture is classified as speech") {
 
 TEST_CASE("Sound classifier: music fixture is classified as music") {
     const auto wav = read_wav_int16(
-        std::string(AURIS_TEST_FIXTURE_DIR) + "/music.wav");
+        std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/music.wav");
     REQUIRE(wav.samples.size() > 0);
 
     const auto t = run_classifier_over_fixture(wav, /*threshold=*/ 0.1f);
@@ -251,9 +251,9 @@ TEST_CASE("Sound classifier: music fixture is classified as music") {
 
 #else
 
-TEST_CASE("Sound classifier tests skipped: AURIS_HAVE_SOUND_CLASS not defined") {
+TEST_CASE("Sound classifier tests skipped: MOCKINGBIRD_HAVE_SOUND_CLASS not defined") {
     MESSAGE("YAMNet not linked - skip");
     CHECK(true);
 }
 
-#endif  // AURIS_HAVE_SOUND_CLASS
+#endif  // MOCKINGBIRD_HAVE_SOUND_CLASS

@@ -4,16 +4,16 @@
 
 #include "engine.hpp"
 
-namespace auris {
+namespace mockingbird {
 
 namespace {
 constexpr size_t kPullEventQueueCap = 1024;
 }
 
-auris_event_t make_event(auris_event_type_t type, uint64_t segment_id,
+mockingbird_event_t make_event(mockingbird_event_type_t type, uint64_t segment_id,
                          uint64_t timestamp_us, uint32_t reason_mask,
                          float confidence) {
-    auris_event_t evt{};
+    mockingbird_event_t evt{};
     evt.type         = type;
     evt.segment_id   = segment_id;
     evt.timestamp_us = timestamp_us;
@@ -22,7 +22,7 @@ auris_event_t make_event(auris_event_type_t type, uint64_t segment_id,
     return evt;
 }
 
-void emit_event(auris_engine* e, const auris_event_t& evt) {
+void emit_event(mockingbird_engine* e, const mockingbird_event_t& evt) {
     {
         std::lock_guard lk(e->evt_mu);
         while (e->evt_queue.size() >= kPullEventQueueCap) {
@@ -30,7 +30,7 @@ void emit_event(auris_engine* e, const auris_event_t& evt) {
         }
         e->evt_queue.push_back(evt);
     }
-    auris_event_cb cb;
+    mockingbird_event_cb cb;
     void*          user;
     {
         std::lock_guard lk(e->cb_mu);
@@ -44,10 +44,10 @@ void emit_event(auris_engine* e, const auris_event_t& evt) {
     }
 }
 
-void emit_backend_error(auris_engine* e, auris_status_t status) {
-    emit_event(e, make_event(AURIS_EVT_BACKEND_ERROR, 0,
+void emit_backend_error(mockingbird_engine* e, mockingbird_status_t status) {
+    emit_event(e, make_event(MOCKINGBIRD_EVT_BACKEND_ERROR, 0,
                              e->last_capture_ts_us.load(std::memory_order_relaxed),
                              static_cast<uint32_t>(status)));
 }
 
-} // namespace auris
+} // namespace mockingbird

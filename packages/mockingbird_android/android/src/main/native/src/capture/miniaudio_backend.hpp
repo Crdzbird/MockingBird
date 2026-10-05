@@ -6,16 +6,16 @@
 
 #include <memory>
 
-namespace auris {
+namespace mockingbird {
 
 class MiniaudioBackend final : public CaptureBackend {
 public:
     MiniaudioBackend();
     ~MiniaudioBackend() override;
 
-    auris_status_t init(const auris_config_t& cfg, PcmCallback cb, void* user) override;
-    auris_status_t start() override;
-    auris_status_t stop() override;
+    mockingbird_status_t init(const mockingbird_config_t& cfg, PcmCallback cb, void* user) override;
+    mockingbird_status_t start() override;
+    mockingbird_status_t stop() override;
 
     struct Impl;
 
@@ -23,4 +23,4 @@ private:
     std::unique_ptr<Impl> impl_;
 };
 
-} // namespace auris
+} // namespace mockingbird

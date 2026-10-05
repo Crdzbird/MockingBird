@@ -1,4 +1,4 @@
-package auris
+package mockingbird
 
 // PerformanceConfig trades latency for CPU and battery.
 type PerformanceConfig struct {

@@ -1,7 +1,7 @@
 # mockingbird_platform_interface
 
 The platform interface for the [mockingbird](https://pub.dev/packages/mockingbird) plugin:
-the `AurisPlatform` contract every platform package implements, the plain
+the `MockingbirdPlatform` contract every platform package implements, the plain
 data records that cross it, and a shared `dart:ffi` implementation for the
 platforms that link the engine natively.
 
@@ -10,53 +10,53 @@ platform packages for Android, iOS, macOS and web.
 
 ## The contract
 
-`AurisPlatform` exposes the engine's operations with plain Dart types and the
+`MockingbirdPlatform` exposes the engine's operations with plain Dart types and the
 C ABI's status codes as integers; the `mockingbird` package turns codes into
 exceptions and records into its typed API:
 
 ```dart
-abstract class AurisPlatform extends PlatformInterface {
+abstract class MockingbirdPlatform extends PlatformInterface {
   Future<void> initialize();
   String version();
   String statusName(int status);
-  AurisCreateResult create(AurisNativeConfig config);
-  void destroy(AurisEngineHandle handle);
-  int start(AurisEngineHandle handle);
-  int stop(AurisEngineHandle handle);
-  int pushPcm(AurisEngineHandle handle, Int16List samples, int captureTsUs);
-  AurisPcmResult readPcm(AurisEngineHandle handle, int maxSamples);
-  AurisEventResult pollEvent(AurisEngineHandle handle);
-  AurisPacketResult drainPacket(AurisEngineHandle handle);
-  AurisStatsResult stats(AurisEngineHandle handle);
-  int updateConfig(AurisEngineHandle handle, AurisNativeConfig config);
+  MockingbirdCreateResult create(MockingbirdNativeConfig config);
+  void destroy(MockingbirdEngineHandle handle);
+  int start(MockingbirdEngineHandle handle);
+  int stop(MockingbirdEngineHandle handle);
+  int pushPcm(MockingbirdEngineHandle handle, Int16List samples, int captureTsUs);
+  MockingbirdPcmResult readPcm(MockingbirdEngineHandle handle, int maxSamples);
+  MockingbirdEventResult pollEvent(MockingbirdEngineHandle handle);
+  MockingbirdPacketResult drainPacket(MockingbirdEngineHandle handle);
+  MockingbirdStatsResult stats(MockingbirdEngineHandle handle);
+  int updateConfig(MockingbirdEngineHandle handle, MockingbirdNativeConfig config);
 }
 ```
 
-`AurisNativeConfig`, `AurisNativeEvent`, `AurisNativePacket` and
-`AurisNativeStats` mirror the C structs field for field, with no `dart:ffi`
+`MockingbirdNativeConfig`, `MockingbirdNativeEvent`, `MockingbirdNativePacket` and
+`MockingbirdNativeStats` mirror the C structs field for field, with no `dart:ffi`
 types, so the main library compiles on every platform including the web.
 
 ## The FFI implementation
 
-`package:mockingbird_platform_interface/ffi.dart` holds `AurisFfiPlatform`, a
+`package:mockingbird_platform_interface/ffi.dart` holds `MockingbirdFfiPlatform`, a
 complete implementation over the generated bindings. A platform package that
 links the engine natively only supplies the library:
 
 ```dart
-class AurisMacOS extends AurisFfiPlatform {
-  static void registerWith() => AurisPlatform.instance = AurisMacOS();
+class MockingbirdMacOS extends MockingbirdFfiPlatform {
+  static void registerWith() => MockingbirdPlatform.instance = MockingbirdMacOS();
 
   @override
   ffi.DynamicLibrary get nativeLibrary => ffi.DynamicLibrary.process();
 }
 ```
 
-The web package implements `AurisPlatform` directly over a WebAssembly
+The web package implements `MockingbirdPlatform` directly over a WebAssembly
 module. Import `ffi.dart` only from code that never runs on the web.
 
 ## Regenerating the bindings
 
-The bindings are generated from `include/auris/auris.h` in the engine
+The bindings are generated from `include/mockingbird/mockingbird.h` in the engine
 repository with `ffigen`:
 
 ```bash

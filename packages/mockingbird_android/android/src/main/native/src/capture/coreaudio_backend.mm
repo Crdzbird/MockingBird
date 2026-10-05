@@ -9,7 +9,7 @@
 #import <AVFoundation/AVFoundation.h>
 #endif
 
-namespace auris {
+namespace mockingbird {
 
 CoreAudioBackend::CoreAudioBackend() : impl_(std::make_unique<Impl>()) {}
 
@@ -21,17 +21,17 @@ CoreAudioBackend::~CoreAudioBackend() {
     }
 }
 
-auris_status_t CoreAudioBackend::init(const auris_config_t& cfg, PcmCallback cb, void* user) {
-    if (impl_->initialized) return AURIS_ERR_INVALID_STATE;
-    if (cb == nullptr) return AURIS_ERR_INVALID_ARG;
+mockingbird_status_t CoreAudioBackend::init(const mockingbird_config_t& cfg, PcmCallback cb, void* user) {
+    if (impl_->initialized) return MOCKINGBIRD_ERR_INVALID_STATE;
+    if (cb == nullptr) return MOCKINGBIRD_ERR_INVALID_ARG;
 
     impl_->cb          = cb;
     impl_->user        = user;
     impl_->sample_rate = cfg.sample_rate_hz;
     impl_->channels    = cfg.channels;
 
-    const auris_status_t opened = coreaudio_open_unit(*impl_, cfg);
-    if (opened != AURIS_OK) return opened;
+    const mockingbird_status_t opened = coreaudio_open_unit(*impl_, cfg);
+    if (opened != MOCKINGBIRD_OK) return opened;
 
     AURenderCallbackStruct cbStruct{};
     cbStruct.inputProc       = coreaudio_input_render;
@@ -43,22 +43,22 @@ auris_status_t CoreAudioBackend::init(const auris_config_t& cfg, PcmCallback cb,
     if (s != noErr) {
         AudioComponentInstanceDispose(impl_->unit);
         impl_->unit = nullptr;
-        return AURIS_ERR_BACKEND;
+        return MOCKINGBIRD_ERR_BACKEND;
     }
     impl_->initialized = true;
-    return AURIS_OK;
+    return MOCKINGBIRD_OK;
 }
 
-auris_status_t CoreAudioBackend::start() {
-    if (!impl_->initialized) return AURIS_ERR_INVALID_STATE;
-    if (impl_->running) return AURIS_ERR_ALREADY_RUNNING;
-    if (AudioOutputUnitStart(impl_->unit) != noErr) return AURIS_ERR_BACKEND;
+mockingbird_status_t CoreAudioBackend::start() {
+    if (!impl_->initialized) return MOCKINGBIRD_ERR_INVALID_STATE;
+    if (impl_->running) return MOCKINGBIRD_ERR_ALREADY_RUNNING;
+    if (AudioOutputUnitStart(impl_->unit) != noErr) return MOCKINGBIRD_ERR_BACKEND;
     impl_->running = true;
-    return AURIS_OK;
+    return MOCKINGBIRD_OK;
 }
 
-auris_status_t CoreAudioBackend::stop() {
-    if (!impl_->running) return AURIS_OK;
+mockingbird_status_t CoreAudioBackend::stop() {
+    if (!impl_->running) return MOCKINGBIRD_OK;
     AudioOutputUnitStop(impl_->unit);
     impl_->running = false;
 #if TARGET_OS_IPHONE
@@ -67,9 +67,9 @@ auris_status_t CoreAudioBackend::stop() {
       withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation
             error:nil];
 #endif
-    return AURIS_OK;
+    return MOCKINGBIRD_OK;
 }
 
-} // namespace auris
+} // namespace mockingbird
 
 #endif
