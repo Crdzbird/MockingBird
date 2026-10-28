@@ -306,6 +306,19 @@ The engine resolves a model path in this order:
 The YAMNet class names are in `tests/fixtures/yamnet_class_map.txt` and, for
 Flutter, through `MockingbirdModels.yamnetLabels()`.
 
+### ONNX Runtime telemetry
+
+The official ONNX Runtime 1.30 builds for Android, iOS, macOS and Linux include
+Microsoft's 1DS telemetry client. Unless a process opts out before its first
+ONNX Runtime environment exists, it keeps a persistent device id and uploads
+usage events to `mobile.events.data.microsoft.com`. Mockingbird opts out: before
+it creates its environment it sets `ORT_DISABLE_TELEMETRY=1`, unless the host
+already set the variable, and it disables telemetry events on the environment,
+which also covers the Windows ETW provider. An app that wants ONNX Runtime's
+telemetry sets `ORT_DISABLE_TELEMETRY=0` before the first engine starts. An app
+that uses ONNX Runtime itself and creates its own environment first decides for
+the whole process.
+
 ## Building for the web
 
 The engine compiles to WebAssembly with Emscripten. The worker then runs inline

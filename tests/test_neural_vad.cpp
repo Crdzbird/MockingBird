@@ -169,6 +169,17 @@ bool neural_vad_available() {
 
 }
 
+TEST_CASE("Loading a model opts the process out of ONNX Runtime telemetry") {
+    const bool preset = std::getenv("ORT_DISABLE_TELEMETRY") != nullptr;
+    set_model_env(std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/silero_vad.onnx");
+    const auto wav = read_wav_int16(std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/hello.wav");
+    REQUIRE(wav.samples.size() > 0);
+    run_vad_through_fixture(wav, MOCKINGBIRD_VAD_NEURAL);
+    const char* v = std::getenv("ORT_DISABLE_TELEMETRY");
+    REQUIRE(v != nullptr);
+    if (!preset) CHECK(std::string(v) == "1");
+}
+
 TEST_CASE("Neural VAD: model loads when MOCKINGBIRD_NEURAL_VAD_MODEL points at the fixture") {
     set_model_env(std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/silero_vad.onnx");
     CHECK(neural_vad_available());

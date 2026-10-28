@@ -66,7 +66,10 @@
  *    mockingbird_start() will return MOCKINGBIRD_ERR_PERMISSION if the OS denies capture,
  *    but the engine does not prompt. Host obtains permission first.
  *
- * 7. No raw audio is logged or stored by the library.
+ * 7. No raw audio is logged or stored by the library, and nothing is sent
+ *    anywhere. Before its first ONNX Runtime environment exists the engine
+ *    sets ORT_DISABLE_TELEMETRY=1, unless the host set that variable first,
+ *    and it disables ONNX Runtime's telemetry events.
  *    The PCM stream is treated as sensitive (potentially voice / private
  *    interior audio). Encoded packets are emitted only via mockingbird_drain.
  *    The library writes nothing to disk and writes no audio bytes to stderr
