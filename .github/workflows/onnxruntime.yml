@@ -82,7 +82,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: apple
-          path: out/framework_out/onnxruntime.xcframework.zip
+          path: out/onnxruntime.xcframework.zip
 
   publish:
     needs: [static, apple]
