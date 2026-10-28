@@ -39,7 +39,7 @@ SAMPLE_RATE = 16000
 FRAME_LEN = 320  # 20 ms @ 16 kHz
 NUM_SAMPLES = 32000  # 2 s, 100 frames
 
-# Role seeds — must match the Go peer's goSeed / dartSeed.
+# Role seeds; they must match the Go peer's goSeed / dartSeed.
 LISTENER_SEED = 0xA1A1A1A1A1A1A1A1
 DIALER_SEED = 0xB2B2B2B2B2B2B2B2
 
@@ -245,10 +245,10 @@ def run_peer(sock: socket.socket, role: str, peer_name: str) -> bool:
     peer_bytes = read_frame(sock)
 
     # Generator parity: the peer's bytes must equal our own regeneration from
-    # its seed — isolates a signal-generation divergence from a processing one.
+    # its seed. That isolates a signal-generation divergence from a processing one.
     if peer_bytes != pcm_to_bytes(gen_signal(peer_seed)):
         print(
-            f"[{name}] ❌ GENERATOR MISMATCH: {peer_name}'s signal differs from "
+            f"[{name}] GENERATOR MISMATCH: {peer_name}'s signal differs from "
             f"our local regeneration",
             flush=True,
         )
@@ -256,7 +256,7 @@ def run_peer(sock: socket.socket, role: str, peer_name: str) -> bool:
     peer_pcm = bytes_to_pcm(peer_bytes)
     print(
         f"[{name}] received {len(peer_pcm)} samples from {peer_name}; generator "
-        f"parity MATCH ✓ — processing through MY binding…",
+        f"parity MATCH, processing through MY binding...",
         flush=True,
     )
 
@@ -273,10 +273,10 @@ def run_peer(sock: socket.socket, role: str, peer_name: str) -> bool:
 
     dir_a = peer_computed_for_mine == expected.digest  # peer processed my audio like me
     dir_b = computed.digest == peer_expected_for_theirs  # I processed theirs like them
-    ok = lambda b: "MATCH ✓" if b else "MISMATCH ✗"  # noqa: E731
+    ok = lambda b: "MATCH" if b else "MISMATCH"  # noqa: E731
     print(
-        f"[{name}] parity {name}-audio→{peer_name}: {ok(dir_a)}   |   "
-        f"{peer_name}-audio→{name}: {ok(dir_b)}",
+        f"[{name}] parity {name}-audio to {peer_name}: {ok(dir_a)}   |   "
+        f"{peer_name}-audio to {name}: {ok(dir_b)}",
         flush=True,
     )
     return dir_a and dir_b
@@ -296,8 +296,8 @@ def main() -> None:
         a, b = process(gen_signal(LISTENER_SEED)), process(gen_signal(LISTENER_SEED))
         match = a.digest == b.digest
         print(
-            f"[self] run1 digest {a.digest:#018x}, run2 digest {b.digest:#018x} — "
-            f"{'MATCH ✓' if match else 'MISMATCH ✗'}"
+            f"[self] run1 digest {a.digest:#018x}, run2 digest {b.digest:#018x}: "
+            f"{'MATCH' if match else 'MISMATCH'}"
         )
         sys.exit(0 if match else 1)
 
@@ -312,7 +312,7 @@ def main() -> None:
         srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         srv.bind(("127.0.0.1", port))
         srv.listen(1)
-        print(f"[python] listening on 127.0.0.1:{port} — start the {peer_name} peer now",
+        print(f"[python] listening on 127.0.0.1:{port}; start the {peer_name} peer now",
               flush=True)
         conn, _ = srv.accept()
         with conn:
@@ -339,10 +339,10 @@ def main() -> None:
         sys.exit(f"unknown mode: {mode}")
 
     if passed:
-        print(f"\n✅ CONFORMANCE PASS — Python and {peer_name} produce byte-identical "
+        print(f"\nCONFORMANCE PASS: Python and {peer_name} produce byte-identical "
               f"results both ways")
     else:
-        print("\n❌ CONFORMANCE FAIL — divergence detected")
+        print("\nCONFORMANCE FAIL: divergence detected")
         sys.exit(1)
 
 

@@ -2,11 +2,10 @@
 
 Native audio capture and detection for Flutter. Mockingbird listens to the
 microphone (or to PCM you push), optionally denoises it, detects human voice in
-any language and non-speech acoustic events, classifies what it hears, and
-hands you only the audio that matters as encoded packets. Everything runs in
-the Mockingbird C++ engine, reached through `dart:ffi`; there are no platform
-channels on the hot path. The Dart API keeps the engine's name as its prefix:
-`MockingbirdEngine`, `MockingbirdConfig`, `MockingbirdEvent`.
+any language and non-speech acoustic events, classifies what it hears, and hands
+you only the audio that matters as encoded packets. Everything runs in the
+Mockingbird C++ engine, reached through `dart:ffi`. There are no platform
+channels on the hot path.
 
 | Stage | What runs | Notes |
 |---|---|---|
@@ -17,9 +16,9 @@ channels on the hot path. The Dart API keeps the engine's name as its prefix:
 | Sound classification | YAMNet, 521 AudioSet classes | 3 s window, 1 s cadence |
 | Encode | Opus or PCM | per segment, with pre-roll |
 
-Supported platforms: Android, iOS, macOS and web. The web build runs the
-engine as WebAssembly with fast VAD, the anomaly gate, RNNoise and Opus; the
-neural detectors need ONNX Runtime and are not available there.
+Supported platforms: Android, iOS, macOS and web. The web build runs the engine
+as WebAssembly with fast VAD, the anomaly gate, RNNoise and Opus; the neural
+detectors need ONNX Runtime and are not available there.
 
 ## Install
 
@@ -32,10 +31,10 @@ document the exact keys:
 [mockingbird_android](https://pub.dev/packages/mockingbird_android),
 [mockingbird_ios](https://pub.dev/packages/mockingbird_ios),
 [mockingbird_macos](https://pub.dev/packages/mockingbird_macos),
-[mockingbird_web](https://pub.dev/packages/mockingbird_web). In short: the `RECORD_AUDIO`
-permission on Android, `NSMicrophoneUsageDescription` on iOS and macOS, the
-audio-input entitlement on macOS, and a secure context on the web. Engines
-that only receive pushed PCM need none of it.
+[mockingbird_web](https://pub.dev/packages/mockingbird_web). You need the
+`RECORD_AUDIO` permission on Android, `NSMicrophoneUsageDescription` on iOS and
+macOS, the audio-input entitlement on macOS, and a secure context on the web.
+Engines that only receive pushed PCM need none of it.
 
 | Platform | Minimum |
 |---|---|
@@ -44,8 +43,8 @@ that only receive pushed PCM need none of it.
 | macOS | 12.0 with CocoaPods, 14.0 with Swift Package Manager |
 | Web | a browser with AudioWorklet and ES modules; no cross-origin isolation needed |
 
-Call `Mockingbird.initialize()` once at startup. It loads the WebAssembly module on
-the web and returns immediately elsewhere:
+Call `Mockingbird.initialize()` once at startup. It loads the WebAssembly module
+on the web and returns immediately elsewhere:
 
 ```dart
 Future<void> main() async {
@@ -94,13 +93,13 @@ final engine = MockingbirdEngine.create(
 ```
 
 `MockingbirdConfig.sensitive` maps one value in `0..1` onto every detector's
-threshold and selects the neural VAD. `MockingbirdModels` copies the bundled Silero
-and YAMNet models to an app-writable path once and returns their paths.
+threshold and selects the neural VAD. `MockingbirdModels` copies the bundled
+Silero and YAMNet models to an app-writable path once and returns their paths.
 
 ## Configuration
 
-Everything is grouped by concern. Each group has sensible defaults, so you set
-only what you change.
+Settings are grouped by concern. Every group has defaults, so you only set what
+you want to change.
 
 | Group | Type | Knobs |
 |---|---|---|
@@ -120,14 +119,14 @@ only what you change.
 | `engine.packets` | `MockingbirdPacket`: encoded audio in a `Uint8List` you own, with `isPreroll`, `isPostroll`, `isKeyframe`, `isLast` |
 | `engine.stats` | `MockingbirdStats`: counters, input level in dBFS, queue fill, and `worker` health |
 
-`MockingbirdEvent` is sealed, so a `switch` over it is exhaustive and each subtype
-carries a typed payload: `MockingbirdSoundClassEvent.category`,
+`MockingbirdEvent` is sealed, so a `switch` over it is exhaustive and each
+subtype carries a typed payload: `MockingbirdSoundClassEvent.category`,
 `MockingbirdAnomalyEvent.reasons`, `MockingbirdDegradationEvent.level`.
 
 Events are polled off the engine's own queues on a timer (50 ms by default)
-rather than delivered through a native callback, which keeps every object on
-the Dart side engine-owned and copy-safe. A native error inside a poll surfaces
-as a `MockingbirdException` on `engine.events`.
+rather than delivered through a native callback, which keeps every object on the
+Dart side engine-owned and copy-safe. A native error inside a poll surfaces as a
+`MockingbirdException` on `engine.events`.
 
 ```dart
 engine.packets.listen((p) => socket.add(p.data));
@@ -169,8 +168,8 @@ engine.events.listen((e) {
 
 `MockingbirdSoundCategory.of(classId)` folds the 521 classes into speech,
 humanOther, animal, music, nature and other. AudioSet is English-biased;
-non-English speech often lands on "Conversation" or "Narration", and both map
-to speech.
+non-English speech often lands on "Conversation" or "Narration", and both map to
+speech.
 
 ## How it compares
 
@@ -202,7 +201,8 @@ processing the same 80 s of 16 kHz audio (speech, music, an animal, silence)
 pushed in the chunk size the package expects. The figure is process CPU time
 divided by audio time: the share of one core needed to keep up with real time.
 Memory is the peak resident size during the run. The harness, inputs and raw
-results are in `bench/flutter_compare` of the repository.
+results are in
+[`bench/flutter_compare`](https://github.com/Crdzbird/MockingBird/tree/main/bench/flutter_compare).
 
 | Task | Package and model | Share of one core | Peak RSS |
 |---|---|---|---|
@@ -220,10 +220,10 @@ results are in `bench/flutter_compare` of the repository.
 | Anomaly gate | mockingbird | 0.07% | 145 MB |
 | Everything on, with Opus | mockingbird | 3.19% | 193 MB |
 
-The same engine as WebAssembly, run under V8 (the engine inside Chrome) on
-the same input. The web build is single-threaded and has no SIMD, so the
-neural network in RNNoise costs about twice what it does natively; the
-packet and segment counts match the native run exactly.
+The same engine as WebAssembly, run under V8 (the engine inside Chrome) on the
+same input. The web build is single-threaded and has no SIMD, so the neural
+network in RNNoise costs about twice what it does natively; the packet and
+segment counts match the native run exactly.
 
 | Task | mockingbird_web (WebAssembly) | Share of one core |
 |---|---|---|
@@ -232,32 +232,34 @@ packet and segment counts match the native run exactly.
 | Noise suppression | RNNoise 0.2 full model | 2.71% |
 | Everything the web build has: fast VAD, anomaly gate, RNNoise, Opus | | 2.89% |
 
-Measured on Flutter 3.47.6 with every package at its latest version; the
-earlier run on 3.47.2 differed by at most a few hundredths of a percent, which
-is the run-to-run noise of the harness.
+Measured on Flutter 3.47.6 with every package at its latest version; the earlier
+run on 3.47.2 differed by at most a few hundredths of a percent, which is the
+run-to-run noise of the harness.
 
-What the Silero v6 upgrade changed is selectivity, not cost. On this fixture,
-which repeats one utterance four times between music and an animal, the
-neural tier now opens 12 speech segments where v5 opened 27 and ships 1,124
-packets where it shipped 1,731, with the same four utterances detected. Less
-false speech means less audio leaving the device.
+The upgrade from Silero v5 to v6 left the cost unchanged and made the neural
+tier fire less often by mistake. On this fixture, which repeats one utterance
+four times between music and an animal, it now opens 12 speech segments where v5
+opened 27 and ships 1,124 packets where it shipped 1,731, and it still detects
+all four utterances. Fewer false triggers means less audio leaving the device.
 
-Reading the numbers fairly:
+Notes on the numbers:
 
-- The mockingbird rows include the whole pipeline around the detector: segmentation
-  with pre-roll, packetisation, the event queue and the Dart poll loop. The
-  sherpa_onnx VAD row is the bare detector with no capture or packet path.
-- The noise suppression rows run different RNNoise builds. Mockingbird compiles the
-  0.2 full model and bridges 16 kHz to 48 kHz and back; flutter_nnnoiseless is
-  a Rust port with the smaller classic model.
-- CED tiny is a smaller network than YAMNet with its own label set; the rows
-  compare the cost of classifying every second, not the quality of the labels.
+- The mockingbird rows include the whole pipeline around the detector:
+  segmentation with pre-roll, packetisation, the event queue and the Dart poll
+  loop. The sherpa_onnx VAD row is the bare detector with no capture or packet
+  path.
+- The noise suppression rows run different RNNoise builds. Mockingbird compiles
+  the 0.2 full model and bridges 16 kHz to 48 kHz and back; flutter_nnnoiseless
+  is a Rust port with the smaller classic model.
+- CED tiny is a smaller network than YAMNet with its own label set. The rows
+  compare the cost of classifying once a second. They say nothing about the
+  quality of the labels.
 - The `vad` package runs its frame loop in Dart on the main isolate, which is
   where its extra cost comes from.
 - The web rows measure the push loop alone, because the WebAssembly build
-  processes each chunk inline; the Flutter rows also include the Dart poll
-  loop and the FFI copies. The native fast VAD and anomaly rows are at the
-  noise floor of the harness either way.
+  processes each chunk inline; the Flutter rows also include the Dart poll loop
+  and the FFI copies. The native fast VAD and anomaly rows are at the noise
+  floor of the harness either way.
 
 Release bundle size on macOS, measured as the whole `.app` with the package's
 default assets, against an empty Flutter app built the same way:
@@ -271,26 +273,26 @@ default assets, against an empty Flutter app built the same way:
 | sherpa_onnx | 88.3 MB | 55.7 MB |
 | flutter_nnnoiseless | 46.3 MB | 13.7 MB |
 
-The mockingbird bundle carries the Silero and YAMNet models as assets (17 MB) and a
-universal binary. sherpa_onnx loads its models from disk, so its model files
-(22 MB for CED tiny) are not in that figure, and `vad` downloads its model at
-first run.
+The mockingbird bundle carries the Silero and YAMNet models as assets (17 MB)
+and a universal binary. sherpa_onnx loads its models from disk, so its model
+files (22 MB for CED tiny) are not in that figure, and `vad` downloads its model
+at first run.
 
 ## Keeping it cheap on phones
 
 - The silence gate (`silenceGateDbfs`, default -60) skips RNNoise and YAMNet
   while the input is quiet; VAD and the anomaly gate stay live. A quiet room
   with every feature on costs about 0.4% of a desktop core.
-- `MockingbirdPerformanceConfig.mobile()` turns on adaptive degradation, which steps
-  YAMNet's cadence down under load and back up when calm, and batches worker
-  wake-ups to cut thread switches.
-- `MockingbirdSoundClassConfig.intervalMs` is the biggest single lever: 1000 ms is
-  the default, 500 ms roughly doubles the classifier's cost.
-- `engine.stats` reports `worker.busyPpm`, wake-ups and the peak frame time,
-  so you can see the cost on the device you ship to.
+- `MockingbirdPerformanceConfig.mobile()` turns on adaptive degradation, which
+  steps YAMNet's cadence down under load and back up when calm, and batches
+  worker wake-ups to cut thread switches.
+- `MockingbirdSoundClassConfig.intervalMs` is the biggest single lever: 1000 ms
+  is the default, 500 ms roughly doubles the classifier's cost.
+- `engine.stats` reports `worker.busyPpm`, wake-ups and the peak frame time, so
+  you can see the cost on the device you ship to.
 
-Expect roughly three times the desktop figures above on a recent iPhone and
-five to eight times on a mid-range Android phone.
+Expect roughly three times the desktop figures above on a recent iPhone and five
+to eight times on a mid-range Android phone.
 
 ## Web
 
@@ -298,9 +300,10 @@ The web build is the same engine compiled to WebAssembly, running
 single-threaded in the page and fed by an AudioWorklet. Fast VAD, the anomaly
 gate, RNNoise, Opus and every API above work; the neural tier and YAMNet are
 rejected with `unsupported` because ONNX Runtime is not part of the build, and
-`MockingbirdModels` throws since there is no file system. The three assets add about
-6 MB to the app. See [mockingbird_web](https://pub.dev/packages/mockingbird_web) for the
-details and for hosting the files on a CDN.
+`MockingbirdModels` throws since there is no file system. The three assets add
+about 6 MB to the app. See
+[mockingbird_web](https://pub.dev/packages/mockingbird_web) for the details and
+for hosting the files on a CDN.
 
 ## Example app
 
@@ -312,8 +315,10 @@ detectors fall back to the fast tier.
 
 ## Engine
 
-The engine is the Mockingbird C++ library, with a pure C ABI, bindings for Go and
-Python, and a conformance harness that checks the three language surfaces
-produce byte-identical output. Its repository has the build, the tests, the
-benchmark and the design notes. Everything is MIT licensed; the vendored
-dependencies are BSD, MIT or public domain.
+The engine is the Mockingbird C++ library, with a pure C ABI, bindings for Go
+and Python, and a conformance harness that checks the three language surfaces
+produce byte-identical output. Its repository,
+https://github.com/Crdzbird/MockingBird, has the build, the tests, the benchmark
+and the design notes. Report problems at
+https://github.com/Crdzbird/MockingBird/issues. Everything is MIT licensed; the
+vendored dependencies are BSD, MIT or public domain.

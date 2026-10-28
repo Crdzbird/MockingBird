@@ -1,22 +1,23 @@
 # mockingbird_web
 
-The web implementation of the [mockingbird](https://pub.dev/packages/mockingbird)
-plugin. It is endorsed, so depending on `mockingbird` includes it automatically.
+The web implementation of the
+[mockingbird](https://pub.dev/packages/mockingbird) plugin. It is endorsed, so
+depending on `mockingbird` includes it automatically.
 
 ## What it bundles
 
-- The Mockingbird engine compiled to WebAssembly with Emscripten: capture ingest,
-  RNNoise, libfvad, the anomaly gate and the Opus encoder. The engine runs
-  single-threaded inside the page; each pushed chunk is processed on the
+- The Mockingbird engine compiled to WebAssembly with Emscripten: capture
+  ingest, RNNoise, libfvad, the anomaly gate and the Opus encoder. The engine
+  runs single-threaded inside the page; each pushed chunk is processed on the
   spot, so no cross-origin isolation headers are needed.
-- Microphone capture through Web Audio: `getUserMedia`, an `AudioContext`
-  opened at the engine's sample rate, and an `AudioWorklet` that delivers
-  20 ms int16 chunks, resampling if the browser would not open at that rate.
-- Three assets, about 6 MB in total: `mockingbird.js`, `mockingbird.wasm` and the
-  capture worklet. They load lazily from the app's asset bundle.
+- Microphone capture through Web Audio: `getUserMedia`, an `AudioContext` opened
+  at the engine's sample rate, and an `AudioWorklet` that delivers 20 ms int16
+  chunks, resampling if the browser would not open at that rate.
+- Three assets, about 6 MB in total: `mockingbird.js`, `mockingbird.wasm` and
+  the capture worklet. They load lazily from the app's asset bundle.
 
-The Dart side reaches the engine through `dart:js_interop`; the `mockingbird` API
-is the same as on the other platforms.
+The Dart side reaches the engine through `dart:js_interop`; the `mockingbird`
+API is the same as on the other platforms.
 
 ## What differs on the web
 
@@ -28,8 +29,8 @@ is the same as on the other platforms.
 | `MockingbirdBackend.auto` | capture through Web Audio; `hostPcm` works as everywhere |
 
 Call `await Mockingbird.initialize()` before creating an engine. On the web it
-loads the module; on the other platforms it returns at once, so apps can
-call it unconditionally at startup.
+loads the module; on the other platforms it returns at once, so apps can call it
+unconditionally at startup.
 
 ```dart
 Future<void> main() async {
@@ -39,16 +40,16 @@ Future<void> main() async {
 }
 ```
 
-The browser asks for the microphone on the first `start()` of a capture
-engine. A refusal arrives as a `MockingbirdBackendErrorEvent` with status
-`permission` on `engine.events`.
+The browser asks for the microphone on the first `start()` of a capture engine.
+A refusal arrives as a `MockingbirdBackendErrorEvent` with status `permission`
+on `engine.events`.
 
 ## Hosting the files elsewhere
 
-Set `MockingbirdWeb.assetBaseUrl` to a directory URL before `Mockingbird.initialize()`
-to serve the three files from a CDN instead of the asset bundle. The server
-must return `application/wasm` for `mockingbird.wasm` and a JavaScript type for
-the two scripts.
+Set `MockingbirdWeb.assetBaseUrl` to a directory URL before
+`Mockingbird.initialize()` to serve the three files from a CDN instead of the
+asset bundle. The server must return `application/wasm` for `mockingbird.wasm`
+and a JavaScript type for the two scripts.
 
 ## Requirements
 

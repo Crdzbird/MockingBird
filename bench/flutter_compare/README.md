@@ -1,7 +1,7 @@
 # Package comparison benchmark
 
-Measures Mockingbird against the pub.dev packages that cover parts of the same job,
-each in its own Flutter macOS app so no two packages share a process or an
+Measures Mockingbird against the pub.dev packages that cover parts of the same
+job, each in its own Flutter macOS app so no two packages share a process or an
 ONNX Runtime build.
 
 | App | Package | Scenarios |
@@ -25,11 +25,11 @@ ONNX Runtime build.
   `CLOCK_PROCESS_CPUTIME_ID` (every thread the package uses), wall time,
   resident memory before and at peak, and the package's own counters (frames
   processed, segments, events) so the run can be checked for drops.
-- `cpu_share` is CPU seconds divided by audio seconds: the fraction of one
-  core the package needs to keep up with real time.
-- Apps are built in release mode so Dart-side code runs ahead-of-time
-  compiled, and the `.app` bundle size is recorded as the footprint a package
-  adds on top of the Flutter template.
+- `cpu_share` is CPU seconds divided by audio seconds: the fraction of one core
+  the package needs to keep up with real time.
+- Apps are built in release mode so Dart-side code runs ahead-of-time compiled,
+  and the `.app` bundle size is recorded as the footprint a package adds on top
+  of the Flutter template.
 
 ## Running
 
@@ -51,16 +51,16 @@ Then run every app, or one:
 ```
 
 Results land in `results/<package>.jsonl`, one JSON line per scenario, plus
-`results/<app>.size.json` with the bundle size. The `vad` package downloads
-its model from a CDN at runtime, so that app needs network access.
+`results/<app>.size.json` with the bundle size. The `vad` package downloads its
+model from a CDN at runtime, so that app needs network access.
 
-The web build is measured separately, because it has no Flutter app around
-it and processes each chunk inline on the caller's thread:
+The web build is measured separately, because it has no Flutter app around it
+and processes each chunk inline on the caller's thread:
 
 ```bash
 node bench/flutter_compare/web_bench.mjs
 ```
 
-It loads `packages/mockingbird_web/assets/mockingbird.js`, builds the same fixture, and
-records the push loop's wall time as the CPU time, into
+It loads `packages/mockingbird_web/assets/mockingbird.js`, builds the same
+fixture, and records the push loop's wall time as the CPU time, into
 `results/mockingbird_web.jsonl`.

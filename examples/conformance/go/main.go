@@ -1,8 +1,7 @@
-// Command conformance is the Go peer of the Mockingbird cross-binding conformance
-// harness. It exchanges deterministic audio with the Dart peer over TCP and
-// proves that BOTH bindings, driving the same native libmockingbird, turn identical
-// input PCM into byte-identical packets, events, and stats — i.e. quality and
-// information are the same and the two language surfaces stay in sync.
+// Command conformance is the Go peer of the Mockingbird cross-binding
+// conformance harness. It exchanges deterministic audio with another peer over
+// TCP and checks that both bindings, driving the same native libmockingbird,
+// turn identical input PCM into byte-identical packets, events and stats.
 //
 // Determinism contract (must match examples/conformance/dart/conformance.dart
 // exactly):
@@ -275,13 +274,13 @@ func runPeer(conn net.Conn, name string, ownSeed, peerSeed uint64, peerName stri
 	peerPCM := bytesToPCM(peerBytes)
 
 	// Generator parity: the bytes the peer sent must equal what OUR generator
-	// produces for the peer's seed — isolates a signal-generation divergence
+	// produces for the peer's seed. That isolates a signal-generation divergence
 	// from a processing divergence.
 	if !bytes.Equal(peerBytes, pcmToBytes(genSignal(peerSeed))) {
-		fmt.Printf("[%s] ❌ GENERATOR MISMATCH: %s's signal differs from our local regeneration\n", name, peerName)
+		fmt.Printf("[%s] GENERATOR MISMATCH: %s's signal differs from our local regeneration\n", name, peerName)
 		return false
 	}
-	fmt.Printf("[%s] received %d samples from %s; generator parity MATCH ✓ — processing through MY binding…\n",
+	fmt.Printf("[%s] received %d samples from %s; generator parity MATCH, processing through MY binding...\n",
 		name, len(peerPCM), peerName)
 
 	computed, err := process(peerPCM)
@@ -299,7 +298,7 @@ func runPeer(conn net.Conn, name string, ownSeed, peerSeed uint64, peerName stri
 	// Direction B: did I process the PEER's audio identically to the peer?
 	dirB := computed.digest == peerExpectedForTheirs
 
-	fmt.Printf("[%s] parity %s-audio→%s: %s   |   %s-audio→%s: %s\n",
+	fmt.Printf("[%s] parity %s-audio to %s: %s   |   %s-audio to %s: %s\n",
 		name, name, peerName, ok(dirA), peerName, name, ok(dirB))
 	return dirA && dirB
 }
@@ -325,7 +324,7 @@ func main() {
 		must(err)
 		b, err := process(genSignal(goSeed))
 		must(err)
-		fmt.Printf("[self] run1 digest %#016x, run2 digest %#016x — %s\n", a.digest, b.digest, ok(a.digest == b.digest))
+		fmt.Printf("[self] run1 digest %#016x, run2 digest %#016x: %s\n", a.digest, b.digest, ok(a.digest == b.digest))
 		if a.digest != b.digest {
 			os.Exit(1)
 		}
@@ -334,25 +333,25 @@ func main() {
 
 	ln, err := net.Listen("tcp", *addr)
 	must(err)
-	fmt.Printf("[go] listening on %s — start the %s peer now\n", *addr, *peer)
+	fmt.Printf("[go] listening on %s; start the %s peer now\n", *addr, *peer)
 	conn, err := ln.Accept()
 	must(err)
 	defer conn.Close()
 
 	pass := runPeer(conn, "go", goSeed, dartSeed, *peer)
 	if pass {
-		fmt.Printf("\n✅ CONFORMANCE PASS — Go and %s produce byte-identical results both ways\n", *peer)
+		fmt.Printf("\nCONFORMANCE PASS: Go and %s produce byte-identical results both ways\n", *peer)
 	} else {
-		fmt.Println("\n❌ CONFORMANCE FAIL — divergence detected")
+		fmt.Println("\nCONFORMANCE FAIL: divergence detected")
 		os.Exit(1)
 	}
 }
 
 func ok(b bool) string {
 	if b {
-		return "MATCH ✓"
+		return "MATCH"
 	}
-	return "MISMATCH ✗"
+	return "MISMATCH"
 }
 
 func must(err error) {

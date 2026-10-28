@@ -1,17 +1,18 @@
 # mockingbird_platform_interface
 
-The platform interface for the [mockingbird](https://pub.dev/packages/mockingbird) plugin:
-the `MockingbirdPlatform` contract every platform package implements, the plain
-data records that cross it, and a shared `dart:ffi` implementation for the
-platforms that link the engine natively.
+The platform interface for the
+[mockingbird](https://pub.dev/packages/mockingbird) plugin: the
+`MockingbirdPlatform` contract every platform package implements, the plain data
+records that cross it, and a shared `dart:ffi` implementation for the platforms
+that link the engine natively.
 
-App code does not depend on this package. Depend on `mockingbird`, which pulls in the
-platform packages for Android, iOS, macOS and web.
+App code does not depend on this package. Depend on `mockingbird`, which pulls
+in the platform packages for Android, iOS, macOS and web.
 
 ## The contract
 
-`MockingbirdPlatform` exposes the engine's operations with plain Dart types and the
-C ABI's status codes as integers; the `mockingbird` package turns codes into
+`MockingbirdPlatform` exposes the engine's operations with plain Dart types and
+the C ABI's status codes as integers; the `mockingbird` package turns codes into
 exceptions and records into its typed API:
 
 ```dart
@@ -32,15 +33,16 @@ abstract class MockingbirdPlatform extends PlatformInterface {
 }
 ```
 
-`MockingbirdNativeConfig`, `MockingbirdNativeEvent`, `MockingbirdNativePacket` and
-`MockingbirdNativeStats` mirror the C structs field for field, with no `dart:ffi`
-types, so the main library compiles on every platform including the web.
+`MockingbirdNativeConfig`, `MockingbirdNativeEvent`, `MockingbirdNativePacket`
+and `MockingbirdNativeStats` mirror the C structs field for field, with no
+`dart:ffi` types, so the main library compiles on every platform including the
+web.
 
 ## The FFI implementation
 
-`package:mockingbird_platform_interface/ffi.dart` holds `MockingbirdFfiPlatform`, a
-complete implementation over the generated bindings. A platform package that
-links the engine natively only supplies the library:
+`package:mockingbird_platform_interface/ffi.dart` holds
+`MockingbirdFfiPlatform`, a complete implementation over the generated bindings.
+A platform package that links the engine natively only supplies the library:
 
 ```dart
 class MockingbirdMacOS extends MockingbirdFfiPlatform {
@@ -56,8 +58,8 @@ module. Import `ffi.dart` only from code that never runs on the web.
 
 ## Regenerating the bindings
 
-The bindings are generated from `include/mockingbird/mockingbird.h` in the engine
-repository with `ffigen`:
+The bindings are generated from `include/mockingbird/mockingbird.h` in the
+engine repository, https://github.com/Crdzbird/MockingBird, with `ffigen`:
 
 ```bash
 dart run ffigen --config ffigen.yaml

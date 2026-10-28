@@ -1,9 +1,9 @@
 # Android-side CMake for libmockingbird.so.
 #
-# Built into the AAR by gradle's externalNativeBuild. Mirrors the top-level
-# libmockingbird CMake target but trims everything not needed on Android (no
-# examples, no static lib, no smoke executable). Sources stay at the repo
-# root so there's one place to edit; CMake reaches them through MOCKINGBIRD_ROOT.
+# Built into the AAR by Gradle's externalNativeBuild. Mirrors the top-level
+# libmockingbird target without the examples, the static library or the smoke
+# executable. The engine sources are a copy kept in ../native by
+# scripts/sync_native.sh; edit them at the repository root, not here.
 
 cmake_minimum_required(VERSION 3.22.1)
 project(mockingbird LANGUAGES C CXX)
@@ -19,9 +19,6 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# Walk up to the repo root. The plugin's android/src/main/cpp/ is 6 levels
-# below /Users/.../mockingbird (cpp → main → src → android → mockingbird_android →
-# packages → mockingbird).
 set(MOCKINGBIRD_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../native)
 
 set(MOCKINGBIRD_SOURCES

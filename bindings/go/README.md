@@ -1,12 +1,15 @@
 # Mockingbird for Go
 
-Go bindings for the [Mockingbird](../../README.md) native audio engine over its C
-ABI: capture, optional RNNoise, multilingual voice detection, an anomaly gate,
+Go bindings for the [Mockingbird](../../README.md) native audio engine over its
+C ABI: capture, optional RNNoise, multilingual voice detection, an anomaly gate,
 YAMNet sound classification, and Opus or PCM packets, delivered on channels.
 
 ```go
-import "github.com/Crdzbird/MockingBird/bindings/go"
+import mockingbird "github.com/Crdzbird/MockingBird/bindings/go"
 ```
+
+The package name is `mockingbird`; the explicit name in the import makes that
+visible, since the path ends in `go`.
 
 ## Prerequisites
 
@@ -17,9 +20,10 @@ cmake -S . -B build -DMOCKINGBIRD_BUILD_SHARED=ON -DMOCKINGBIRD_ENABLE_NEURAL_VA
 cmake --build build -j
 ```
 
-The cgo directives in [`mockingbird.go`](mockingbird.go) point at the repository's
-`include/` and `build/` directories, so a checkout needs no further setup.
-For an installed copy, override the flags:
+The cgo directives in [`mockingbird.go`](mockingbird.go) point at the
+repository's `include/` and `build/` directories, so a clone of
+https://github.com/Crdzbird/MockingBird needs no further setup. With `go get` or
+an installed copy of the library, override the flags:
 
 ```bash
 CGO_CFLAGS="-I/usr/local/include" \
@@ -47,8 +51,8 @@ for ev := range e.Events() {
 }
 ```
 
-`DefaultConfig` runs fast VAD and the anomaly gate on the platform's
-microphone. Everything else is grouped by concern:
+`DefaultConfig` runs fast VAD and the anomaly gate on the platform's microphone.
+Everything else is grouped by concern:
 
 | Field | Type |
 |---|---|
@@ -105,10 +109,10 @@ Go-owned copy, with `IsPreroll()`, `IsPostroll()`, `IsKeyframe()` and
 
 Every method is safe from any goroutine; concurrent `PushPCM` calls are
 serialised for the single-producer ring. `Close` stops, releases the native
-engine and closes both channels, which ends a `for ev := range e.Events()`
-loop; `Stop` keeps them open so the engine can restart. An internal goroutine
-drains the native queues every 2 ms and drops, never blocks, when a channel is
-full; `Dropped` reports the count.
+engine and closes both channels, which ends a `for ev := range e.Events()` loop;
+`Stop` keeps them open so the engine can restart. An internal goroutine drains
+the native queues every 2 ms and drops, never blocks, when a channel is full;
+`Dropped` reports the count.
 
 Native failures are `*StatusError`:
 

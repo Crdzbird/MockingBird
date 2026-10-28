@@ -1,19 +1,20 @@
 # mockingbird_ios
 
-The iOS implementation of the [mockingbird](https://pub.dev/packages/mockingbird) plugin.
-It is endorsed, so depending on `mockingbird` includes it automatically.
+The iOS implementation of the
+[mockingbird](https://pub.dev/packages/mockingbird) plugin. It is endorsed, so
+depending on `mockingbird` includes it automatically.
 
 ## What it bundles
 
-- The Mockingbird engine compiled from source into the host app: capture, RNNoise,
-  libfvad, the anomaly gate, the Opus encoder, and the ONNX Runtime detectors
-  (Silero VAD and YAMNet).
-- Microphone capture through a Core Audio RemoteIO unit, which supplies the
-  OS host-time stamp of every buffer. The plugin configures and activates the
+- The Mockingbird engine compiled from source into the host app: capture,
+  RNNoise, libfvad, the anomaly gate, the Opus encoder, and the ONNX Runtime
+  detectors (Silero VAD and YAMNet).
+- Microphone capture through a Core Audio RemoteIO unit, which supplies the OS
+  host-time stamp of every buffer. The plugin configures and activates the
   recording `AVAudioSession` itself.
 
-The Dart side reaches the C ABI through `DynamicLibrary.process()`. There are
-no platform channels.
+The Dart side reaches the C ABI through `DynamicLibrary.process()`. There are no
+platform channels.
 
 ## Integration
 

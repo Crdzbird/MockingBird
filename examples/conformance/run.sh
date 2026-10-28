@@ -36,7 +36,7 @@ port=$PORT
 run_pair() {
   local pair="$1" listener_cmd="$2" dialer_cmd="$3"
   echo
-  echo "════════ $pair (127.0.0.1:$port) ════════"
+  echo "======== $pair (127.0.0.1:$port) ========"
   # shellcheck disable=SC2086
   eval "$listener_cmd" &
   local lpid=$!
@@ -81,8 +81,8 @@ done
 
 echo
 if [ "$failures" -eq 0 ]; then
-  echo "✅ conformance passed — every binding pair is byte-identical"
+  echo "conformance passed: every binding pair is byte-identical"
   exit 0
 fi
-echo "❌ conformance failed in $failures pair(s)"
+echo "conformance failed in $failures pair(s)"
 exit 1

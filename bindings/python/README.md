@@ -1,13 +1,14 @@
 # Mockingbird for Python
 
-Python bindings for the [Mockingbird](../../README.md) native audio engine: capture,
-optional RNNoise, multilingual voice detection, an anomaly gate, YAMNet sound
-classification, and Opus or PCM packets. Pure ctypes: no compiler, no build
-step, no runtime dependency, CPython 3.10 or newer.
+Python bindings for the [Mockingbird](../../README.md) native audio engine:
+capture, optional RNNoise, multilingual voice detection, an anomaly gate, YAMNet
+sound classification, and Opus or PCM packets. Pure ctypes: no compiler, no
+build step, no runtime dependency, CPython 3.10 or newer.
 
 ## Setup
 
-Build the native library once from the repository root:
+The binding is not on PyPI yet. Clone https://github.com/Crdzbird/MockingBird
+and build the native library once from the repository root:
 
 ```bash
 cmake -S . -B build -DMOCKINGBIRD_BUILD_SHARED=ON -DMOCKINGBIRD_ENABLE_NEURAL_VAD=ON
@@ -73,8 +74,8 @@ with mockingbird.Engine(cfg) as engine:
     packets = engine.drain_packets()
 ```
 
-`push_pcm` accepts `bytes`, `array('h')`, `memoryview`, numpy `int16` arrays,
-or a list of ints.
+`push_pcm` accepts `bytes`, `array('h')`, `memoryview`, numpy `int16` arrays, or
+a list of ints.
 
 ### Live retuning
 

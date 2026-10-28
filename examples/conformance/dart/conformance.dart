@@ -32,7 +32,7 @@ Int16List genSignal(int seed) {
   int x = seed;
   final out = Int16List(numSamples);
   for (int i = 0; i < numSamples; i++) {
-    // xorshift64 — use >>> (logical shift) to match Go's uint64 semantics; <<
+    // xorshift64: use >>> (logical shift) to match Go's uint64 semantics; <<
     // wraps to 64 bits on the native VM, like Go.
     x ^= (x << 13);
     x ^= (x >>> 7);
@@ -294,10 +294,10 @@ bool bytesEqual(Uint8List a, Uint8List b) {
 }
 
 String hex16(int v) => '0x${(v & 0xFFFFFFFFFFFFFFFF).toRadixString(16).padLeft(16, '0')}';
-String ok(bool b) => b ? 'MATCH ✓' : 'MISMATCH ✗';
+String ok(bool b) => b ? 'MATCH' : 'MISMATCH';
 
 String resolveLib(List<String> args) {
-  // Positional args only — skip flags like --peer=<name>.
+  // Positional args only; skip flags like --peer=<name>.
   final positional = args.where((a) => !a.startsWith('--')).toList();
   if (positional.length >= 2) return positional[1];
   final ext = Platform.isMacOS ? 'dylib' : (Platform.isWindows ? 'dll' : 'so');
@@ -335,7 +335,7 @@ Future<void> main(List<String> args) async {
   final reader = ByteReader(socket);
 
   // The peer name is cosmetic (log labels only). Any binding can be on the
-  // other end — the seeds belong to the ROLE, not the language.
+  // other end; the seeds belong to the ROLE, not the language.
   const name = 'dart';
   final peerName = args
       .firstWhere((a) => a.startsWith('--peer='), orElse: () => '--peer=go')
@@ -351,13 +351,13 @@ Future<void> main(List<String> args) async {
 
   // Generator parity: peer's bytes must equal our regeneration of the peer seed.
   if (!bytesEqual(peerBytes, pcmToBytes(genSignal(goSeed)))) {
-    stdout.writeln('[$name] ❌ GENERATOR MISMATCH: $peerName signal differs from our local regeneration');
+    stdout.writeln('[$name] GENERATOR MISMATCH: $peerName signal differs from our local regeneration');
     await socket.close();
     exit(1);
   }
   final peerPcm = bytesToPcm(peerBytes);
   stdout.writeln('[$name] received ${peerPcm.length} samples from $peerName; '
-      'generator parity MATCH ✓ — processing through MY binding…');
+      'generator parity MATCH, processing through MY binding...');
 
   final computed = process(b, peerPcm);
   stdout.writeln('[$name] my result for $peerName\'s audio: ${computed.nPackets} packets / '
@@ -372,17 +372,17 @@ Future<void> main(List<String> args) async {
   final dirA = peerComputedForMine == expected.digest; // peer processed my audio like me
   final dirB = computed.digest == peerExpectedForTheirs; // I processed peer's audio like peer
 
-  stdout.writeln('[$name] parity $name-audio→$peerName: ${ok(dirA)}   |   '
-      '$peerName-audio→$name: ${ok(dirB)}');
+  stdout.writeln('[$name] parity $name-audio to $peerName: ${ok(dirA)}   |   '
+      '$peerName-audio to $name: ${ok(dirB)}');
 
   await socket.flush();
   await socket.close();
 
   if (dirA && dirB) {
-    stdout.writeln('\n✅ CONFORMANCE PASS — Dart and $peerName produce '
+    stdout.writeln('\nCONFORMANCE PASS: Dart and $peerName produce '
         'byte-identical results both ways');
   } else {
-    stdout.writeln('\n❌ CONFORMANCE FAIL — divergence detected');
+    stdout.writeln('\nCONFORMANCE FAIL: divergence detected');
     exit(1);
   }
 }
