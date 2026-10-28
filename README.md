@@ -279,8 +279,17 @@ cmake --build build-tsan -j && ./build-tsan/test_mockingbird
 | Model | File | Size |
 |---|---|---|
 | Silero VAD v6.2 (from the v6.2.3 release) | `silero_vad.onnx` | about 2 MB |
-| YAMNet, 3 s window | `yamnet_3s.onnx` | about 15 MB |
+| YAMNet, 3 s window, int8 weights | `yamnet_3s.onnx` | about 5 MB |
 | RNNoise | compiled into the library | |
+
+YAMNet's convolution and dense weights are stored as int8 with one scale per
+output channel; `scripts/quantize_yamnet.py` turns the float export into the
+shipped file. Inference still runs in float. On the bundled audio fixtures and
+synthesized speech, its top-1 class matches the float model on 98% of frames
+scored 0.2 or higher, and every mismatch was a near tie between related
+classes such as Cat and Animal. The file shrank from 16.1 MB to 5.0 MB for
+about 0.1 percentage points more CPU, 2.44% of an M3 Max core instead of 2.32%
+at the 1 s cadence.
 
 Copies live in `tests/fixtures/` for the core tests and the Go and Python
 examples, and in `packages/mockingbird/assets/` as Flutter assets. The Flutter
@@ -354,7 +363,7 @@ Notes for Android devices:
 - A debug APK carries every ABI plus debug assets and is about 270 MB. Android
   refuses an install without roughly twice that free. For a phone that is low on
   space, build `flutter build apk --release --split-per-abi` and install
-  `build/app/outputs/flutter-apk/app-arm64-v8a-release.apk` (about 70 MB).
+  `build/app/outputs/flutter-apk/app-arm64-v8a-release.apk` (about 63 MB).
 - Grant the microphone before launching if you want to skip the prompt: `adb
   shell pm grant io.mockingbird.example android.permission.RECORD_AUDIO`.
 

@@ -1,5 +1,6 @@
 ## Unreleased
 
+- The bundled YAMNet model stores its weights as int8: 5.0 MB instead of 16.1 MB, with the same class on 98% of confident frames in our checks. The release APK for arm64 drops from 73.8 MB to 63.2 MB.
 - On native platforms the engine wakes Dart as soon as it queues an event or packet, so events no longer wait for a 50 ms timer; `start(pollInterval:)` now paces only `stats`, every 250 ms by default. The web keeps its 50 ms timer.
 - Linux and Windows support through `mockingbird_linux` and `mockingbird_windows`; the bundled models now ship to both.
 - `MockingbirdCodec.oggOpus` and `MockingbirdEncoderConfig.oggOpus()`: a segment's packets, concatenated, form a playable `.opus` file.

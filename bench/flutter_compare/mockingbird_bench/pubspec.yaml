@@ -26,5 +26,9 @@ dependency_overrides:
     path: ../../../packages/mockingbird_ios
   mockingbird_macos:
     path: ../../../packages/mockingbird_macos
+  mockingbird_linux:
+    path: ../../../packages/mockingbird_linux
+  mockingbird_windows:
+    path: ../../../packages/mockingbird_windows
   mockingbird_web:
     path: ../../../packages/mockingbird_web

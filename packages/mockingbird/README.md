@@ -249,6 +249,10 @@ results are in
 | Anomaly gate | mockingbird | 0.07% | 145 MB |
 | Everything on, with Opus | mockingbird | 3.19% | 193 MB |
 
+These rows were measured with the float YAMNet model. The int8 model that ships
+now is a third of the size and, in the engine's own benchmark on the same
+machine, costs about 0.1 percentage points more CPU at the 1 s cadence.
+
 The same engine as WebAssembly, run under V8 (the engine inside Chrome) on the
 same input. The web build is single-threaded and has no SIMD, so the neural
 network in RNNoise costs about twice what it does natively; the packet and
@@ -296,14 +300,14 @@ default assets, against an empty Flutter app built the same way:
 | Package | Bundle | Added over the empty app |
 |---|---|---|
 | empty Flutter app | 32.6 MB | |
-| mockingbird | 126.3 MB | 93.8 MB |
+| mockingbird | 115.5 MB | 82.9 MB |
 | vad_plus | 89.4 MB | 56.8 MB |
 | vad | 93.2 MB | 60.6 MB |
 | sherpa_onnx | 88.3 MB | 55.7 MB |
 | flutter_nnnoiseless | 46.3 MB | 13.7 MB |
 
-The mockingbird bundle carries the Silero and YAMNet models as assets (17 MB)
-and a universal binary. sherpa_onnx loads its models from disk, so its model
+The mockingbird bundle carries the Silero and YAMNet models as assets (7 MB:
+Silero 2.3 MB and YAMNet with int8 weights 5.0 MB) and a universal binary. sherpa_onnx loads its models from disk, so its model
 files (22 MB for CED tiny) are not in that figure, and `vad` downloads its model
 at first run.
 
