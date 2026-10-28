@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Keyword spotting: `engine.addKeyword` listens for wake words and short commands with openWakeWord-compatible models and reports `MockingbirdKeywordEvent`. The shared front end ships as two assets, 1.6 MB together; `MockingbirdModels.keywordMelspectrogramPath()`, `keywordEmbeddingPath()` and `fromAsset()` return the paths. It runs only while there is sound and, with voice detection on, recent voice, and scores the same as if it ran throughout.
+- With the neural tier, `MockingbirdSpeechBeginEvent.timestampUs` is where speech began rather than the frame that confirmed it, a window or two later.
 - The neural tier works on the web: `MockingbirdModels` returns paths to `.ort` models stored in the module's memory. Cached native model files are replaced when the bundled model changes size.
 - `MockingbirdConfig.voiceProcessing` turns on the platform's echo cancellation, gain control and noise suppression; `stats.capture.voiceProcessing` reports what applied.
 - `MockingbirdDevices.input()` lists microphones and `engine.selectInputDevice` picks one.

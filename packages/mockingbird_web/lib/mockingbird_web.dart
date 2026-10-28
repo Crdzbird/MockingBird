@@ -10,6 +10,7 @@ import 'package:mockingbird_web/src/module_registry.dart';
 import 'package:mockingbird_web/src/web_assets.dart';
 import 'package:mockingbird_web/src/web_devices.dart';
 import 'package:mockingbird_web/src/web_engine_handle.dart';
+import 'package:mockingbird_web/src/web_keywords.dart';
 import 'package:mockingbird_web/src/web_model_store.dart';
 
 /// Runs the engine as WebAssembly in the page and captures through Web Audio.
@@ -37,6 +38,28 @@ final class MockingbirdWeb extends MockingbirdWebBase {
   @override
   int setInputDevice(MockingbirdEngineHandle handle, String? id) =>
       const WebDevices().select(handle as WebEngineHandle, id);
+
+  @override
+  int setKeywordFrontend(
+    MockingbirdEngineHandle handle,
+    String? melspectrogram,
+    String? embedding,
+  ) => WebKeywords(
+    ModuleRegistry.module,
+  ).frontend(handle as WebEngineHandle, melspectrogram, embedding);
+
+  @override
+  MockingbirdKeywordResult addKeyword(
+    MockingbirdEngineHandle handle,
+    String path,
+    double threshold,
+  ) => WebKeywords(
+    ModuleRegistry.module,
+  ).add(handle as WebEngineHandle, path, threshold);
+
+  @override
+  int clearKeywords(MockingbirdEngineHandle handle) =>
+      WebKeywords(ModuleRegistry.module).clear(handle as WebEngineHandle);
 
   @override
   Future<String> storeModel(String name, Uint8List bytes) async {

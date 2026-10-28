@@ -4,6 +4,7 @@
 
 #include "mockingbird/mockingbird.h"
 #include "capture/capture_backend.hpp"
+#include "detect/keyword_set.hpp"
 #include "encode/encoder.hpp"
 #include "packet_pool.hpp"
 #include "spsc_ring.hpp"
@@ -31,6 +32,7 @@ struct mockingbird_engine {
     std::unique_ptr<mockingbird::CaptureBackend> capture_backend;
     bool capture_backend_used = false;
     std::string input_device_id;
+    mockingbird::KeywordSet keywords;
     std::atomic<uint32_t> voice_processing_active{0};
     std::atomic<uint32_t> capture_restarts{0};
     std::unique_ptr<mockingbird::Encoder>        encoder;

@@ -32,6 +32,24 @@ abstract class MockingbirdPlatformExtras extends PlatformInterface {
   int setInputDevice(MockingbirdEngineHandle handle, String? id) =>
       MockingbirdStatusCode.unsupported;
 
+  /// Names the two models every keyword shares; null uses the defaults.
+  int setKeywordFrontend(
+    MockingbirdEngineHandle handle,
+    String? melspectrogram,
+    String? embedding,
+  ) => MockingbirdStatusCode.unsupported;
+
+  /// Registers the keyword model at [path] and returns its id.
+  MockingbirdKeywordResult addKeyword(
+    MockingbirdEngineHandle handle,
+    String path,
+    double threshold,
+  ) => (status: MockingbirdStatusCode.unsupported, id: -1);
+
+  /// Removes every keyword.
+  int clearKeywords(MockingbirdEngineHandle handle) =>
+      MockingbirdStatusCode.unsupported;
+
   /// Stores model [bytes] where the engine can open them and returns the
   /// path; only platforms without a file system need it.
   Future<String> storeModel(String name, Uint8List bytes) =>

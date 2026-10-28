@@ -39,6 +39,10 @@ enum MockingbirdSymbolAnchor {
     var count: UInt32 = 0
     _ = mockingbird_list_input_devices(MOCKINGBIRD_BACKEND_AUTO, &device, 1, &count)
     _ = mockingbird_set_input_device(engine, nil)
+    var keyword: UInt32 = 0
+    _ = mockingbird_set_keyword_frontend(engine, nil, nil)
+    _ = mockingbird_add_keyword(engine, "", 0, &keyword)
+    _ = mockingbird_clear_keywords(engine)
     _ = mockingbird_push_pcm(engine, &sample, 0, 0)
     _ = mockingbird_poll_event(engine, &event)
     _ = mockingbird_drain(engine, &packet)

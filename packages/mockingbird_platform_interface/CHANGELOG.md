@@ -1,5 +1,6 @@
 ## Unreleased
 
+- `setKeywordFrontend`, `addKeyword` and `clearKeywords`, with `MockingbirdKeywordResult`.
 - `storeModel`, for platforms without a file system.
 - `voiceProcessing` in the native config, capture fields in the native stats (worker fields moved to `MockingbirdNativeWorkerStats`), and `listInputDevices` and `setInputDevice`.
 - `setWakeListener` and `ackWake`, implemented over `mockingbird_set_wake_callback` and `mockingbird_ack_wake` with a `NativeCallable.listener`.

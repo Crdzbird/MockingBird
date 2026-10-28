@@ -32,6 +32,7 @@ API is the same as on the other platforms.
 |---|---|
 | Fast VAD, anomaly gate, RNNoise, Opus and PCM packets, segments, retuning, stats | available |
 | Neural VAD (Silero) and YAMNet classification | available; the models load from the `.ort` assets, fetched only when asked for |
+| Keyword spotting | available; the front end loads from `.ort` assets, and keyword models must be `.ort` too |
 | `MockingbirdModels` | stores the `.ort` models in the module's memory and returns their paths |
 | `MockingbirdBackend.auto` | capture through Web Audio; `hostPcm` works as everywhere |
 

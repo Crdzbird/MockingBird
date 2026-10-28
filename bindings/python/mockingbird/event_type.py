@@ -20,3 +20,5 @@ class EventType(IntEnum):
     CAPTURE_RESUMED = 11
     ROUTE_CHANGED = 12
     """The input device changed; capture continues on the new route."""
+    KEYWORD = 13
+    """A keyword was heard: ``reason_mask`` is its id, ``confidence`` its score."""

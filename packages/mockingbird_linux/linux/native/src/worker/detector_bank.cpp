@@ -40,6 +40,7 @@ void DetectorBank::init(mockingbird_engine* e) {
         classifier_ = make_sound_classifier();
         prepare(e, classifier_, "sound-class");
     }
+    if (!e->keywords.keywords.empty()) init_spotter(e);
 }
 
 void DetectorBank::denoise(mockingbird_engine* e, int16_t* frame, uint32_t n, bool quiet) {

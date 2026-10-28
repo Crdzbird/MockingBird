@@ -9,6 +9,7 @@ part 'mockingbird_backend_error_event.dart';
 part 'mockingbird_capture_interrupted_event.dart';
 part 'mockingbird_capture_resumed_event.dart';
 part 'mockingbird_degradation_event.dart';
+part 'mockingbird_keyword_event.dart';
 part 'mockingbird_overrun_event.dart';
 part 'mockingbird_route_changed_event.dart';
 part 'mockingbird_segment_begin_event.dart';
@@ -40,6 +41,7 @@ sealed class MockingbirdEvent {
       10 => MockingbirdCaptureInterruptedEvent._(id, ts),
       11 => MockingbirdCaptureResumedEvent._(id, ts),
       12 => MockingbirdRouteChangedEvent._(id, ts),
+      13 => MockingbirdKeywordEvent._(id, ts, e.reasonMask, e.confidence),
       final other => MockingbirdUnknownEvent._(id, ts, other),
     };
   }

@@ -13,6 +13,7 @@ import 'package:mockingbird/src/native/native_config_mapper.dart';
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
 
 part 'mockingbird_engine_devices.dart';
+part 'mockingbird_engine_keywords.dart';
 part 'mockingbird_engine_lifecycle.dart';
 part 'mockingbird_engine_pcm.dart';
 part 'mockingbird_engine_tuning.dart';

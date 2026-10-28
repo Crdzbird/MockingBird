@@ -236,6 +236,34 @@ humanOther, animal, music, nature and other. AudioSet is English-biased;
 non-English speech often lands on "Conversation" or "Narration", and both map to
 speech.
 
+## Keywords
+
+Wake words and short commands, with openWakeWord-compatible keyword models
+you bundle as assets. The front end they share ships with the package.
+
+```dart
+final engine = MockingbirdEngine.create(const MockingbirdConfig())
+  ..setKeywordFrontend(
+    melspectrogram: await MockingbirdModels.keywordMelspectrogramPath(),
+    embedding: await MockingbirdModels.keywordEmbeddingPath(),
+  );
+final heyMockingbird = engine.addKeyword(
+  await MockingbirdModels.fromAsset('assets/hey_mockingbird.onnx'),
+  threshold: 0.5,
+);
+engine.events.listen((e) {
+  if (e case MockingbirdKeywordEvent(:final keywordId) when keywordId == heyMockingbird) {
+    print('heard it');
+  }
+});
+engine.start();
+```
+
+openWakeWord's pretrained keywords are licensed for non-commercial use only;
+its training notebook makes your own from synthetic speech. On the web, bundle
+the model's `.ort` conversion instead. Keyword spotting needs 16 kHz input,
+and the first score arrives about 1.3 s after `start`.
+
 ## How it compares
 
 The pub.dev packages below each cover part of the same job. The first table is
@@ -248,6 +276,7 @@ about scope; the second is measured.
 | Voice detection | libfvad or Silero v6 | Silero v6 | Silero v4 or v5, model fetched from a CDN at runtime | Silero or TEN | RNNoise probability | no |
 | Noise suppression | RNNoise | no | platform flags via the recorder | gtcrn, dpdfnet | RNNoise | platform flags |
 | Sound classification | YAMNet, 521 classes | no | no | CED and zipformer audio tagging | no | no |
+| Keyword spotting | openWakeWord models | no | no | open-vocabulary zipformer | no | no |
 | Non-speech event gate | yes | no | no | no | no | no |
 | Encoded output | Opus, Ogg Opus or PCM with a WAV helper, per segment with pre-roll | PCM speech segments | PCM speech segments | PCM speech segments | PCM | AAC, Opus, WAV, FLAC, PCM |
 | Retune while running | yes | no | no | no | no | no |
@@ -256,8 +285,9 @@ about scope; the second is measured.
 | Platforms | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS, Windows, Linux, web |
 | License | MIT | MIT | MIT | Apache-2.0 | LGPL-3.0 | BSD-3-Clause |
 
-sherpa_onnx also ships speech recognition, synthesis, keyword spotting and
-speaker identification, which Mockingbird does not attempt.
+sherpa_onnx also ships speech recognition, synthesis and speaker
+identification, which Mockingbird does not attempt. Its keyword spotter takes
+keywords as text; Mockingbird's needs a trained model per keyword.
 
 ### Measured
 
@@ -323,14 +353,42 @@ Notes on the numbers:
   the 0.2 full model and bridges 16 kHz to 48 kHz and back; flutter_nnnoiseless
   is a Rust port with the smaller classic model.
 - CED tiny is a smaller network than YAMNet with its own label set. The rows
-  compare the cost of classifying once a second. They say nothing about the
-  quality of the labels.
+  compare the cost of classifying once a second; the accuracy section below
+  compares the labels.
 - The `vad` package runs its frame loop in Dart on the main isolate, which is
   where its extra cost comes from.
 - The web rows measure the push loop alone, because the WebAssembly build
   processes each chunk inline; the Flutter rows also include the Dart poll loop
   and the FFI copies. The native fast VAD and anomaly rows are at the noise
   floor of the harness either way.
+
+### Accuracy
+
+On public datasets, with the method and full tables in
+[`bench/accuracy`](https://github.com/Crdzbird/MockingBird/tree/main/bench/accuracy):
+11 minutes of LibriSpeech speech mixed with ESC-50 noise for voice detection,
+scored frame by frame, and 1,880 ESC-50 clips in 47 categories for sound
+classification, scored zero-shot through the AudioSet labels.
+
+| Voice detection, F1 | Clean | 10 dB SNR | 0 dB SNR |
+|---|---|---|---|
+| mockingbird, fast tier (libfvad) | 0.903 | 0.862 | 0.855 |
+| mockingbird, neural tier (Silero v6.2), 300 ms hangover | 0.876 | 0.867 | 0.842 |
+| mockingbird, neural tier, 768 ms hangover | 0.899 | 0.890 | 0.864 |
+| vad_plus (Silero v6), 768 ms redemption | 0.907 | 0.897 | 0.873 |
+| vad (Silero v5) | 0.902 | 0.899 | 0.863 |
+| sherpa_onnx (Silero v5) | 0.887 | 0.882 | 0.838 |
+
+The fast tier calls 77% of the noise speech at 0 dB; the neural tier calls 34%.
+The neural tier's default hangover ends speech 470 ms sooner than vad_plus's
+default, at the cost of the pauses inside sentences; matched, it is within one
+F1 point of vad_plus on the same model.
+
+| Sound classification | Top-1 | Top-3 |
+|---|---|---|
+| mockingbird, YAMNet with int8 weights | 69.5% | 88.4% |
+| YAMNet with float weights | 69.3% | 88.5% |
+| sherpa_onnx, CED tiny | 82.9% | 95.9% |
 
 Release bundle size on macOS, measured as the whole `.app` with the package's
 default assets, against an empty Flutter app built the same way:
@@ -345,7 +403,8 @@ default assets, against an empty Flutter app built the same way:
 | flutter_nnnoiseless | 46.3 MB | 13.7 MB |
 
 The mockingbird bundle carries the Silero and YAMNet models as assets (7 MB:
-Silero 2.3 MB and YAMNet with int8 weights 5.0 MB) and a universal binary. sherpa_onnx loads its models from disk, so its model
+Silero 2.3 MB and YAMNet with int8 weights 5.0 MB) and a universal binary; the
+keyword front end, added since, brings 1.6 MB more. sherpa_onnx loads its models from disk, so its model
 files (22 MB for CED tiny) are not in that figure, and `vad` downloads its model
 at first run.
 

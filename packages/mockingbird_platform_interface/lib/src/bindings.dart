@@ -37,6 +37,51 @@ class MockingbirdBindings {
   late final _mockingbird_ack_wake = _mockingbird_ack_wakePtr
       .asFunction<int Function(ffi.Pointer<mockingbird_engine_t>)>();
 
+  mockingbird_status mockingbird_add_keyword(
+    ffi.Pointer<mockingbird_engine_t> engine,
+    ffi.Pointer<ffi.Char> model_path,
+    double threshold,
+    ffi.Pointer<ffi.Uint32> out_id,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_add_keyword(engine, model_path, threshold, out_id),
+    );
+  }
+
+  late final _mockingbird_add_keywordPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<mockingbird_engine_t>,
+            ffi.Pointer<ffi.Char>,
+            ffi.Float,
+            ffi.Pointer<ffi.Uint32>,
+          )
+        >
+      >('mockingbird_add_keyword');
+  late final _mockingbird_add_keyword = _mockingbird_add_keywordPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<mockingbird_engine_t>,
+          ffi.Pointer<ffi.Char>,
+          double,
+          ffi.Pointer<ffi.Uint32>,
+        )
+      >();
+
+  mockingbird_status mockingbird_clear_keywords(
+    ffi.Pointer<mockingbird_engine_t> engine,
+  ) {
+    return mockingbird_status.fromValue(_mockingbird_clear_keywords(engine));
+  }
+
+  late final _mockingbird_clear_keywordsPtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Int Function(ffi.Pointer<mockingbird_engine_t>)>
+      >('mockingbird_clear_keywords');
+  late final _mockingbird_clear_keywords = _mockingbird_clear_keywordsPtr
+      .asFunction<int Function(ffi.Pointer<mockingbird_engine_t>)>();
+
   mockingbird_status mockingbird_config_defaults(
     ffi.Pointer<mockingbird_config_t> out_cfg,
   ) {
@@ -334,6 +379,40 @@ class MockingbirdBindings {
       .asFunction<
         int Function(ffi.Pointer<mockingbird_engine_t>, ffi.Pointer<ffi.Char>)
       >();
+
+  mockingbird_status mockingbird_set_keyword_frontend(
+    ffi.Pointer<mockingbird_engine_t> engine,
+    ffi.Pointer<ffi.Char> melspectrogram_path,
+    ffi.Pointer<ffi.Char> embedding_path,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_set_keyword_frontend(
+        engine,
+        melspectrogram_path,
+        embedding_path,
+      ),
+    );
+  }
+
+  late final _mockingbird_set_keyword_frontendPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<mockingbird_engine_t>,
+            ffi.Pointer<ffi.Char>,
+            ffi.Pointer<ffi.Char>,
+          )
+        >
+      >('mockingbird_set_keyword_frontend');
+  late final _mockingbird_set_keyword_frontend =
+      _mockingbird_set_keyword_frontendPtr
+          .asFunction<
+            int Function(
+              ffi.Pointer<mockingbird_engine_t>,
+              ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.Char>,
+            )
+          >();
 
   mockingbird_status mockingbird_set_wake_callback(
     ffi.Pointer<mockingbird_engine_t> engine,
@@ -744,7 +823,8 @@ enum mockingbird_event_type {
   MOCKINGBIRD_EVT_DEGRADATION(9),
   MOCKINGBIRD_EVT_CAPTURE_INTERRUPTED(10),
   MOCKINGBIRD_EVT_CAPTURE_RESUMED(11),
-  MOCKINGBIRD_EVT_ROUTE_CHANGED(12);
+  MOCKINGBIRD_EVT_ROUTE_CHANGED(12),
+  MOCKINGBIRD_EVT_KEYWORD(13);
 
   final int value;
   const mockingbird_event_type(this.value);
@@ -762,6 +842,7 @@ enum mockingbird_event_type {
     10 => MOCKINGBIRD_EVT_CAPTURE_INTERRUPTED,
     11 => MOCKINGBIRD_EVT_CAPTURE_RESUMED,
     12 => MOCKINGBIRD_EVT_ROUTE_CHANGED,
+    13 => MOCKINGBIRD_EVT_KEYWORD,
     _ => throw ArgumentError(
       'Unknown value for mockingbird_event_type: $value',
     ),

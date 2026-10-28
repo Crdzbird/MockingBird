@@ -1,5 +1,6 @@
 // One process-wide Ort::Env, as ONNX Runtime documents, shared by every
-// session; and the optional execution provider used for measurements.
+// session; and the optional execution provider used for measurements, picked
+// by MOCKINGBIRD_ORT_EP: coreml, xnnpack, or nnapi on Android.
 //
 // The official ONNX Runtime 1.30 builds for Android, iOS, macOS and Linux
 // carry Microsoft's 1DS telemetry client, which uploads usage events and a
@@ -11,6 +12,11 @@
 
 #include "detect/ort_headers.hpp"
 
+#if defined(__ANDROID__) && __has_include(<nnapi_provider_factory.h>)
+#include <nnapi_provider_factory.h>
+#define MOCKINGBIRD_HAVE_NNAPI_EP 1
+#endif
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -20,8 +26,19 @@
 namespace mockingbird {
 inline void apply_execution_provider(Ort::SessionOptions& opts) {
     const char* ep = std::getenv("MOCKINGBIRD_ORT_EP");
-    if (ep == nullptr || std::strcmp(ep, "coreml") != 0) return;
+    if (ep == nullptr) return;
     try {
+        if (std::strcmp(ep, "xnnpack") == 0) {
+            opts.AppendExecutionProvider("XNNPACK", {{"intra_op_num_threads", "1"}});
+            return;
+        }
+#ifdef MOCKINGBIRD_HAVE_NNAPI_EP
+        if (std::strcmp(ep, "nnapi") == 0) {
+            Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_Nnapi(opts, 0));
+            return;
+        }
+#endif
+        if (std::strcmp(ep, "coreml") != 0) return;
         std::unordered_map<std::string, std::string> o{
             {"ModelFormat", "MLProgram"},
             {"MLComputeUnits", "ALL"},
@@ -29,7 +46,7 @@ inline void apply_execution_provider(Ort::SessionOptions& opts) {
         };
         opts.AppendExecutionProvider("CoreML", o);
     } catch (const Ort::Exception& ex) {
-        std::fprintf(stderr, "mockingbird: CoreML EP unavailable: %s\n", ex.what());
+        std::fprintf(stderr, "mockingbird: %s EP unavailable: %s\n", ep, ex.what());
     }
 }
 

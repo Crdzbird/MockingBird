@@ -194,7 +194,11 @@ typedef enum mockingbird_event_type {
     MOCKINGBIRD_EVT_CAPTURE_RESUMED     = 11,
     /* The input device changed (a headset plugged or unplugged, the default
      * device switched); the engine reopened capture on the new route. */
-    MOCKINGBIRD_EVT_ROUTE_CHANGED       = 12
+    MOCKINGBIRD_EVT_ROUTE_CHANGED       = 12,
+    /* A keyword added with mockingbird_add_keyword was heard. reason_mask is
+     * the id mockingbird_add_keyword returned; confidence is the keyword
+     * model's score in [0, 1]. Does not open a segment. */
+    MOCKINGBIRD_EVT_KEYWORD             = 13
 } mockingbird_event_type_t;
 
 /* Bits of mockingbird_config_t.voice_processing. */
@@ -681,6 +685,42 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_list_input_devices(mockingbird_
 
 MOCKINGBIRD_API mockingbird_status_t mockingbird_set_input_device(mockingbird_engine_t* engine,
                                                 const char*           device_id);
+
+/* ============================================================================
+ * KEYWORD SPOTTING
+ *
+ * Wake words and short commands with openWakeWord-compatible models: a
+ * shared front end (a mel spectrogram model and Google's speech embedding
+ * model) feeds one small classifier per keyword every 80 ms. The first
+ * score arrives about 1.3 s after start, once the classifiers have their
+ * input history. 16 kHz only; needs a build with ONNX Runtime.
+ *
+ * mockingbird_set_keyword_frontend names the two front-end models; NULL or
+ * "" falls back to the MOCKINGBIRD_KEYWORD_MELSPECTROGRAM_MODEL and
+ * MOCKINGBIRD_KEYWORD_EMBEDDING_MODEL env vars, then "melspectrogram.onnx"
+ * and "embedding_model.onnx" in the working directory.
+ *
+ * mockingbird_add_keyword registers one classifier model and returns its id
+ * (0, 1, 2 in the order added) for MOCKINGBIRD_EVT_KEYWORD. threshold is the
+ * score that fires it; 0 falls back to 0.5. After firing, a keyword stays
+ * quiet for one second and until its score falls below the threshold. Up
+ * to 16 keywords; mockingbird_clear_keywords removes them all.
+ *
+ * All three copy their strings and fail with MOCKINGBIRD_ERR_INVALID_STATE
+ * while the engine runs; changes apply from the next start. A model that
+ * fails to load at start is reported as MOCKINGBIRD_EVT_BACKEND_ERROR and
+ * keyword spotting stays off for that run.
+ * ========================================================================== */
+MOCKINGBIRD_API mockingbird_status_t mockingbird_set_keyword_frontend(mockingbird_engine_t* engine,
+                                                    const char* melspectrogram_path,
+                                                    const char* embedding_path);
+
+MOCKINGBIRD_API mockingbird_status_t mockingbird_add_keyword(mockingbird_engine_t* engine,
+                                           const char*           model_path,
+                                           float                 threshold,
+                                           uint32_t*             out_id);
+
+MOCKINGBIRD_API mockingbird_status_t mockingbird_clear_keywords(mockingbird_engine_t* engine);
 
 /* ============================================================================
  * HOST PCM PUSH  (only when backend == MOCKINGBIRD_BACKEND_HOST_PCM)

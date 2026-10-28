@@ -22,19 +22,33 @@ final class MockingbirdModels {
   static const yamnetLabelsAsset =
       'packages/mockingbird/assets/yamnet_class_map.txt';
 
-  static String? _neuralVadPath;
-  static String? _soundClassPath;
+  static final Map<String, String> _paths = {};
   static List<String>? _yamnetLabels;
 
   /// Where the engine opens the Silero VAD model, for
   /// `MockingbirdVadConfig.modelPath`.
-  static Future<String> neuralVadPath() async =>
-      _neuralVadPath ??= await _materialise('silero_vad');
+  static Future<String> neuralVadPath() => _model('silero_vad');
 
   /// Where the engine opens the YAMNet model, for
   /// `MockingbirdSoundClassConfig.modelPath`.
-  static Future<String> soundClassPath() async =>
-      _soundClassPath ??= await _materialise('yamnet_3s');
+  static Future<String> soundClassPath() => _model('yamnet_3s');
+
+  /// Where the engine opens the keyword front end's mel spectrogram model,
+  /// for `MockingbirdEngine.setKeywordFrontend`.
+  static Future<String> keywordMelspectrogramPath() => _model('melspectrogram');
+
+  /// Where the engine opens the keyword front end's speech embedding model,
+  /// for `MockingbirdEngine.setKeywordFrontend`.
+  static Future<String> keywordEmbeddingPath() => _model('embedding_model');
+
+  /// Materialises any model in the app's asset bundle, such as a keyword
+  /// model for `MockingbirdEngine.addKeyword`, and returns its path. On the
+  /// web, bundle and pass the `.ort` build of the model.
+  static Future<String> fromAsset(String key) async =>
+      _paths[key] ??= await _materialise(key);
+
+  static Future<String> _model(String name) =>
+      fromAsset('packages/mockingbird/assets/$name.${kIsWeb ? 'ort' : 'onnx'}');
 
   /// YAMNet's 521 AudioSet labels, indexed by class id.
   static Future<List<String>> yamnetLabels() async => _yamnetLabels ??=
@@ -46,9 +60,9 @@ final class MockingbirdModels {
         label.substring(label.indexOf(' ') + 1),
   ];
 
-  static Future<String> _materialise(String model) async {
-    final filename = kIsWeb ? '$model.ort' : '$model.onnx';
-    final data = await rootBundle.load('packages/mockingbird/assets/$filename');
+  static Future<String> _materialise(String key) async {
+    final filename = key.substring(key.lastIndexOf('/') + 1);
+    final data = await rootBundle.load(key);
     final bytes = data.buffer.asUint8List(
       data.offsetInBytes,
       data.lengthInBytes,

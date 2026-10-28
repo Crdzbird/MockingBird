@@ -28,6 +28,7 @@ set(MOCKINGBIRD_SOURCES
         ${MOCKINGBIRD_ROOT}/src/api/api_queues.cpp
         ${MOCKINGBIRD_ROOT}/src/api/api_run.cpp
         ${MOCKINGBIRD_ROOT}/src/api/api_devices.cpp
+        ${MOCKINGBIRD_ROOT}/src/api/api_keywords.cpp
         ${MOCKINGBIRD_ROOT}/src/api/api_stats.cpp
         ${MOCKINGBIRD_ROOT}/src/api/api_tuning.cpp
         ${MOCKINGBIRD_ROOT}/src/config_support.cpp
@@ -38,6 +39,7 @@ set(MOCKINGBIRD_SOURCES
         ${MOCKINGBIRD_ROOT}/src/packet_pool.cpp
         ${MOCKINGBIRD_ROOT}/src/status.cpp
         ${MOCKINGBIRD_ROOT}/src/worker/detector_bank.cpp
+        ${MOCKINGBIRD_ROOT}/src/worker/detector_bank_keywords.cpp
         ${MOCKINGBIRD_ROOT}/src/worker/packet_emitter.cpp
         ${MOCKINGBIRD_ROOT}/src/worker/segmenter.cpp
         ${MOCKINGBIRD_ROOT}/src/worker/segmenter_frame.cpp
@@ -59,6 +61,8 @@ set(MOCKINGBIRD_SOURCES
         ${MOCKINGBIRD_ROOT}/src/detect/yamnet_classifier.cpp
         ${MOCKINGBIRD_ROOT}/src/detect/yamnet_classifier_feed.cpp
         ${MOCKINGBIRD_ROOT}/src/detect/yamnet_classifier_inference.cpp
+        ${MOCKINGBIRD_ROOT}/src/detect/oww_keyword_spotter.cpp
+        ${MOCKINGBIRD_ROOT}/src/detect/oww_keyword_spotter_feed.cpp
         ${MOCKINGBIRD_ROOT}/src/encode/factory.cpp
         ${MOCKINGBIRD_ROOT}/src/encode/pcm_encoder.cpp
         ${MOCKINGBIRD_ROOT}/src/encode/opus_encoder.cpp

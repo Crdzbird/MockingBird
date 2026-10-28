@@ -20,6 +20,9 @@ const (
 	// EventRouteChanged: the input device changed and capture continues on
 	// the new route.
 	EventRouteChanged EventType = 12
+	// EventKeyword: a keyword added with Engine.AddKeyword was heard.
+	// ReasonMask is its id and Confidence its score.
+	EventKeyword EventType = 13
 )
 
 // String returns the event type's name.
@@ -49,6 +52,8 @@ func (t EventType) String() string {
 		return "CAPTURE_RESUMED"
 	case EventRouteChanged:
 		return "ROUTE_CHANGED"
+	case EventKeyword:
+		return "KEYWORD"
 	}
 	return "UNKNOWN"
 }

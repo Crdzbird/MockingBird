@@ -6,6 +6,7 @@ import ctypes
 from typing import Any
 
 from mockingbird._config_struct import ConfigStruct
+from mockingbird._engine_keywords import EngineKeywords
 from mockingbird._engine_lifecycle import EngineLifecycle
 from mockingbird._engine_output import EngineOutput
 from mockingbird._library import check
@@ -14,7 +15,7 @@ from mockingbird._pcm_buffer import as_int16_buffer
 from mockingbird.config import Config
 
 
-class Engine(EngineLifecycle, EngineOutput):
+class Engine(EngineLifecycle, EngineOutput, EngineKeywords):
     """Create it, :meth:`start` it, drain :meth:`poll_events` and
     :meth:`drain_packets`, and :meth:`close` it; a ``with`` block does the
     last part for you. Drive it from one thread."""

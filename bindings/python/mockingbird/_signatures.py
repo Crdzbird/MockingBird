@@ -25,6 +25,9 @@ SIGNATURES = [
     ("mockingbird_update_config", [EnginePtr, ctypes.POINTER(ConfigStruct)], ctypes.c_int),
     ("mockingbird_list_input_devices", [ctypes.c_int, ctypes.POINTER(DeviceStruct), ctypes.c_uint32, ctypes.POINTER(ctypes.c_uint32)], ctypes.c_int),
     ("mockingbird_set_input_device", [EnginePtr, ctypes.c_char_p], ctypes.c_int),
+    ("mockingbird_set_keyword_frontend", [EnginePtr, ctypes.c_char_p, ctypes.c_char_p], ctypes.c_int),
+    ("mockingbird_add_keyword", [EnginePtr, ctypes.c_char_p, ctypes.c_float, ctypes.POINTER(ctypes.c_uint32)], ctypes.c_int),
+    ("mockingbird_clear_keywords", [EnginePtr], ctypes.c_int),
     ("mockingbird_status_str", [ctypes.c_int], ctypes.c_char_p),
     ("mockingbird_version_string", [], ctypes.c_char_p),
 ]

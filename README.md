@@ -39,6 +39,7 @@ under AddressSanitizer, UndefinedBehaviorSanitizer and ThreadSanitizer.
 | Voice detection | libfvad (fast) or Silero v6 through ONNX Runtime (neural) | language-agnostic |
 | Anomaly gate | RMS, spectral flux and centroid z-scores (PFFFT) | adaptive rolling background |
 | Sound classification | YAMNet through ONNX Runtime | all 521 AudioSet classes |
+| Keyword spotting (optional) | openWakeWord's front end through ONNX Runtime | your own openWakeWord keyword models |
 | Encode | libopus, raw or in Ogg, or PCM | per segment |
 
 A segment opens when the voice detector or the anomaly gate triggers. Packets
@@ -293,6 +294,8 @@ cmake --build build-tsan -j && ./build-tsan/test_mockingbird
 |---|---|---|
 | Silero VAD v6.2 (from the v6.2.3 release) | `silero_vad.onnx` | about 2 MB |
 | YAMNet, 3 s window, int8 weights | `yamnet_3s.onnx` | about 5 MB |
+| Keyword front end: mel spectrogram, int8 weights | `melspectrogram.onnx` | about 0.3 MB |
+| Keyword front end: Google speech embedding | `embedding_model.onnx` | about 1.3 MB |
 | RNNoise | compiled into the library | |
 
 YAMNet's convolution and dense weights are stored as int8 with one scale per
@@ -318,6 +321,37 @@ The engine resolves a model path in this order:
 
 The YAMNet class names are in `tests/fixtures/yamnet_class_map.txt` and, for
 Flutter, through `MockingbirdModels.yamnetLabels()`.
+
+### Keyword spotting
+
+`mockingbird_add_keyword` listens for a wake word or short command. The
+engine runs openWakeWord's pipeline: every 80 ms a mel spectrogram model turns
+the newest audio into eight frames, Google's speech embedding model turns the
+last 76 frames into one embedding, and each keyword's small classifier scores
+the last 16 embeddings. The two front-end models come from openWakeWord's
+v0.5.1 release; the mel model's convolution weights are stored as int8 with
+`scripts/quantize_yamnet.py`, which changed no detection in the check below,
+while the same treatment of the embedding model lost three of 105 phrases, so
+it stays float.
+
+The keyword classifiers are yours to supply. openWakeWord's pretrained ones
+("hey jarvis", "alexa" and others) carry a non-commercial licence (CC BY-NC-SA
+4.0), so none ship with Mockingbird; openWakeWord's training notebook makes a
+new one from synthetic speech, and any model with its layout (16 embeddings of
+96 values in, one score out) works. On the web, convert it to `.ort` with
+`python3 -m onnxruntime.tools.convert_onnx_models_to_ort`.
+
+Checked with `hey_jarvis_v0.1.onnx` on 105 phrases spoken by the 35 English
+macOS voices over light noise, and on the 10.1 minutes of LibriSpeech speech
+from `bench/accuracy`: the engine fired on 81 of the phrases and never on the
+LibriSpeech speech, the same detections, step for step, as openWakeWord's own
+Python package.
+
+The embedding model is most of the cost, so it runs only while the input is
+above the silence gate and, when voice detection is on, for 1.5 s after the
+last voiced frame. The mel model keeps running, and when listening resumes
+the engine computes the embeddings the classifiers need from the kept mel
+frames, so the scores are the same as if it had run throughout.
 
 ### ONNX Runtime telemetry
 
@@ -485,7 +519,7 @@ src/
   api/                      one translation unit per C entry point group
   worker/                   the worker thread: drain loop, detector bank, tunables,
                             segmenter, packet emitter, health window
-  detect/                   libfvad VAD, Silero VAD, anomaly gate, YAMNet
+  detect/                   libfvad VAD, Silero VAD, anomaly gate, YAMNet, keywords
   capture/                  backend factory, miniaudio, Core Audio, Oboe
   web/                      the WebAssembly shim (Emscripten builds only)
   preprocess/               RNNoise and the integer-ratio resamplers
@@ -520,6 +554,13 @@ structure is meant to carry that information.
 | YAMNet, 1000 ms cadence (default) | 1.69% |
 | everything on, with Opus | 4.92% |
 | everything on, quiet room at -75 dBFS | 0.44% |
+
+Keyword spotting was measured later, in a session where every row above read
+about 25% higher (RNNoise 3.14%, Silero 0.65%, YAMNet 2.31%). In that run one
+keyword cost 2.65% of a core and four keywords 2.67%: the shared embedding
+model is nearly all of it, and each extra keyword adds about 8 microseconds per
+80 ms step. In a quiet room only the mel model runs, at 0.34%. On a Pixel 7 Pro
+one keyword costs 2.7% of a core.
 
 Expect roughly three times these figures on a recent iPhone and five to eight
 times on a mid-range Android phone. The two settings that matter most are
@@ -558,6 +599,13 @@ Measured and not adopted, with the same harness so the numbers can be rechecked:
   26% of wall time from per-inference dispatch overhead, and Silero from 0.6% to
   2.4% with unsupported-dimension errors. `MOCKINGBIRD_ORT_EP=coreml`
   re-measures with a newer ONNX Runtime; the CPU provider stays the default.
+- XNNPACK and NNAPI on a Pixel 7 Pro, with ONNX Runtime 1.30's Android
+  package and `bench_mockingbird` built for arm64. Against the CPU provider
+  (Silero 0.87%, YAMNet 2.4 to 2.6%, one keyword 2.7% of a core), XNNPACK was
+  within run-to-run noise for Silero and YAMNet and slower for keywords at
+  3.4%; NNAPI was slower for all three, YAMNet worst at 17%.
+  `MOCKINGBIRD_ORT_EP=xnnpack` or `nnapi` re-measures; set
+  `MOCKINGBIRD_BENCH_FIXTURES` to the fixtures copied to the device.
 - Opus NEON intrinsics against the portable path: 0.37% to 0.40% either way,
   within run-to-run noise, so the Apple builds keep `OPUS_DISABLE_INTRINSICS`.
 - The arm64 dot-product extension for RNNoise: no difference outside noise, so
@@ -761,6 +809,9 @@ are permissive-only, with no GPL or LGPL code:
 | PFFFT | 2013 original by J. Pommier | BSD-like (FFTPACK-derived) |
 | libopus | 1.6.1 release, DRED/OSCE weights and autotools output trimmed; see `third_party/opus/VENDORED_FROM.txt` | BSD-3-Clause |
 | RNNoise | 0.2 release with the full `0b50c45` model; see `third_party/rnnoise/VENDORED_FROM.txt` | BSD-3-Clause (Xiph) |
+| Silero VAD | v6.2 model | MIT |
+| YAMNet | TensorFlow Hub model, converted | Apache-2.0 |
+| openWakeWord mel spectrogram and speech embedding models | v0.5.1 release; the embedding model re-implements Google's `speech_embedding` | Apache-2.0 |
 | ONNX Runtime | Homebrew 1.30, Android `onnxruntime-android:1.30.0`, SwiftPM 1.24.2, CocoaPods `onnxruntime-c ~> 1.20` | MIT, linked rather than vendored |
 | doctest | 2.5.3 | MIT, tests only |
 

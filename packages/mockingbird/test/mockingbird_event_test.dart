@@ -27,6 +27,7 @@ void main() {
     expect(decode(10), isA<MockingbirdCaptureInterruptedEvent>());
     expect(decode(11), isA<MockingbirdCaptureResumedEvent>());
     expect(decode(12), isA<MockingbirdRouteChangedEvent>());
+    expect(decode(13, reason: 1), isA<MockingbirdKeywordEvent>());
     expect(decode(42), isA<MockingbirdUnknownEvent>());
   });
 
@@ -59,5 +60,12 @@ void main() {
         decode(9, reason: 2, confidence: 0.83) as MockingbirdDegradationEvent;
     expect(e.level, 2);
     expect(e.busyFraction, closeTo(0.83, 1e-6));
+  });
+
+  test('a keyword event carries its id and score', () {
+    final e =
+        decode(13, reason: 3, confidence: 0.92) as MockingbirdKeywordEvent;
+    expect(e.keywordId, 3);
+    expect(e.score, closeTo(0.92, 1e-6));
   });
 }

@@ -75,7 +75,9 @@ double cpu_seconds() {
 }
 #endif
 
-struct Case { const char* name; mockingbird_config_t cfg; };
+struct Case { const char* name; mockingbird_config_t cfg; int keywords = 0; };
+
+std::string g_fixtures;
 
 mockingbird_config_t base() {
     mockingbird_config_t c{}; mockingbird_config_defaults(&c);
@@ -91,6 +93,14 @@ void run(const Case& k, const std::vector<int16_t>& audio) {
     mockingbird_engine_t* e = nullptr;
     mockingbird_status_t st = mockingbird_create(&k.cfg, &e);
     if (st != MOCKINGBIRD_OK) { std::printf("%-28s  SKIPPED (%s)\n", k.name, mockingbird_status_str(st)); return; }
+    const std::string assets = g_fixtures + "/../../packages/mockingbird/assets";
+    if (k.keywords > 0) {
+        mockingbird_set_keyword_frontend(e, (assets + "/melspectrogram.onnx").c_str(),
+                                         (assets + "/embedding_model.onnx").c_str());
+    }
+    for (int i = 0; i < k.keywords; ++i) {
+        mockingbird_add_keyword(e, (g_fixtures + "/keyword_test.onnx").c_str(), 0.5f, nullptr);
+    }
     mockingbird_start(e);
 
     const auto   t0   = std::chrono::steady_clock::now();
@@ -137,7 +147,9 @@ void run(const Case& k, const std::vector<int16_t>& audio) {
 int main(int argc, char** argv) {
     setvbuf(stdout, nullptr, _IOLBF, 0);
     const uint32_t seconds = argc > 1 ? static_cast<uint32_t>(std::atoi(argv[1])) : 30;
-    const std::string fx = MOCKINGBIRD_BENCH_FIXTURE_DIR;
+    const char*       fx_env = std::getenv("MOCKINGBIRD_BENCH_FIXTURES");
+    const std::string fx     = fx_env != nullptr ? fx_env : MOCKINGBIRD_BENCH_FIXTURE_DIR;
+    g_fixtures = fx;
     const std::string silero = fx + "/silero_vad.onnx", yamnet = fx + "/yamnet_3s.onnx";
     const auto audio = make_audio(seconds);
     std::vector<int16_t> quiet(audio.size());
@@ -154,6 +166,9 @@ int main(int argc, char** argv) {
     { auto c = base(); c.enable_vad = 1; c.vad_tier = MOCKINGBIRD_VAD_NEURAL; c.neural_vad_model_path = silero.c_str(); cases.push_back({"neural VAD (Silero)", c}); }
     { auto c = base(); c.enable_sound_class = 1; c.sound_class_model_path = yamnet.c_str(); c.sound_class_interval_ms = 500; cases.push_back({"YAMNet @500ms (old default)", c}); }
     { auto c = base(); c.enable_sound_class = 1; c.sound_class_model_path = yamnet.c_str(); c.sound_class_interval_ms = 1000; cases.push_back({"YAMNet @1000ms (new default)", c}); }
+    { auto c = base(); cases.push_back({"keywords, one model", c, 1}); }
+    { auto c = base(); cases.push_back({"keywords, four models", c, 4}); }
+    { auto c = base(); c.enable_vad = 1; c.vad_tier = MOCKINGBIRD_VAD_FAST; cases.push_back({"keywords + fast VAD", c, 1}); }
     { auto c = base(); c.enable_vad = 1; c.vad_tier = MOCKINGBIRD_VAD_NEURAL; c.neural_vad_model_path = silero.c_str();
       c.enable_anomaly = 1; c.enable_rnnoise = 1; c.enable_sound_class = 1; c.sound_class_model_path = yamnet.c_str();
       c.codec = MOCKINGBIRD_CODEC_OPUS; cases.push_back({"EVERYTHING (+Opus)", c}); }
@@ -163,6 +178,7 @@ int main(int argc, char** argv) {
     std::vector<Case> quiet_cases;
     { auto c = base(); c.enable_rnnoise = 1; quiet_cases.push_back({"RNNoise, quiet room", c}); }
     { auto c = base(); c.enable_sound_class = 1; c.sound_class_model_path = yamnet.c_str(); quiet_cases.push_back({"YAMNet @1000ms, quiet room", c}); }
+    { auto c = base(); quiet_cases.push_back({"keywords, quiet room", c, 1}); }
     { auto c = base(); c.enable_vad = 1; c.vad_tier = MOCKINGBIRD_VAD_NEURAL; c.neural_vad_model_path = silero.c_str();
       c.enable_anomaly = 1; c.enable_rnnoise = 1; c.enable_sound_class = 1; c.sound_class_model_path = yamnet.c_str();
       c.codec = MOCKINGBIRD_CODEC_OPUS; quiet_cases.push_back({"EVERYTHING, quiet room", c}); }

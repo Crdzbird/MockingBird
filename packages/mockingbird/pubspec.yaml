@@ -38,11 +38,19 @@ flutter:
       platforms: [android, ios, macos, linux, windows]
     - path: assets/yamnet_3s.onnx
       platforms: [android, ios, macos, linux, windows]
+    - path: assets/melspectrogram.onnx
+      platforms: [android, ios, macos, linux, windows]
+    - path: assets/embedding_model.onnx
+      platforms: [android, ios, macos, linux, windows]
     - path: assets/yamnet_class_map.txt
       platforms: [android, ios, macos, linux, windows, web]
     - path: assets/silero_vad.ort
       platforms: [web]
     - path: assets/yamnet_3s.ort
+      platforms: [web]
+    - path: assets/melspectrogram.ort
+      platforms: [web]
+    - path: assets/embedding_model.ort
       platforms: [web]
 
 dependencies:

@@ -27,6 +27,9 @@ typedef MockingbirdPacketResult = ({
 /// A status code with the stats snapshot, if read.
 typedef MockingbirdStatsResult = ({int status, MockingbirdNativeStats? stats});
 
+/// A status code with the id a keyword was given.
+typedef MockingbirdKeywordResult = ({int status, int id});
+
 /// A status code with the input devices listed.
 typedef MockingbirdDevicesResult = ({
   int status,
