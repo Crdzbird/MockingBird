@@ -8,7 +8,8 @@
 # Targets: android-arm64-v8a, android-armeabi-v7a, android-x86_64,
 # android-x86, linux-x64, linux-aarch64, windows-x64, windows-arm64.
 # Android needs ANDROID_HOME and ANDROID_NDK_HOME; Windows runs under Git
-# Bash with the MSVC tools on PATH. Needs Python with flatbuffers.
+# Bash in an MSVC developer environment for the target architecture, with
+# Ninja. Needs Python with flatbuffers.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -29,7 +30,7 @@ case "$TARGET" in
   android-*)
     args+=(--android --android_abi "${TARGET#android-}" --android_api 24
       --android_sdk_path "$ANDROID_HOME" --android_ndk_path "$ANDROID_NDK_HOME") ;;
-  windows-arm64) args+=(--arm64) ;;
+  windows-*) args+=(--cmake_generator Ninja) ;;
 esac
 case "$TARGET" in
   windows-*) ;;
