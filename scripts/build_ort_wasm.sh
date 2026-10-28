@@ -14,6 +14,10 @@ SRC="$(cd "$1" && pwd)"
 OUT="${2:-$ROOT/build-ort-wasm}"
 EMROOT="$(dirname "$(dirname "$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$(command -v emcc)")")")/libexec"
 
+for patch in "$ROOT"/scripts/ort_patches/*.patch; do
+  git -C "$SRC" apply --reverse --check "$patch" 2> /dev/null || git -C "$SRC" apply "$patch"
+done
+
 EMSDK_DIR="$SRC/cmake/external/emsdk"
 mkdir -p "$EMSDK_DIR/upstream"
 ln -sfn "$EMROOT" "$EMSDK_DIR/upstream/emscripten"

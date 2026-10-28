@@ -9,7 +9,8 @@
 # android-x86, linux-x64, linux-aarch64, windows-x64, windows-arm64.
 # Android needs ANDROID_HOME and ANDROID_NDK_HOME; Windows runs under Git
 # Bash in an MSVC developer environment for the target architecture, with
-# Ninja. Needs Python with flatbuffers.
+# Ninja. Needs Python with flatbuffers. The patches in scripts/ort_patches
+# are applied to the checkout first.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -19,6 +20,10 @@ mkdir -p "$3"
 OUT="$(cd "$3" && pwd)"
 BUILD="$OUT/build-$TARGET"
 NAME="onnxruntime-mockingbird-1.30.0-$TARGET"
+
+for patch in "$ROOT"/scripts/ort_patches/*.patch; do
+  git -C "$SRC" apply --reverse --check "$patch" 2> /dev/null || git -C "$SRC" apply "$patch"
+done
 
 args=(--config MinSizeRel --parallel --skip_tests --skip_submodule_sync
   --compile_no_warning_as_error --no_telemetry --disable_ml_ops --minimal_build extended

@@ -17,7 +17,7 @@ import onnxruntime as ort
 from onnx import TensorProto, helper, numpy_helper
 
 ROOT = Path(__file__).resolve().parents[1]
-ASSETS = ROOT / "packages" / "mockingbird" / "assets"
+ASSETS = ROOT / "models"
 
 
 def embeddings(pcm):

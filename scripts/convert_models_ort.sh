@@ -14,10 +14,11 @@ ASSETS="$ROOT/packages/mockingbird/assets"
 HOSTED="$ROOT/models"
 MODELS="silero_vad melspectrogram embedding_model"
 HOSTED_MODELS="yamnet_3s speaker_campplus"
+SOURCES="$ROOT/tests/fixtures/silero_vad.onnx $HOSTED/melspectrogram.onnx $HOSTED/embedding_model.onnx"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
-for m in $MODELS; do cp "$ASSETS/$m.onnx" "$WORK/"; done
+for f in $SOURCES; do cp "$f" "$WORK/"; done
 for m in $HOSTED_MODELS; do cp "$HOSTED/$m.onnx" "$WORK/"; done
 cp "$ROOT/tests/fixtures/keyword_test.onnx" "$WORK/"
 if [ -n "${1:-}" ]; then cp "$1"/*.onnx "$WORK/"; fi

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Copies the engine sources into the platform packages so each one is
 # self-contained on pub.dev. The repository root stays the only place to edit;
-# run this after any change under include/, src/ or third_party/ and commit
+# run this after any change under include/, src/, third_party/ or cmake/ and commit
 # the result. CI fails if the copies drift.
 set -euo pipefail
 
@@ -10,9 +10,10 @@ PARTS=(miniaudio libfvad pffft opus rnnoise)
 
 sync_into() {
   local dest="$1"
-  rm -rf "$dest/include" "$dest/src" "$dest/third_party"
+  rm -rf "$dest/include" "$dest/src" "$dest/third_party" "$dest/cmake"
   mkdir -p "$dest/include" "$dest/third_party"
   cp -R "$ROOT/include/mockingbird" "$dest/include/"
+  cp -R "$ROOT/cmake" "$dest/cmake"
   cp -R "$ROOT/src" "$dest/src"
   for part in "${PARTS[@]}"; do
     cp -R "$ROOT/third_party/$part" "$dest/third_party/"
