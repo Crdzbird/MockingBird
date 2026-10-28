@@ -308,9 +308,14 @@ if(MOCKINGBIRD_ENABLE_NEURAL_VAD)
         # The static ONNX Runtime is built against MSVC's release C runtime,
         # so everything compiled here uses it too, in debug builds as well;
         # the engine shares only C types with its host.
+        # A host project with policy CMP0091 off, as Flutter's Windows runner
+        # is, chooses the runtime through the flag variables instead.
         if(MOCKINGBIRD_ORT_STATIC AND MSVC)
             set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
             add_compile_definitions(_ITERATOR_DEBUG_LEVEL=0)
+            foreach(flags CMAKE_C_FLAGS_DEBUG CMAKE_CXX_FLAGS_DEBUG)
+                string(REPLACE "/MDd" "/MD" ${flags} "${${flags}}")
+            endforeach()
         endif()
         if(EMSCRIPTEN)
             # ONNX Runtime's WebAssembly build catches exceptions through
