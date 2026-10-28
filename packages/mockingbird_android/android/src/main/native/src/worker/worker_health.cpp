@@ -55,7 +55,7 @@ void WorkerHealth::close_window(mockingbird_engine* e, uint64_t now_ts, Tunables
     e->degradation_level.store(t.degrade.level(), std::memory_order_relaxed);
     emit_event(e, make_event(MOCKINGBIRD_EVT_DEGRADATION, 0, now_ts, t.degrade.level(),
                              static_cast<float>(ppm) / 1000000.0f));
-    MOCKINGBIRD_VLOG("degradation level -> %u (busy %llu ppm%s)", t.degrade.level(),
+    MOCKINGBIRD_VLOG("degradation level now %u (busy %llu ppm%s)", t.degrade.level(),
                static_cast<unsigned long long>(ppm), dropped ? ", drops" : "");
 }
 

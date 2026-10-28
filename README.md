@@ -237,6 +237,7 @@ that text.
 | `MOCKINGBIRD_BUILD_SHARED` | ON | build `libmockingbird.dylib` / `libmockingbird.so` (the bindings need this) |
 | `MOCKINGBIRD_BUILD_STATIC` | ON | build `libmockingbird.a` (the tests link this) |
 | `MOCKINGBIRD_VERSIONED_SONAME` | ON | give the shared library a versioned file name; the Linux and Windows plugins turn it off |
+| `MOCKINGBIRD_RELOCATABLE` | OFF | on Linux, give the shared library only an `$ORIGIN` run path so it finds ONNX Runtime next to itself; the Linux plugin turns it on |
 | `MOCKINGBIRD_ENABLE_NEURAL_VAD` | OFF | compile Silero VAD and YAMNet; needs ONNX Runtime |
 | `ONNXRUNTIME_ROOT` | empty | an extracted ONNX Runtime release to build against |
 | `MOCKINGBIRD_ENABLE_TESTS` | OFF | build `test_mockingbird` and `bench_mockingbird` |

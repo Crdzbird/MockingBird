@@ -24,7 +24,13 @@
 #include <string>
 #include <thread>
 #include <vector>
+#if defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#else
 #include <sys/resource.h>
+#endif
 
 namespace {
 constexpr uint32_t kRate  = 16000;
@@ -52,11 +58,22 @@ std::vector<int16_t> make_audio(uint32_t seconds) {
     return out;
 }
 
+#if defined(_WIN32)
+double cpu_seconds() {
+    FILETIME created{}, exited{}, kernel{}, user{};
+    GetProcessTimes(GetCurrentProcess(), &created, &exited, &kernel, &user);
+    const auto ticks = [](const FILETIME& t) {
+        return (static_cast<unsigned long long>(t.dwHighDateTime) << 32) | t.dwLowDateTime;
+    };
+    return static_cast<double>(ticks(kernel) + ticks(user)) * 1e-7;
+}
+#else
 double cpu_seconds() {
     rusage ru{}; getrusage(RUSAGE_SELF, &ru);
     return ru.ru_utime.tv_sec + ru.ru_utime.tv_usec * 1e-6 +
            ru.ru_stime.tv_sec + ru.ru_stime.tv_usec * 1e-6;
 }
+#endif
 
 struct Case { const char* name; mockingbird_config_t cfg; };
 
