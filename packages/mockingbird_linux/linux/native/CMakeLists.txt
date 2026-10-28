@@ -305,6 +305,13 @@ if(MOCKINGBIRD_ENABLE_NEURAL_VAD)
         elseif(WIN32 AND NOT EXISTS "${ONNXRUNTIME_ROOT}/lib/onnxruntime.dll")
             set(MOCKINGBIRD_ORT_STATIC ON)
         endif()
+        # The static ONNX Runtime is built against MSVC's release C runtime,
+        # so everything compiled here uses it too, in debug builds as well;
+        # the engine shares only C types with its host.
+        if(MOCKINGBIRD_ORT_STATIC AND MSVC)
+            set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+            add_compile_definitions(_ITERATOR_DEBUG_LEVEL=0)
+        endif()
         if(EMSCRIPTEN)
             # ONNX Runtime's WebAssembly build catches exceptions through
             # JavaScript; every object in the module has to agree.
