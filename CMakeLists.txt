@@ -43,6 +43,10 @@ if(APPLE)
     endif()
 endif()
 
+if(EMSCRIPTEN AND MOCKINGBIRD_WASM_SIMD)
+    add_compile_options(-msimd128 -msse4.1 -mavx -mfpu=neon)
+endif()
+
 if(ANDROID)
     # NDK r28 or later is required for 16KB-page-aligned shared libraries.
     # The toolchain file sets ANDROID_PLATFORM to the minSdk, and the app
@@ -61,6 +65,7 @@ option(MOCKINGBIRD_BUILD_SHARED   "Build the shared library (libmockingbird.so/.
 option(MOCKINGBIRD_BUILD_STATIC   "Build the static library (libmockingbird.a)"         ON)
 option(MOCKINGBIRD_VERSIONED_SONAME "Give the shared library a versioned file name" ON)
 option(MOCKINGBIRD_RELOCATABLE "Find dependencies next to the shared library on Linux" OFF)
+option(MOCKINGBIRD_WASM_SIMD "Build WebAssembly with SIMD (SSE and AVX intrinsics translated)" OFF)
 option(MOCKINGBIRD_ENABLE_NEURAL_VAD "Compile in Silero VAD and YAMNet via ONNX Runtime" OFF)
 set(ONNXRUNTIME_ROOT "" CACHE PATH "An extracted ONNX Runtime release to build against")
 option(MOCKINGBIRD_ENABLE_OPUS    "Compile in libopus encoder"                    ON)

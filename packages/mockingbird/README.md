@@ -254,16 +254,18 @@ now is a third of the size and, in the engine's own benchmark on the same
 machine, costs about 0.1 percentage points more CPU at the 1 s cadence.
 
 The same engine as WebAssembly, run under V8 (the engine inside Chrome) on the
-same input. The web build is single-threaded and has no SIMD, so the neural
-network in RNNoise costs about twice what it does natively; the packet and
-segment counts match the native run exactly.
+same input. The web build is single-threaded. It ships twice: with WebAssembly
+SIMD, which Chrome 91, Firefox 89 and Safari 16.4 and later run and which the
+package picks automatically, and without it for older browsers. Both columns
+come from one session; the packet and segment counts match the native run
+exactly in both.
 
-| Task | mockingbird_web (WebAssembly) | Share of one core |
-|---|---|---|
-| Fast voice detection | libfvad | 0.02% |
-| Anomaly gate | | 0.02% |
-| Noise suppression | RNNoise 0.2 full model | 2.71% |
-| Everything the web build has: fast VAD, anomaly gate, RNNoise, Opus | | 2.89% |
+| Task | mockingbird_web (WebAssembly) | SIMD | Without SIMD |
+|---|---|---|---|
+| Fast voice detection | libfvad | 0.02% | 0.02% |
+| Anomaly gate | | 0.02% | 0.02% |
+| Noise suppression | RNNoise 0.2 full model | 1.89% | 3.59% |
+| Everything the web build has: fast VAD, anomaly gate, RNNoise, Opus | | 2.24% | 3.90% |
 
 Measured on Flutter 3.47.6 with every package at its latest version; the earlier
 run on 3.47.2 differed by at most a few hundredths of a percent, which is the

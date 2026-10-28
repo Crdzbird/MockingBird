@@ -13,8 +13,13 @@ depending on `mockingbird` includes it automatically.
 - Microphone capture through Web Audio: `getUserMedia`, an `AudioContext` opened
   at the engine's sample rate, and an `AudioWorklet` that delivers 20 ms int16
   chunks, resampling if the browser would not open at that rate.
-- Three assets, about 6 MB in total: `mockingbird.js`, `mockingbird.wasm` and
-  the capture worklet. They load lazily from the app's asset bundle.
+- Four assets: `mockingbird.js`, two builds of the engine of about 6 MB each,
+  and the capture worklet. `mockingbird_simd.wasm` uses WebAssembly SIMD and
+  needs Chrome 91, Firefox 89 or Safari 16.4 or later; `mockingbird.wasm`
+  runs everywhere else. The package checks once, with
+  `WebAssembly.validate`, and fetches only the build the browser can run, so
+  a visitor downloads one of them. SIMD makes noise suppression about twice
+  as fast. Both builds produce the same packets and events.
 
 The Dart side reaches the engine through `dart:js_interop`; the `mockingbird`
 API is the same as on the other platforms.
@@ -47,9 +52,9 @@ on `engine.events`.
 ## Hosting the files elsewhere
 
 Set `MockingbirdWeb.assetBaseUrl` to a directory URL before
-`Mockingbird.initialize()` to serve the three files from a CDN instead of the
-asset bundle. The server must return `application/wasm` for `mockingbird.wasm`
-and a JavaScript type for the two scripts.
+`Mockingbird.initialize()` to serve the four files from a CDN instead of the
+asset bundle. The server must return `application/wasm` for the two `.wasm`
+files and a JavaScript type for the two scripts.
 
 ## Requirements
 

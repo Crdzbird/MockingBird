@@ -1,15 +1,17 @@
 // Pushes the speech fixture through the WebAssembly build with fast VAD,
 // RNNoise and Opus on, and checks events, packets and stats come back, and
 // that closed segments end on a LAST packet. Pass `ogg` to run Ogg Opus and
-// check that a segment's first packet opens an Ogg stream.
-//   node tests/wasm/smoke.mjs [ogg]
+// check that a segment's first packet opens an Ogg stream, and `simd` to run
+// the SIMD build.
+//   node tests/wasm/smoke.mjs [ogg] [simd]
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..', '..');
-const { default: createMockingbirdModule } = await import(path.join(root, 'build-wasm', 'mockingbird.js'));
+const simd = process.argv.includes('simd');
+const { default: createMockingbirdModule } = await import(path.join(root, simd ? 'build-wasm-simd' : 'build-wasm', 'mockingbird.js'));
 const m = await createMockingbirdModule();
 
 function wavSamples(file) {
@@ -24,7 +26,7 @@ function wavSamples(file) {
   throw new Error('no data chunk');
 }
 
-const ogg = process.argv[2] === 'ogg';
+const ogg = process.argv.includes('ogg');
 const codec = ogg ? 3 : 1;
 const F = { backend: 0, enableRnnoise: 3, enableVad: 4, codec: 19, pcmRingFrames: 23 };
 const cfg = m._mockingbird_web_config_new();
@@ -92,7 +94,7 @@ m._free(statusPtr);
 m._mockingbird_destroy(engine);
 
 const seconds = pcm.length / 16000;
-console.log(JSON.stringify({ version: m.UTF8ToString(m._mockingbird_version_string()), codec, seconds, captured, dropped, rms, packets, bytes, last, events: counts, cpu_share: ms / 1000 / seconds }));
+console.log(JSON.stringify({ version: m.UTF8ToString(m._mockingbird_version_string()), simd, codec, seconds, captured, dropped, rms, packets, bytes, last, events: counts, cpu_share: ms / 1000 / seconds }));
 if (!(counts[1] >= 1 && counts[4] >= 1 && packets > 0 && dropped === 0 && last >= 1 && badStart === 0)) {
   console.error('expected speech and segment events, LAST packets, the right codec and no drops');
   process.exit(1);

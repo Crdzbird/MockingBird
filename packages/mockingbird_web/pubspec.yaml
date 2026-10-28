@@ -27,6 +27,8 @@ flutter:
       platforms: [web]
     - path: assets/mockingbird.wasm
       platforms: [web]
+    - path: assets/mockingbird_simd.wasm
+      platforms: [web]
     - path: assets/mockingbird_capture_worklet.js
       platforms: [web]
 

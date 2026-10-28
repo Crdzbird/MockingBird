@@ -74,6 +74,8 @@ extension type MockingbirdModule(JSObject _) implements JSObject {
 
 /// The default export of `mockingbird.js`: a factory for [MockingbirdModule].
 extension type MockingbirdModuleFactory(JSFunction _) implements JSFunction {
-  /// Instantiates the module with Emscripten's options object.
-  external JSPromise<MockingbirdModule> call(JSObject options);
+  /// Instantiates the module, passing Emscripten's options object as the
+  /// factory's argument.
+  JSPromise<MockingbirdModule> create(JSObject options) =>
+      callAsFunction(null, options)! as JSPromise<MockingbirdModule>;
 }

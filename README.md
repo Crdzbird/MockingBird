@@ -314,9 +314,17 @@ leaves out the capture backends and the ONNX detectors; the Flutter web package
 captures through Web Audio and pushes PCM in.
 
 ```bash
-scripts/build_wasm.sh                 # writes packages/mockingbird_web/assets/mockingbird.{js,wasm}
+scripts/build_wasm.sh                 # writes mockingbird.js, mockingbird.wasm and mockingbird_simd.wasm
 node tests/wasm/smoke.mjs             # pushes the speech fixture through the build
+node tests/wasm/smoke.mjs simd ogg    # the SIMD build, with Ogg Opus
 ```
+
+The script builds the engine twice. `MOCKINGBIRD_WASM_SIMD=ON` compiles with
+WebAssembly SIMD and lets Emscripten translate the SSE and AVX intrinsics in
+RNNoise and PFFFT, which halves the cost of noise suppression. Both builds share
+one JavaScript glue file, and the script stops if they ever differ. The web
+package loads the SIMD build where `WebAssembly.validate` accepts a SIMD module
+and the plain build elsewhere.
 
 The web package's own tests run the module in Chrome with a synthetic
 microphone:
