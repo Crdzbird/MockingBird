@@ -20,7 +20,7 @@ BUILD="$OUT/build-$TARGET"
 NAME="onnxruntime-mockingbird-1.30.0-$TARGET"
 
 args=(--config MinSizeRel --parallel --skip_tests --skip_submodule_sync
-  --compile_no_warning_as_error --disable_ml_ops --minimal_build extended
+  --compile_no_warning_as_error --no_telemetry --disable_ml_ops --minimal_build extended
   --enable_reduced_operator_type_support
   --include_ops_by_config "$ROOT/scripts/ort_ops.config" --build_dir "$BUILD")
 defines=(onnxruntime_BUILD_UNIT_TESTS=OFF CMAKE_POSITION_INDEPENDENT_CODE=ON

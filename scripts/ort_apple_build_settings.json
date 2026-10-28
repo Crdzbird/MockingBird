@@ -11,6 +11,7 @@
             "--build_apple_framework",
             "--skip_tests",
             "--skip_submodule_sync",
+            "--no_telemetry",
             "--compile_no_warning_as_error",
             "--minimal_build=extended",
             "--disable_ml_ops",

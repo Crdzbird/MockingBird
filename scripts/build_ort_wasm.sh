@@ -25,7 +25,7 @@ build() {
   local map="-ffile-prefix-map=$SRC=onnxruntime -ffile-prefix-map=$1=build"
   EMSDK="$EMSDK_DIR" EMSDK_NODE="$(command -v node)" EMSDK_PYTHON="$(command -v python3)" \
   python3 "$SRC/tools/ci_build/build.py" --config MinSizeRel --build_wasm_static_lib \
-    --parallel --skip_tests --skip_submodule_sync --compile_no_warning_as_error \
+    --parallel --skip_tests --skip_submodule_sync --compile_no_warning_as_error --no_telemetry \
     --disable_ml_ops --minimal_build extended --enable_reduced_operator_type_support \
     --include_ops_by_config "$ROOT/scripts/ort_ops.config" --targets bundling_target \
     --build_dir "$1" "${@:2}" \
