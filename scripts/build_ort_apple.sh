@@ -31,9 +31,9 @@ rm -rf "$LIBS" "$OUT/onnxruntime.xcframework" "$OUT/onnxruntime.xcframework.zip"
 slices=()
 for framework in "$OUT"/framework_out/onnxruntime.xcframework/*/onnxruntime.framework; do
   slice="$LIBS/$(basename "$(dirname "$framework")")"
-  mkdir -p "$slice"
-  cp "$framework/onnxruntime" "$slice/libonnxruntime.a"
-  cp -R "$framework/Headers" "$slice/include"
+  mkdir -p "$slice/include"
+  cp -L "$framework/onnxruntime" "$slice/libonnxruntime.a"
+  cp -RL "$framework/Headers/." "$slice/include/"
   slices+=(-library "$slice/libonnxruntime.a" -headers "$slice/include")
 done
 xcodebuild -create-xcframework "${slices[@]}" -output "$OUT/onnxruntime.xcframework"
