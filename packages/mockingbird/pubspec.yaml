@@ -30,9 +30,12 @@ flutter:
   # ONNX models bundled with the plugin so the demo (or any consumer)
   # gets Neural VAD + YAMNet sound classification with no extra setup.
   assets:
-    - assets/silero_vad.onnx
-    - assets/yamnet_3s.onnx
-    - assets/yamnet_class_map.txt
+    - path: assets/silero_vad.onnx
+      platforms: [android, ios, macos]
+    - path: assets/yamnet_3s.onnx
+      platforms: [android, ios, macos]
+    - path: assets/yamnet_class_map.txt
+      platforms: [android, ios, macos]
 
 dependencies:
   flutter:

@@ -23,9 +23,12 @@ flutter:
         pluginClass: MockingbirdWeb
         fileName: mockingbird_web.dart
   assets:
-    - assets/mockingbird.js
-    - assets/mockingbird.wasm
-    - assets/mockingbird_capture_worklet.js
+    - path: assets/mockingbird.js
+      platforms: [web]
+    - path: assets/mockingbird.wasm
+      platforms: [web]
+    - path: assets/mockingbird_capture_worklet.js
+      platforms: [web]
 
 dependencies:
   flutter:

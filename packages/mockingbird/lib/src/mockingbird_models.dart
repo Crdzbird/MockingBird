@@ -34,8 +34,12 @@ final class MockingbirdModels {
       _soundClassPath ??= await _extract(soundClassAsset, 'yamnet_3s.onnx');
 
   /// YAMNet's 521 AudioSet labels, indexed by class id.
-  static Future<List<String>> yamnetLabels() async => _yamnetLabels ??=
-      _parseLabels(await rootBundle.loadString(yamnetLabelsAsset));
+  static Future<List<String>> yamnetLabels() async {
+    _ensureNative();
+    return _yamnetLabels ??= _parseLabels(
+      await rootBundle.loadString(yamnetLabelsAsset),
+    );
+  }
 
   static List<String> _parseLabels(String text) => [
     for (final line in text.split('\n'))
@@ -43,13 +47,16 @@ final class MockingbirdModels {
         label.substring(label.indexOf(' ') + 1),
   ];
 
+  static void _ensureNative() {
+    if (!kIsWeb) return;
+    throw UnsupportedError(
+      'The models are not bundled for the web; use the fast VAD tier and '
+      'the anomaly gate there.',
+    );
+  }
+
   static Future<String> _extract(String asset, String filename) async {
-    if (kIsWeb) {
-      throw UnsupportedError(
-        'The neural detectors are not available on the web; use the fast '
-        'VAD tier and the anomaly gate.',
-      );
-    }
+    _ensureNative();
     final dir = await getApplicationSupportDirectory();
     final file = File('${dir.path}/$filename');
     if (file.existsSync() && file.lengthSync() > 0) return file.path;
