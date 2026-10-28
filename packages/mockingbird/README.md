@@ -45,9 +45,9 @@ Engines that only receive pushed PCM need none of it.
 |---|---|
 | Android | API 21, compileSdk 37, NDK r28 or newer (16 KB pages) |
 | iOS | 15.0 |
-| macOS | 12.0 with CocoaPods, 14.0 with Swift Package Manager |
-| Linux | x64 or arm64, CMake 3.24; the first build downloads ONNX Runtime |
-| Windows | Windows 10, x64 or ARM64, Visual Studio 2022; the first build downloads ONNX Runtime |
+| macOS | 12.0 |
+| Linux | x64 or arm64, CMake 3.24; the first build downloads a reduced ONNX Runtime |
+| Windows | Windows 10, x64 or ARM64, Visual Studio 2022; the first build downloads a reduced ONNX Runtime |
 | Web | a browser with AudioWorklet and ES modules; no cross-origin isolation needed |
 
 Call `Mockingbird.initialize()` once at startup. It loads the WebAssembly module
@@ -128,7 +128,7 @@ MockingbirdModels.mirrors = [Uri.parse('https://cdn.example.com/models/')];
 ```
 
 An app that must never download can bundle the files as its own assets and
-pass `MockingbirdModels.fromAsset('assets/yamnet_3s.onnx')` instead.
+pass `MockingbirdModels.fromAsset('assets/yamnet_3s.ort')` instead.
 
 Downloads need network access: on macOS add the
 `com.apple.security.network.client` entitlement, and on Android the
@@ -281,7 +281,7 @@ final engine = MockingbirdEngine.create(const MockingbirdConfig())
     embedding: await MockingbirdModels.keywordEmbeddingPath(),
   );
 final heyMockingbird = engine.addKeyword(
-  await MockingbirdModels.fromAsset('assets/hey_mockingbird.onnx'),
+  await MockingbirdModels.fromAsset('assets/hey_mockingbird.ort'),
   threshold: 0.5,
 );
 engine.events.listen((e) {
@@ -293,8 +293,9 @@ engine.start();
 ```
 
 openWakeWord's pretrained keywords are licensed for non-commercial use only;
-its training notebook makes your own from synthetic speech. On the web, bundle
-the model's `.ort` conversion instead. Keyword spotting needs 16 kHz input,
+its training notebook makes your own from synthetic speech. Bundle the
+model's `.ort` conversion, made with
+`python3 -m onnxruntime.tools.convert_onnx_models_to_ort`. Keyword spotting needs 16 kHz input,
 and the first score arrives about 1.3 s after `start`.
 
 ## Speaker verification

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:mockingbird/src/asset_models.dart';
 import 'package:mockingbird/src/model_downloads.dart';
 import 'package:mockingbird/src/yamnet_labels.dart';
@@ -7,14 +6,16 @@ import 'package:mockingbird_platform_interface/mockingbird_platform_interface.da
 /// The models the engine opens, where it can open them. Silero VAD and the
 /// keyword front end ship as assets; YAMNet and the speaker model download on
 /// first use from the pinned `MockingbirdModelCatalog`, checked against their
-/// SHA-256 and kept, so later calls work offline. Native platforms keep files
-/// in the app's support directory; the web keeps the `.ort` builds in the
-/// module's memory and the browser's cache. Every call is idempotent.
+/// SHA-256 and kept, so later calls work offline. Every model is in ONNX
+/// Runtime's `.ort` format, the only one the reduced ONNX Runtime the plugin
+/// links reads. Native platforms keep files in the app's support directory;
+/// the web keeps them in the module's memory and the browser's cache. Every
+/// call is idempotent.
 final class MockingbirdModels {
   const MockingbirdModels._();
 
   /// Asset key of the Silero VAD model.
-  static const neuralVadAsset = 'packages/mockingbird/assets/silero_vad.onnx';
+  static const neuralVadAsset = 'packages/mockingbird/assets/silero_vad.ort';
 
   /// Asset key of YAMNet's class labels, one `<index> <label>` per line.
   static const yamnetLabelsAsset =
@@ -39,25 +40,14 @@ final class MockingbirdModels {
   /// source can be reached.
   static Future<String> soundClassPath({
     MockingbirdDownloadProgress? onProgress,
-  }) => _downloads.path(
-    kIsWeb
-        ? MockingbirdModelCatalog.yamnetOrt
-        : MockingbirdModelCatalog.yamnetOnnx,
-    mirrors,
-    onProgress,
-  );
+  }) => _downloads.path(MockingbirdModelCatalog.yamnetOrt, mirrors, onProgress);
 
   /// Where the engine opens the speaker model, for
   /// `MockingbirdEngine.setSpeakerModel`. Downloads 8.4 MB on first use.
   static Future<String> speakerModelPath({
     MockingbirdDownloadProgress? onProgress,
-  }) => _downloads.path(
-    kIsWeb
-        ? MockingbirdModelCatalog.speakerOrt
-        : MockingbirdModelCatalog.speakerOnnx,
-    mirrors,
-    onProgress,
-  );
+  }) =>
+      _downloads.path(MockingbirdModelCatalog.speakerOrt, mirrors, onProgress);
 
   /// Where the engine opens the keyword front end's mel spectrogram model,
   /// for `MockingbirdEngine.setKeywordFrontend`.
@@ -68,12 +58,12 @@ final class MockingbirdModels {
   static Future<String> keywordEmbeddingPath() => _model('embedding_model');
 
   /// Materialises any model in the app's asset bundle, such as a keyword
-  /// model for `MockingbirdEngine.addKeyword`, and returns its path. On the
-  /// web, bundle and pass the `.ort` build of the model.
+  /// model for `MockingbirdEngine.addKeyword`, and returns its path. Bundle
+  /// the model's `.ort` conversion.
   static Future<String> fromAsset(String key) => _assets.path(key);
 
   static Future<String> _model(String name) =>
-      fromAsset('packages/mockingbird/assets/$name.${kIsWeb ? 'ort' : 'onnx'}');
+      fromAsset('packages/mockingbird/assets/$name.ort');
 
   /// YAMNet's 521 AudioSet labels, indexed by class id.
   static Future<List<String>> yamnetLabels() => _labels.load(yamnetLabelsAsset);

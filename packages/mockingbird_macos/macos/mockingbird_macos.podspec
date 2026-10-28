@@ -70,7 +70,7 @@ Pod::Spec.new do |s|
   s.public_header_files = 'Sources/include/mockingbird/*.h'
 
   s.dependency 'FlutterMacOS'
-  s.dependency 'onnxruntime-c', '~> 1.20'
+  s.dependency 'onnxruntime-c', '~> 1.30'
   s.platform     = :osx
   # macOS 11 (Big Sur) is the first universal-binary baseline and is the
   # iOS-14-equivalent floor for std::atomic::wait/notify.

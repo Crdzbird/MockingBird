@@ -22,11 +22,11 @@ Both CocoaPods and Swift Package Manager are supported.
 | Integration | Minimum macOS |
 |---|---|
 | CocoaPods | 12.0 |
-| Swift Package Manager | 14.0 |
+| Swift Package Manager | 12.0 |
 
-The higher Swift Package Manager floor comes from Microsoft's
-`onnxruntime-swift-package-manager` package. Set `MACOSX_DEPLOYMENT_TARGET` in
-your Xcode project accordingly.
+With Swift Package Manager, ONNX Runtime is a reduced static xcframework
+pinned by checksum; with CocoaPods it is Microsoft's `onnxruntime-c` pod. Both
+read the `.ort` models the package uses.
 
 ## Requirements
 

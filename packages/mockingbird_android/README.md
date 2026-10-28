@@ -8,8 +8,9 @@ depending on `mockingbird` includes it automatically.
 
 - The Mockingbird engine compiled from source by the plugin's CMake build:
   capture, RNNoise, libfvad, the anomaly gate, the Opus encoder, and the ONNX
-  Runtime detectors (Silero VAD and YAMNet) through the `onnxruntime-android`
-  AAR.
+  Runtime detectors (Silero VAD, YAMNet, keywords and speaker verification)
+  through a reduced, static ONNX Runtime linked into the engine and
+  downloaded, pinned by SHA-256, when the app builds.
 - Microphone capture through Oboe, with miniaudio as the fallback backend.
 - 16 KB page alignment for the shared library, as Android 15 requires.
 

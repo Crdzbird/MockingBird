@@ -1,6 +1,8 @@
 # Downloadable models
 
-Models the Flutter package fetches on first use instead of bundling. Apps
+Models the Flutter package fetches on first use instead of bundling, and the
+`.onnx` sources of the `.ort` models it bundles (`melspectrogram.onnx`,
+`embedding_model.onnx`; Silero VAD's is `tests/fixtures/silero_vad.onnx`). Apps
 download them from this directory, at the commit pinned in
 `packages/mockingbird_platform_interface/lib/src/mockingbird_model_catalog.dart`,
 through raw.githubusercontent.com or jsDelivr, and check each file's SHA-256

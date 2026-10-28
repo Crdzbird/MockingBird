@@ -8,7 +8,7 @@ import (
 
 func TestKeywordFiresOnceAboveItsThreshold(t *testing.T) {
 	fixtures := filepath.Join("..", "..", "tests", "fixtures")
-	assets := filepath.Join("..", "..", "packages", "mockingbird", "assets")
+	assets := filepath.Join("..", "..", "models")
 	samples, rate, err := readWAV(filepath.Join(fixtures, "hello.wav"))
 	if err != nil || rate != 16000 {
 		t.Skipf("fixture unavailable: %v (rate %d)", err, rate)

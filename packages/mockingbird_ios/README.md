@@ -25,8 +25,9 @@ Both CocoaPods and Swift Package Manager are supported.
 | CocoaPods | 15.0 |
 | Swift Package Manager | 15.0 |
 
-ONNX Runtime comes from the `onnxruntime-c` pod or from Microsoft's
-`onnxruntime-swift-package-manager` package, depending on the integration.
+With Swift Package Manager, ONNX Runtime is a reduced static xcframework
+pinned by checksum; with CocoaPods it is Microsoft's `onnxruntime-c` pod. Both
+read the `.ort` models the package uses.
 
 ## Requirements
 

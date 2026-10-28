@@ -78,6 +78,7 @@ double cpu_seconds() {
 struct Case { const char* name; mockingbird_config_t cfg; int keywords = 0; };
 
 std::string g_fixtures;
+std::string g_ext = "onnx";
 
 mockingbird_config_t base() {
     mockingbird_config_t c{}; mockingbird_config_defaults(&c);
@@ -93,13 +94,13 @@ void run(const Case& k, const std::vector<int16_t>& audio) {
     mockingbird_engine_t* e = nullptr;
     mockingbird_status_t st = mockingbird_create(&k.cfg, &e);
     if (st != MOCKINGBIRD_OK) { std::printf("%-28s  SKIPPED (%s)\n", k.name, mockingbird_status_str(st)); return; }
-    const std::string assets = g_fixtures + "/../../packages/mockingbird/assets";
+    const std::string assets = g_fixtures + "/../../models";
     if (k.keywords > 0) {
-        mockingbird_set_keyword_frontend(e, (assets + "/melspectrogram.onnx").c_str(),
-                                         (assets + "/embedding_model.onnx").c_str());
+        mockingbird_set_keyword_frontend(e, (assets + "/melspectrogram." + g_ext).c_str(),
+                                         (assets + "/embedding_model." + g_ext).c_str());
     }
     for (int i = 0; i < k.keywords; ++i) {
-        mockingbird_add_keyword(e, (g_fixtures + "/keyword_test.onnx").c_str(), 0.5f, nullptr);
+        mockingbird_add_keyword(e, (g_fixtures + "/keyword_test." + g_ext).c_str(), 0.5f, nullptr);
     }
     mockingbird_start(e);
 
@@ -150,7 +151,8 @@ int main(int argc, char** argv) {
     const char*       fx_env = std::getenv("MOCKINGBIRD_BENCH_FIXTURES");
     const std::string fx     = fx_env != nullptr ? fx_env : MOCKINGBIRD_BENCH_FIXTURE_DIR;
     g_fixtures = fx;
-    const std::string silero = fx + "/silero_vad.onnx", yamnet = fx + "/yamnet_3s.onnx";
+    if (const char* ext = std::getenv("MOCKINGBIRD_BENCH_MODEL_EXT")) g_ext = ext;
+    const std::string silero = fx + "/silero_vad." + g_ext, yamnet = fx + "/yamnet_3s." + g_ext;
     const auto audio = make_audio(seconds);
     std::vector<int16_t> quiet(audio.size());
     { Rng rng; for (auto& v : quiet) v = static_cast<int16_t>(static_cast<int>(rng.next() % 13) - 6); }

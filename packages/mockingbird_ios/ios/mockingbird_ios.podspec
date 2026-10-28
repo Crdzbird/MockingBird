@@ -80,7 +80,7 @@ Pod::Spec.new do |s|
   s.dependency 'Flutter'
   # ONNX Runtime for Silero VAD and YAMNet, from Microsoft's prebuilt iOS
   # framework.
-  s.dependency 'onnxruntime-c', '~> 1.20'
+  s.dependency 'onnxruntime-c', '~> 1.30'
   # std::jthread, std::stop_token and std::atomic::wait need iOS 14, and
   # Xcode 27's SDK refuses deployment targets below 15.0, which is also the
   # ONNX Runtime Swift package's floor, so SPM and CocoaPods agree.

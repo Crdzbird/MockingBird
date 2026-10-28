@@ -1,5 +1,6 @@
 ## Unreleased
 
+- With Swift Package Manager, ONNX Runtime is a reduced static xcframework pinned by checksum instead of Microsoft's package; CocoaPods now requires `onnxruntime-c` 1.30.
 - Native engine with speaker verification, keyword spotting, and SPEECH_BEGIN stamped where the neural tier found the onset.
 - Native engine with platform voice processing, input device selection, and interruption and route-change handling.
 - An engine that captures from the microphone can be started again after `stop`; the second start used to fail with an invalid-state error.

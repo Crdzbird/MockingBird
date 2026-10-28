@@ -168,46 +168,16 @@ find_package(oboe REQUIRED CONFIG)
 target_compile_definitions(mockingbird PRIVATE MOCKINGBIRD_HAVE_OBOE=1)
 target_link_libraries(mockingbird PRIVATE oboe::oboe)
 
-# ONNX Runtime: Microsoft's onnxruntime-android AAR does NOT ship Prefab
-# metadata, so find_package(onnxruntime CONFIG) cannot work. Instead we
-# locate the AAR's transformed cache directory via gradle's standard glob,
-# import the .so as a SHARED IMPORTED library, and add its bundled headers
-# to the include search path.
-#
-# Gradle caches AARs under
-#   $HOME/.gradle/caches/<gradle-version>/transforms/<hash>/transformed/
-#       jetified-onnxruntime-android-<version>/{headers, jni/<abi>/*.so}
-# Resilient to gradle version + hash by globbing both.
-file(GLOB ORT_AAR_DIRS
-     "$ENV{HOME}/.gradle/caches/*/transforms/*/transformed/jetified-onnxruntime-android-*"
-     "$ENV{HOME}/.gradle/caches/transforms-*/*/transformed/jetified-onnxruntime-android-*")
-list(SORT ORT_AAR_DIRS)
-list(REVERSE ORT_AAR_DIRS)         # latest version first
-set(ORT_FOUND FALSE)
-foreach(_dir ${ORT_AAR_DIRS})
-    if(EXISTS "${_dir}/jni/${ANDROID_ABI}/libonnxruntime.so" AND
-       EXISTS "${_dir}/headers/onnxruntime_cxx_api.h")
-        set(ORT_LIB     "${_dir}/jni/${ANDROID_ABI}/libonnxruntime.so")
-        set(ORT_HEADERS "${_dir}/headers")
-        set(ORT_FOUND TRUE)
-        break()
-    endif()
-endforeach()
-
-if(ORT_FOUND)
-    add_library(onnxruntime_imp SHARED IMPORTED)
-    set_target_properties(onnxruntime_imp PROPERTIES IMPORTED_LOCATION "${ORT_LIB}")
-    target_compile_definitions(mockingbird PRIVATE MOCKINGBIRD_HAVE_NEURAL_VAD=1)
-    target_compile_definitions(mockingbird PRIVATE MOCKINGBIRD_HAVE_SOUND_CLASS=1)
-    target_include_directories(mockingbird SYSTEM PRIVATE "${ORT_HEADERS}")
-    target_link_libraries(mockingbird PRIVATE onnxruntime_imp)
-    message(STATUS "Mockingbird Android: Neural VAD + YAMNet enabled "
-                   "(linked ${ORT_LIB})")
-else()
-    message(WARNING "Mockingbird Android: onnxruntime AAR not found in gradle "
-                    "cache. Neural VAD + YAMNet will be unavailable. Run "
-                    "a gradle sync first so the AAR is downloaded.")
-endif()
+# ONNX Runtime: the reduced static build the ONNX Runtime builds workflow
+# publishes, linked into libmockingbird.so with its symbols kept private,
+# so the app carries no separate libonnxruntime.so.
+include(${MOCKINGBIRD_ROOT}/cmake/mockingbird_onnxruntime.cmake)
+mockingbird_onnxruntime(android-${ANDROID_ABI} ORT_ROOT)
+target_compile_definitions(mockingbird PRIVATE
+        MOCKINGBIRD_HAVE_NEURAL_VAD=1 MOCKINGBIRD_HAVE_SOUND_CLASS=1)
+target_include_directories(mockingbird SYSTEM PRIVATE "${ORT_ROOT}/include")
+target_link_libraries(mockingbird PRIVATE "${ORT_ROOT}/lib/libonnxruntime.a" log dl)
+target_link_options(mockingbird PRIVATE "LINKER:--exclude-libs,ALL")
 
 # Warnings.
 set(MOCKINGBIRD_WARN_COMMON

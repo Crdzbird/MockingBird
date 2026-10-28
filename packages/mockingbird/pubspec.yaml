@@ -34,20 +34,10 @@ flutter:
   # Models bundled with the plugin: Silero VAD and the keyword front end.
   # YAMNet and the speaker model download on first use.
   assets:
-    - path: assets/silero_vad.onnx
-      platforms: [android, ios, macos, linux, windows]
-    - path: assets/melspectrogram.onnx
-      platforms: [android, ios, macos, linux, windows]
-    - path: assets/embedding_model.onnx
-      platforms: [android, ios, macos, linux, windows]
-    - path: assets/yamnet_class_map.txt
-      platforms: [android, ios, macos, linux, windows, web]
-    - path: assets/silero_vad.ort
-      platforms: [web]
-    - path: assets/melspectrogram.ort
-      platforms: [web]
-    - path: assets/embedding_model.ort
-      platforms: [web]
+    - assets/silero_vad.ort
+    - assets/melspectrogram.ort
+    - assets/embedding_model.ort
+    - assets/yamnet_class_map.txt
 
 dependencies:
   flutter:

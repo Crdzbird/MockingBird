@@ -17,7 +17,7 @@
 
 namespace {
 const std::string kFixtures = MOCKINGBIRD_TEST_FIXTURE_DIR;
-const std::string kAssets   = kFixtures + "/../../packages/mockingbird/assets";
+const std::string kAssets   = kFixtures + "/../../models";
 
 std::vector<int16_t> read_pcm(const std::string& path) {
     std::vector<int16_t> out;

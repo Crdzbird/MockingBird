@@ -67,6 +67,4 @@ kotlin {
 
 dependencies {
     implementation 'com.google.oboe:oboe:1.11.0'
-
-    implementation 'com.microsoft.onnxruntime:onnxruntime-android:1.30.0'
 }

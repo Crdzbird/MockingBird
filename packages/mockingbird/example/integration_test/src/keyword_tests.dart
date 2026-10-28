@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockingbird/mockingbird.dart';
 
@@ -13,9 +12,7 @@ void keywordTests() {
         embedding: await MockingbirdModels.keywordEmbeddingPath(),
       );
     addTearDown(engine.dispose);
-    final model = await MockingbirdModels.fromAsset(
-      kIsWeb ? 'assets/keyword_test.ort' : 'assets/keyword_test.onnx',
-    );
+    final model = await MockingbirdModels.fromAsset('assets/keyword_test.ort');
     expect(engine.addKeyword(model, threshold: 0.9), 0);
     final errors = <MockingbirdBackendErrorEvent>[];
     addTearDown(

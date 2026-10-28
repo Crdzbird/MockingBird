@@ -4,7 +4,7 @@ import unittest
 
 from helpers import FIXTURES, FRAME, mockingbird, host_config, read_wav
 
-ASSETS = FIXTURES.parents[1] / "packages" / "mockingbird" / "assets"
+ASSETS = FIXTURES.parents[1] / "models"
 
 
 @unittest.skipUnless((FIXTURES / "keyword_test.onnx").exists(), "fixture unavailable")

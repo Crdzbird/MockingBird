@@ -39,7 +39,7 @@ engine in `build/` for the Python binding.
 ```bash
 python3 bench/accuracy/prepare.py ~/.cache/mockingbird-bench
 python3 bench/accuracy/vad_eval.py ~/.cache/mockingbird-bench
-git show 2966238~1:packages/mockingbird/assets/yamnet_3s.onnx > /tmp/yamnet_float.onnx
+git show 415a54d~1:packages/mockingbird/assets/yamnet_3s.onnx > /tmp/yamnet_float.onnx
 python3 bench/accuracy/classify_eval.py ~/.cache/mockingbird-bench /tmp/yamnet_float.onnx
 python3 bench/accuracy/speaker_eval.py ~/.cache/mockingbird-bench
 ```

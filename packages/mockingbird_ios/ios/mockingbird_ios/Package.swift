@@ -2,20 +2,12 @@
 //
 // Swift Package Manager support for the mockingbird_ios Flutter plugin.
 //
-// Mockingbird' C/C++ core is shared by every platform and lives at the repository
-// root. SwiftPM requires a target's sources to live inside the package, so
-// Sources/mockingbird_native contains SYMLINKS to the real tree (include/, src/,
-// third_party/*). SwiftPM follows them, and because they are links rather than
-// copies the package can never drift from the source of truth. This directory
-// is only ever used on macOS during an iOS build, so symlinks are safe here.
-//
-// The plugin keeps its podspec: Flutter supports both, and CocoaPods remains
-// the path that also wires up ONNX Runtime (see "Neural features" below).
-//
-// FEATURE PARITY: this package pulls in Microsoft's ONNX Runtime Swift package,
-// so the SPM build has the same capabilities as the CocoaPods one,
-// including Silero neural VAD and YAMNet sound classification. That dependency sets the
-// platform floor (iOS 15 / macOS 14), above what the podspecs require.
+// Sources/mockingbird_native holds a copy of the engine's sources, which
+// scripts/sync_native.sh keeps identical to the repository root. ONNX Runtime
+// comes as a binary target: the reduced, static xcframework the ONNX Runtime
+// builds workflow publishes, checked against its checksum, which links into
+// the plugin and loads the bundled .ort models. The plugin keeps its podspec
+// too; the CocoaPods build uses Microsoft's onnxruntime-c pod instead.
 import PackageDescription
 
 let nonSourceExcludes: [String] = [
@@ -61,16 +53,15 @@ let package = Package(
     products: [
         .library(name: "mockingbird-ios", targets: ["mockingbird_ios"]),
     ],
-    dependencies: [
-        .package(url: "https://github.com/microsoft/onnxruntime-swift-package-manager",
-                 exact: "1.24.2"),
-    ],
     targets: [
+        .binaryTarget(
+            name: "onnxruntime",
+            url: "https://github.com/Crdzbird/MockingBird/releases/download/onnxruntime-1.30.0-mockingbird.1/onnxruntime-mockingbird-1.30.0-apple.xcframework.zip",
+            checksum: "ae47f9335def0756ebec5687ac662b5535ea859aca8a82892151bc0216b78d7c"
+        ),
         .target(
             name: "mockingbird_native",
-            dependencies: [
-                .product(name: "onnxruntime", package: "onnxruntime-swift-package-manager"),
-            ],
+            dependencies: ["onnxruntime"],
             path: "Sources/mockingbird_native",
             exclude: [
                 "src/capture/miniaudio_impl.c",

@@ -342,7 +342,7 @@ The keyword classifiers are yours to supply. openWakeWord's pretrained ones
 ("hey jarvis", "alexa" and others) carry a non-commercial licence (CC BY-NC-SA
 4.0), so none ship with Mockingbird; openWakeWord's training notebook makes a
 new one from synthetic speech, and any model with its layout (16 embeddings of
-96 values in, one score out) works. On the web, convert it to `.ort` with
+96 values in, one score out) works. Convert it to `.ort` with
 `python3 -m onnxruntime.tools.convert_onnx_models_to_ort`.
 
 Checked with `hey_jarvis_v0.1.onnx` on 105 phrases spoken by the 35 English
@@ -356,6 +356,32 @@ above the silence gate and, when voice detection is on, for 1.5 s after the
 last voiced frame. The mel model keeps running, and when listening resumes
 the engine computes the embeddings the classifiers need from the kept mel
 frames, so the scores are the same as if it had run throughout.
+
+### The reduced ONNX Runtime
+
+The Flutter packages link ONNX Runtime 1.30.0 built from source with only the
+operators and types the models need (`scripts/ort_ops.config`, written by
+`scripts/convert_models_ort.sh`), the `--minimal_build extended` option and no
+telemetry client. It reads ONNX Runtime's `.ort` format only, so every model
+the package bundles or downloads is a `.ort` file, and a keyword model must be
+converted with `python3 -m onnxruntime.tools.convert_onnx_models_to_ort` and
+use the operators an openWakeWord classifier uses.
+
+| Platform | How it arrives |
+|---|---|
+| Android, Linux, Windows | one static library per ABI or architecture, downloaded at build time by `cmake/mockingbird_onnxruntime.cmake` and checked against its SHA-256 |
+| iOS and macOS with Swift Package Manager | a static xcframework, a binary target pinned by checksum |
+| iOS and macOS with CocoaPods | Microsoft's `onnxruntime-c` pod |
+| Web | linked into the WebAssembly module (see "Building for the web") |
+
+The ONNX Runtime builds workflow (`.github/workflows/onnxruntime.yml`) makes
+every archive with `scripts/build_ort_static.sh` and `scripts/build_ort_apple.sh`
+and publishes them as assets of the `onnxruntime-1.30.0-mockingbird.1` release.
+On a Pixel 7 Pro the example's release APK for arm64 went from 63.2 MB with
+Microsoft's AAR to 33.5 MB. In the same benchmark run Silero VAD cost 0.54 to
+0.63% of a core instead of 0.94 to 1.07%, because the `.ort` model comes
+optimised, YAMNet 2.50% instead of 2.36%, and keyword spotting 3.0% either
+way.
 
 ### Speaker verification
 
@@ -648,9 +674,11 @@ correctly on each platform. They are already encoded in the build files under
 - NDK r28 or newer (the plugin pins r30) with `-Wl,-z,max-page-size=16384` for
   the 16 KB page alignment Android 15 requires. Oboe 1.10 and ONNX Runtime 1.26
   and later ship aligned libraries.
-- Oboe comes through Prefab. ONNX Runtime comes from the AAR through a glob of
-  the Gradle transform cache and a `SHARED IMPORTED` target, because the AAR has
-  no Prefab metadata.
+- Oboe comes through Prefab. ONNX Runtime is the reduced static build (see
+  "The reduced ONNX Runtime"), downloaded by `cmake/mockingbird_onnxruntime.cmake`
+  and linked into `libmockingbird.so` with `--exclude-libs,ALL`, so the app
+  carries no `libonnxruntime.so` and an app that loads another ONNX Runtime
+  does not clash with it.
 - `abiFilters arm64-v8a, x86_64`.
 - The engine sources are a copy kept in `android/src/main/native` by
   `scripts/sync_native.sh`, so the published package is self-contained. The
@@ -677,11 +705,10 @@ correctly on each platform. They are already encoded in the build files under
     of celt whose headers shadow those of opus and miscompile it silently.
   - Under SwiftPM the C engine is its own module, so `MockingbirdPlugin.swift`
     does `#if canImport(mockingbird_native) import mockingbird_native`.
-  - Neural VAD and YAMNet come from Microsoft's
-    [onnxruntime-swift-package-manager](https://github.com/microsoft/onnxruntime-swift-package-manager)
-    pinned to 1.24.2, which wraps the same artifact as the `onnxruntime-c` pod.
-    That dependency sets the SwiftPM floor at iOS 15 and macOS 14. The podspecs
-    keep iOS 15 and macOS 12.
+  - ONNX Runtime is a binary target: the reduced static xcframework, pinned by
+    URL and checksum. The CocoaPods build uses Microsoft's `onnxruntime-c` pod
+    (`~> 1.30`), which reads the same `.ort` models. Both paths need iOS 15 and
+    macOS 12.
 - Microphone capture. On iOS a RemoteIO unit cannot capture until an
   `AVAudioSession` with the record category is active; the Core Audio backend
   does this. `permission_handler` needs `PERMISSION_MICROPHONE=1` in the app
@@ -840,7 +867,7 @@ are permissive-only, with no GPL or LGPL code:
 | CAM++ speaker embedding model | 3D-Speaker `speech_campplus_sv_zh_en_16k-common_advanced`, sherpa-onnx's export | Apache-2.0 |
 | LibriSpeech clips in `tests/fixtures` | test-clean | CC BY 4.0 |
 | openWakeWord mel spectrogram and speech embedding models | v0.5.1 release; the embedding model re-implements Google's `speech_embedding` | Apache-2.0 |
-| ONNX Runtime | Homebrew 1.30, Android `onnxruntime-android:1.30.0`, SwiftPM 1.24.2, CocoaPods `onnxruntime-c ~> 1.20` | MIT, linked rather than vendored |
+| ONNX Runtime | 1.30.0, reduced and built by `.github/workflows/onnxruntime.yml` for the Flutter packages; CocoaPods `onnxruntime-c ~> 1.30`; Homebrew 1.30 for the core build | MIT, linked rather than vendored |
 | doctest | 2.5.3 | MIT, tests only |
 
 Android builds against Oboe 1.11.0, compileSdk 37 and NDK r30. The example app

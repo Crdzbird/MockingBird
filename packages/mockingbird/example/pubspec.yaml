@@ -27,9 +27,6 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - path: assets/keyword_test.onnx
-      platforms: [android, ios, macos, linux, windows]
-    - path: assets/keyword_test.ort
-      platforms: [web]
+    - assets/keyword_test.ort
     - assets/speaker_a1.wav
     - assets/speaker_b.wav
