@@ -1,5 +1,6 @@
 ## Unreleased
 
+- `downloadModel`, `MockingbirdModelSpec`, `MockingbirdModelCatalog` and `MockingbirdDownloadException`: verified, resumable model downloads with mirrors.
 - `setKeywordFrontend`, `addKeyword` and `clearKeywords`, with `MockingbirdKeywordResult`.
 - `storeModel`, for platforms without a file system.
 - `voiceProcessing` in the native config, capture fields in the native stats (worker fields moved to `MockingbirdNativeWorkerStats`), and `listInputDevices` and `setInputDevice`.

@@ -21,7 +21,8 @@ function cString(s) {
 }
 
 function store(name) {
-  const bytes = readFileSync(path.join(root, 'packages', 'mockingbird', 'assets', name));
+  const dir = name.startsWith('yamnet') ? ['models'] : ['packages', 'mockingbird', 'assets'];
+  const bytes = readFileSync(path.join(root, ...dir, name));
   const data = m._malloc(bytes.length);
   m.HEAPU8.set(bytes, data);
   const p = cString(`/models/${name}`);

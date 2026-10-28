@@ -11,6 +11,7 @@ import 'package:mockingbird_web/src/web_assets.dart';
 import 'package:mockingbird_web/src/web_devices.dart';
 import 'package:mockingbird_web/src/web_engine_handle.dart';
 import 'package:mockingbird_web/src/web_keywords.dart';
+import 'package:mockingbird_web/src/web_model_download.dart';
 import 'package:mockingbird_web/src/web_model_store.dart';
 
 /// Runs the engine as WebAssembly in the page and captures through Web Audio.
@@ -60,6 +61,16 @@ final class MockingbirdWeb extends MockingbirdWebBase {
   @override
   int clearKeywords(MockingbirdEngineHandle handle) =>
       WebKeywords(ModuleRegistry.module).clear(handle as WebEngineHandle);
+
+  @override
+  Future<String> downloadModel(
+    MockingbirdModelSpec spec, {
+    required String directory,
+    MockingbirdDownloadProgress? onProgress,
+  }) async {
+    final bytes = await const WebModelDownload().fetch(spec, onProgress);
+    return await storeModel(spec.fileName, bytes);
+  }
 
   @override
   Future<String> storeModel(String name, Uint8List bytes) async {

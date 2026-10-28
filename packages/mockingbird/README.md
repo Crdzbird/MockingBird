@@ -100,8 +100,40 @@ final engine = MockingbirdEngine.create(
 ```
 
 `MockingbirdConfig.sensitive` maps one value in `0..1` onto every detector's
-threshold and selects the neural VAD. `MockingbirdModels` copies the bundled
-Silero and YAMNet models to an app-writable path once and returns their paths.
+threshold and selects the neural VAD. `MockingbirdModels` returns paths the
+engine can open: it copies the bundled Silero model to an app-writable path,
+and downloads YAMNet (5 MB) the first time you ask for it.
+
+## Models on first use
+
+YAMNet and the speaker model are not bundled. `MockingbirdModels` downloads
+each the first time it is asked for, from a pinned commit of this repository
+through raw.githubusercontent.com, then jsDelivr, with three attempts per
+source, resuming a broken transfer where it stopped. A file is used only after
+its size and SHA-256 match the catalog, and it is kept, so later calls and
+later launches work offline. Pass `onProgress` to show progress; a
+`MockingbirdDownloadException` means no source could be reached.
+
+```dart
+final yamnet = await MockingbirdModels.soundClassPath(
+  onProgress: (received, total) => print('$received of $total bytes'),
+);
+```
+
+To serve the files yourself, copy them from `models/` in the repository to
+your host and list it first:
+
+```dart
+MockingbirdModels.mirrors = [Uri.parse('https://cdn.example.com/models/')];
+```
+
+An app that must never download can bundle the files as its own assets and
+pass `MockingbirdModels.fromAsset('assets/yamnet_3s.onnx')` instead.
+
+Downloads need network access: on macOS add the
+`com.apple.security.network.client` entitlement, and on Android the
+`android.permission.INTERNET` permission, which debug builds have by default
+and release builds do not.
 
 ## Configuration
 
@@ -403,9 +435,10 @@ default assets, against an empty Flutter app built the same way:
 | sherpa_onnx | 88.3 MB | 55.7 MB |
 | flutter_nnnoiseless | 46.3 MB | 13.7 MB |
 
-The mockingbird bundle carries the Silero and YAMNet models as assets (7 MB:
-Silero 2.3 MB and YAMNet with int8 weights 5.0 MB) and a universal binary; the
-keyword front end, added since, brings 1.6 MB more. sherpa_onnx loads its models from disk, so its model
+The mockingbird bundle measured here carried the Silero and YAMNet models as
+assets (7 MB: Silero 2.3 MB and YAMNet with int8 weights 5.0 MB) and a
+universal binary. Since then YAMNet downloads on first use instead, and the
+keyword front end (1.6 MB) is bundled, so the assets come to 3.9 MB. sherpa_onnx loads its models from disk, so its model
 files (22 MB for CED tiny) are not in that figure, and `vad` downloads its model
 at first run.
 
@@ -428,11 +461,10 @@ to eight times on a mid-range Android phone.
 ## Web
 
 The web build is the same engine compiled to WebAssembly, running
-single-threaded in the page and fed by an AudioWorklet. Fast VAD, the anomaly
-gate, RNNoise, Opus and every API above work; the neural tier and YAMNet are
-rejected with `unsupported` because ONNX Runtime is not part of the build, and
-`MockingbirdModels` throws since there is no file system. The three assets add
-about 6 MB to the app. See
+single-threaded in the page and fed by an AudioWorklet. Every API above works,
+the neural tier, YAMNet and keywords included, through a minimal ONNX Runtime
+linked into the module. `MockingbirdModels` puts the models in the module's
+memory, and keeps downloaded ones in the browser's cache. See
 [mockingbird_web](https://pub.dev/packages/mockingbird_web) for the details and
 for hosting the files on a CDN.
 

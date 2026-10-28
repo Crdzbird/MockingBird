@@ -2,6 +2,7 @@ import 'package:mockingbird_platform_interface/mockingbird_platform_interface.da
 import 'package:mockingbird_platform_interface/src/ffi/ffi_devices.dart';
 import 'package:mockingbird_platform_interface/src/ffi/ffi_engine_handle.dart';
 import 'package:mockingbird_platform_interface/src/ffi/ffi_keywords.dart';
+import 'package:mockingbird_platform_interface/src/ffi/ffi_model_downloader.dart';
 import 'package:mockingbird_platform_interface/src/ffi/mockingbird_ffi_platform_base.dart';
 
 /// The `dart:ffi` implementation; a platform package supplies the library.
@@ -44,4 +45,11 @@ abstract class MockingbirdFfiPlatform extends MockingbirdFfiPlatformBase {
   @override
   int clearKeywords(MockingbirdEngineHandle handle) =>
       _keywords.clear(handle as FfiEngineHandle);
+
+  @override
+  Future<String> downloadModel(
+    MockingbirdModelSpec spec, {
+    required String directory,
+    MockingbirdDownloadProgress? onProgress,
+  }) => const FfiModelDownloader().fetch(spec, directory, onProgress);
 }

@@ -100,7 +100,7 @@ def main(cache, float_model):
     check(y, "YAMNet")
     check(c, "CED")
     systems = {
-        "Mockingbird YAMNet (int8 weights)": (yamnet(ROOT / "packages" / "mockingbird" / "assets" / "yamnet_3s.onnx"), y),
+        "Mockingbird YAMNet (int8 weights)": (yamnet(ROOT / "models" / "yamnet_3s.onnx"), y),
         "YAMNet (float weights)": (yamnet(float_model), y),
         "sherpa_onnx CED tiny": (ced(), c),
     }

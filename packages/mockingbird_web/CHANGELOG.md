@@ -1,5 +1,6 @@
 ## Unreleased
 
+- `downloadModel` fetches models with retries and a SHA-256 check and keeps them in Cache Storage for later visits.
 - Keyword spotting in the browser: the reduced ONNX Runtime now carries the operators of the keyword front end and of openWakeWord keyword models, which load as `.ort` files.
 - Silero VAD and YAMNet run in the browser: both builds link a minimal ONNX Runtime, and `storeModel` puts the `.ort` models in the module's memory. Each build now has its own glue file.
 - Voice processing becomes `getUserMedia` constraints, and the applied settings are read back into the stats. `listInputDevices` uses `enumerateDevices`, and a selected device is opened exactly.

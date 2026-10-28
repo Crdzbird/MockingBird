@@ -309,9 +309,10 @@ about 0.1 percentage points more CPU, 2.44% of an M3 Max core instead of 2.32%
 at the 1 s cadence.
 
 Copies live in `tests/fixtures/` for the core tests and the Go and Python
-examples, and in `packages/mockingbird/assets/` as Flutter assets. The Flutter
-package extracts them to an app-writable path at runtime through
-`MockingbirdModels`.
+examples. The Flutter package bundles Silero VAD and the keyword front end in
+`packages/mockingbird/assets/`; YAMNet and the speaker model live in `models/`
+and the package downloads them on first use, pinned to one commit and checked
+against their SHA-256 (see `models/README.md`).
 
 The engine resolves a model path in this order:
 

@@ -2,7 +2,11 @@
 /// engine operations every platform implementation provides.
 library;
 
+export 'package:mockingbird_platform_interface/src/mockingbird_download_exception.dart';
+export 'package:mockingbird_platform_interface/src/mockingbird_download_progress.dart';
 export 'package:mockingbird_platform_interface/src/mockingbird_engine_handle.dart';
+export 'package:mockingbird_platform_interface/src/mockingbird_model_catalog.dart';
+export 'package:mockingbird_platform_interface/src/mockingbird_model_spec.dart';
 export 'package:mockingbird_platform_interface/src/mockingbird_native_config.dart';
 export 'package:mockingbird_platform_interface/src/mockingbird_native_detector_config.dart';
 export 'package:mockingbird_platform_interface/src/mockingbird_native_device.dart';

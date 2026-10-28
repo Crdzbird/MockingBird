@@ -2,27 +2,33 @@ import 'dart:io' show File;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:mockingbird/src/model_downloads.dart';
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
 import 'package:path_provider/path_provider.dart';
 
-/// The ONNX models and labels bundled with the plugin, materialised where the
-/// engine can open them. Native platforms extract the `.onnx` files to the
-/// app's support directory; the web stores the `.ort` builds of the same
-/// models in the module's memory. Every call is idempotent and cached.
+/// The models the engine opens, where it can open them. Silero VAD and the
+/// keyword front end ship as assets; YAMNet and the speaker model download on
+/// first use from the pinned `MockingbirdModelCatalog`, checked against their
+/// SHA-256 and kept, so later calls work offline. Native platforms keep files
+/// in the app's support directory; the web keeps the `.ort` builds in the
+/// module's memory and the browser's cache. Every call is idempotent.
 final class MockingbirdModels {
   const MockingbirdModels._();
 
   /// Asset key of the Silero VAD model.
   static const neuralVadAsset = 'packages/mockingbird/assets/silero_vad.onnx';
 
-  /// Asset key of the YAMNet sound classifier.
-  static const soundClassAsset = 'packages/mockingbird/assets/yamnet_3s.onnx';
-
   /// Asset key of YAMNet's class labels, one `<index> <label>` per line.
   static const yamnetLabelsAsset =
       'packages/mockingbird/assets/yamnet_class_map.txt';
 
   static final Map<String, String> _paths = {};
+  static final ModelDownloads _downloads = ModelDownloads();
+
+  /// Servers tried before the pinned sources, each a directory URL ending in
+  /// `/` that holds the files under their catalog names. Set it to serve the
+  /// models from your own host or CDN.
+  static List<Uri> mirrors = const [];
   static List<String>? _yamnetLabels;
 
   /// Where the engine opens the Silero VAD model, for
@@ -30,8 +36,18 @@ final class MockingbirdModels {
   static Future<String> neuralVadPath() => _model('silero_vad');
 
   /// Where the engine opens the YAMNet model, for
-  /// `MockingbirdSoundClassConfig.modelPath`.
-  static Future<String> soundClassPath() => _model('yamnet_3s');
+  /// `MockingbirdSoundClassConfig.modelPath`. Downloads 5 MB on first use,
+  /// reporting [onProgress]; throws `MockingbirdDownloadException` when no
+  /// source can be reached.
+  static Future<String> soundClassPath({
+    MockingbirdDownloadProgress? onProgress,
+  }) => _downloads.path(
+    kIsWeb
+        ? MockingbirdModelCatalog.yamnetOrt
+        : MockingbirdModelCatalog.yamnetOnnx,
+    mirrors,
+    onProgress,
+  );
 
   /// Where the engine opens the keyword front end's mel spectrogram model,
   /// for `MockingbirdEngine.setKeywordFrontend`.

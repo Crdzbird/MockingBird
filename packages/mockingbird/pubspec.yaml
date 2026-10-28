@@ -31,12 +31,10 @@ flutter:
         default_package: mockingbird_windows
       web:
         default_package: mockingbird_web
-  # ONNX models bundled with the plugin so the demo (or any consumer)
-  # gets Neural VAD + YAMNet sound classification with no extra setup.
+  # Models bundled with the plugin: Silero VAD and the keyword front end.
+  # YAMNet and the speaker model download on first use.
   assets:
     - path: assets/silero_vad.onnx
-      platforms: [android, ios, macos, linux, windows]
-    - path: assets/yamnet_3s.onnx
       platforms: [android, ios, macos, linux, windows]
     - path: assets/melspectrogram.onnx
       platforms: [android, ios, macos, linux, windows]
@@ -45,8 +43,6 @@ flutter:
     - path: assets/yamnet_class_map.txt
       platforms: [android, ios, macos, linux, windows, web]
     - path: assets/silero_vad.ort
-      platforms: [web]
-    - path: assets/yamnet_3s.ort
       platforms: [web]
     - path: assets/melspectrogram.ort
       platforms: [web]

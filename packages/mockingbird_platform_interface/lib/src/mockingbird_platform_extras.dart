@@ -1,6 +1,8 @@
 import 'dart:typed_data';
 
+import 'package:mockingbird_platform_interface/src/mockingbird_download_progress.dart';
 import 'package:mockingbird_platform_interface/src/mockingbird_engine_handle.dart';
+import 'package:mockingbird_platform_interface/src/mockingbird_model_spec.dart';
 import 'package:mockingbird_platform_interface/src/mockingbird_native_device.dart';
 import 'package:mockingbird_platform_interface/src/mockingbird_results.dart';
 import 'package:mockingbird_platform_interface/src/mockingbird_status_code.dart';
@@ -49,6 +51,15 @@ abstract class MockingbirdPlatformExtras extends PlatformInterface {
   /// Removes every keyword.
   int clearKeywords(MockingbirdEngineHandle handle) =>
       MockingbirdStatusCode.unsupported;
+
+  /// Downloads [spec], checks it, keeps it under [directory], and returns
+  /// the path the engine opens it from. A kept copy is reused without any
+  /// network access.
+  Future<String> downloadModel(
+    MockingbirdModelSpec spec, {
+    required String directory,
+    MockingbirdDownloadProgress? onProgress,
+  }) => throw UnsupportedError('downloadModel is not available here.');
 
   /// Stores model [bytes] where the engine can open them and returns the
   /// path; only platforms without a file system need it.

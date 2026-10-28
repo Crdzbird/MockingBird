@@ -1,5 +1,6 @@
 ## Unreleased
 
+- YAMNet is no longer bundled: `MockingbirdModels.soundClassPath()` downloads it on first use (5 MB), checks its SHA-256 and keeps it, so apps that never classify sounds ship 5 MB smaller. Downloads try each source three times, resume broken transfers, accept `onProgress`, and can use your own servers through `MockingbirdModels.mirrors`. `MockingbirdModels.soundClassAsset` is gone.
 - Keyword spotting: `engine.addKeyword` listens for wake words and short commands with openWakeWord-compatible models and reports `MockingbirdKeywordEvent`. The shared front end ships as two assets, 1.6 MB together; `MockingbirdModels.keywordMelspectrogramPath()`, `keywordEmbeddingPath()` and `fromAsset()` return the paths. It runs only while there is sound and, with voice detection on, recent voice, and scores the same as if it ran throughout.
 - With the neural tier, `MockingbirdSpeechBeginEvent.timestampUs` is where speech began rather than the frame that confirmed it, a window or two later.
 - The neural tier works on the web: `MockingbirdModels` returns paths to `.ort` models stored in the module's memory. Cached native model files are replaced when the bundled model changes size.
