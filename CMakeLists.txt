@@ -20,6 +20,10 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+# Strip the checkout location from __FILE__ and debug paths, so no absolute
+# path of the machine that built a binary ends up inside it.
+add_compile_options("-ffile-prefix-map=${CMAKE_SOURCE_DIR}/=")
+
 # ----------------------------------------------------------------------------
 # Platform deployment targets (lowest sensible for v1).
 # ----------------------------------------------------------------------------
