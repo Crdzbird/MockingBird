@@ -123,6 +123,7 @@ you want to change.
 |---|---|
 | `engine.events` | `MockingbirdEvent`, a sealed hierarchy: `MockingbirdSpeechBeginEvent`, `MockingbirdSpeechEndEvent`, `MockingbirdAnomalyEvent`, `MockingbirdSegmentBeginEvent`, `MockingbirdSegmentEndEvent`, `MockingbirdSoundClassEvent`, `MockingbirdOverrunEvent`, `MockingbirdBackendErrorEvent`, `MockingbirdDegradationEvent` |
 | `engine.packets` | `MockingbirdPacket`: encoded audio in a `Uint8List` you own, with `isPreroll`, `isPostroll`, `isKeyframe`, `isLast` |
+| `engine.segments` | `MockingbirdSegment`: one finished segment with all its packets; `toFile()` gives a WAV or Ogg Opus file |
 | `engine.stats` | `MockingbirdStats`: counters, input level in dBFS, queue fill, and `worker` health |
 
 `MockingbirdEvent` is sealed, so a `switch` over it is exhaustive and each
@@ -145,21 +146,20 @@ engine.packets.listen((p) => socket.add(p.data));
 
 A segment closes after the longer of the VAD hangover and the post-roll, or
 when it reaches its maximum length, and the packet that closes it has `isLast`
-set. To save segments as files, collect each segment's payloads in order. With
-`oggOpus` the bytes already form an `.opus` file; with `pcm16`,
-`MockingbirdWav.fromPcm16` adds a WAV header.
+set. `engine.segments` does the grouping for you: it delivers each segment once
+it has ended, and `toFile()` returns a WAV file for `pcm16` or an Ogg Opus file
+for `oggOpus`.
 
 ```dart
-final open = <int, BytesBuilder>{};
-engine.packets.listen((p) {
-  (open[p.segmentId] ??= BytesBuilder()).add(p.data);
-  if (p.isLast) save(p.segmentId, open.remove(p.segmentId)!.takeBytes());
+engine.segments.listen((s) {
+  File('utterance_${s.id}.${s.fileExtension}').writeAsBytesSync(s.toFile());
 });
 ```
 
-When `stop` cuts a segment short, the last packet only has `isLast` set with
-`oggOpus`, which has a container to finish. With every codec,
-`MockingbirdSegmentEndEvent` marks the end.
+Segments are only kept while something listens, and one that was already under
+way when listening began is skipped. When `stop` cuts a segment short it still
+arrives, with `complete` false for `pcm16` and raw Opus; Ogg Opus writes its
+end-of-stream page at stop, so those segments are always complete files.
 
 ## Retune without restarting
 

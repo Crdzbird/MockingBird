@@ -20,6 +20,7 @@ export 'package:mockingbird/src/mockingbird_engine.dart';
 export 'package:mockingbird/src/mockingbird_exception.dart';
 export 'package:mockingbird/src/mockingbird_models.dart';
 export 'package:mockingbird/src/mockingbird_packet.dart';
+export 'package:mockingbird/src/mockingbird_segment.dart';
 export 'package:mockingbird/src/mockingbird_sound_category.dart';
 export 'package:mockingbird/src/mockingbird_stats.dart';
 export 'package:mockingbird/src/mockingbird_status.dart';

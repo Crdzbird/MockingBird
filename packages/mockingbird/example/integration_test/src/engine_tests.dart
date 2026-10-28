@@ -33,6 +33,29 @@ void engineTests() {
     expect(packet.data.length, 320 * 2);
   }, skip: kIsWeb);
 
+  test('segments arrive as playable Ogg Opus files', () async {
+    final engine = MockingbirdEngine.create(
+      const MockingbirdConfig(
+        backend: .hostPcm,
+        vad: MockingbirdVadConfig(enabled: false),
+        anomaly: MockingbirdAnomalyConfig(enabled: false),
+        segments: MockingbirdSegmentConfig(maxMs: 200),
+        encoder: MockingbirdEncoderConfig.oggOpus(),
+      ),
+    )..start();
+    final segments = <MockingbirdSegment>[];
+    final sub = engine.segments.listen(segments.add);
+    await push(engine, 25, amplitude: 6000);
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    engine.stop();
+    await engine.dispose();
+    await sub.cancel();
+    expect(segments.map((s) => s.complete), [true, true, true]);
+    for (final s in segments) {
+      expect(String.fromCharCodes(s.toFile().sublist(0, 4)), 'OggS');
+    }
+  });
+
   test('stats report the input level; the PCM tap is ungated', () async {
     final engine = MockingbirdEngine.create(hostConfig(tap: true))..start();
     addTearDown(engine.dispose);
