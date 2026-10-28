@@ -28,7 +28,7 @@ defines=(onnxruntime_BUILD_UNIT_TESTS=OFF CMAKE_POSITION_INDEPENDENT_CODE=ON
   FETCHCONTENT_TRY_FIND_PACKAGE_MODE=NEVER)
 case "$TARGET" in
   android-*)
-    args+=(--android --android_abi "${TARGET#android-}" --android_api 24
+    args+=(--android --android_abi "${TARGET#android-}" --android_api 21
       --android_sdk_path "$ANDROID_HOME" --android_ndk_path "$ANDROID_NDK_HOME") ;;
   windows-*) args+=(--cmake_generator Ninja) ;;
 esac
@@ -46,7 +46,7 @@ rm -rf "$PKG"
 mkdir -p "$PKG/include" "$PKG/lib"
 cp "$SRC"/include/onnxruntime/core/session/*.h "$PKG/include/"
 cp "$SRC/LICENSE" "$SRC/ThirdPartyNotices.txt" "$PKG/"
-skip='test|gtest|gmock|mocked|benchmark|onnx_proto|protobuf|protoc'
+skip='test|gtest|gmock|mocked|benchmark|protoc\.'
 case "$TARGET" in
   windows-*)
     libs=$(find "$BUILD/MinSizeRel" -name '*.lib' | grep -Ev "$skip")
