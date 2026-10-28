@@ -1,5 +1,6 @@
 ## Unreleased
 
+- The neural tier works on the web: `MockingbirdModels` returns paths to `.ort` models stored in the module's memory. Cached native model files are replaced when the bundled model changes size.
 - `MockingbirdConfig.voiceProcessing` turns on the platform's echo cancellation, gain control and noise suppression; `stats.capture.voiceProcessing` reports what applied.
 - `MockingbirdDevices.input()` lists microphones and `engine.selectInputDevice` picks one.
 - Interruptions and route changes arrive as `MockingbirdCaptureInterruptedEvent`, `MockingbirdCaptureResumedEvent` and `MockingbirdRouteChangedEvent`; on Android a disconnected stream now reopens on the new device instead of going silent.

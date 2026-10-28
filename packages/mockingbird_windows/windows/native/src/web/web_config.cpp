@@ -1,5 +1,6 @@
 // Config construction for the WebAssembly shim: defaults, one setter keyed
-// by field id, and create() with the status returned by pointer.
+// by field id, one for the two model paths, which the config owns copies of,
+// and create() with the status returned by pointer.
 #ifdef __EMSCRIPTEN__
 
 #include "mockingbird/mockingbird.h"
@@ -8,6 +9,7 @@
 #include <emscripten/emscripten.h>
 
 #include <cstdlib>
+#include <cstring>
 
 using namespace mockingbird::web;
 
@@ -31,7 +33,24 @@ EMSCRIPTEN_KEEPALIVE mockingbird_config_t* mockingbird_web_config_new(void) {
     return cfg;
 }
 
-EMSCRIPTEN_KEEPALIVE void mockingbird_web_config_free(mockingbird_config_t* cfg) { std::free(cfg); }
+EMSCRIPTEN_KEEPALIVE void mockingbird_web_config_free(mockingbird_config_t* cfg) {
+    if (cfg == nullptr) return;
+    std::free(const_cast<char*>(cfg->neural_vad_model_path));
+    std::free(const_cast<char*>(cfg->sound_class_model_path));
+    std::free(cfg);
+}
+
+EMSCRIPTEN_KEEPALIVE int mockingbird_web_config_set_path(mockingbird_config_t* c, int which,
+                                                         const char* path) {
+    if (c == nullptr || path == nullptr) return -1;
+    const char** slot = which == 0 ? &c->neural_vad_model_path
+                      : which == 1 ? &c->sound_class_model_path
+                                   : nullptr;
+    if (slot == nullptr) return -1;
+    std::free(const_cast<char*>(*slot));
+    *slot = strdup(path);
+    return *slot == nullptr ? -3 : 0;
+}
 
 EMSCRIPTEN_KEEPALIVE int mockingbird_web_config_field_count(void) { return kConfigFieldCount; }
 

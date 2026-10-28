@@ -39,7 +39,11 @@ flutter:
     - path: assets/yamnet_3s.onnx
       platforms: [android, ios, macos, linux, windows]
     - path: assets/yamnet_class_map.txt
-      platforms: [android, ios, macos, linux, windows]
+      platforms: [android, ios, macos, linux, windows, web]
+    - path: assets/silero_vad.ort
+      platforms: [web]
+    - path: assets/yamnet_3s.ort
+      platforms: [web]
 
 dependencies:
   flutter:

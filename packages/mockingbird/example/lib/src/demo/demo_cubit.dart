@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mockingbird/mockingbird.dart';
 import 'package:mockingbird_example/src/demo/demo_state.dart';
@@ -24,7 +23,7 @@ final class DemoCubit extends Cubit<DemoState> {
       emit(state.copyWith(error: () => denied));
       return;
     }
-    if (!kIsWeb) await _loadModels();
+    await _loadModels();
     try {
       _session = await EngineSession.open(
         _config(state.sensitivity),

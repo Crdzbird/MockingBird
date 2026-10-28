@@ -19,9 +19,18 @@ extension type MockingbirdRecordApi(JSObject _) implements JSObject {
   @JS('_mockingbird_web_config_set')
   external int configSet(int cfg, int field, double value);
 
+  /// Sets model path [which] (0 Silero, 1 YAMNet) from the C string at [path];
+  /// the config keeps a copy.
+  @JS('_mockingbird_web_config_set_path')
+  external int configSetPath(int cfg, int which, int path);
+
   /// Creates an engine; the status lands at [outStatus].
   @JS('_mockingbird_web_create')
   external int createEngine(int cfg, int outStatus);
+
+  /// Writes [len] bytes at [data] to the file named by the C string [path].
+  @JS('_mockingbird_web_store_file')
+  external int storeFile(int path, int data, int len);
 
   /// Pushes int16 samples with a capture timestamp.
   @JS('_mockingbird_web_push_pcm')

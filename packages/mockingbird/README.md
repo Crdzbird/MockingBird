@@ -16,9 +16,9 @@ channels on the hot path.
 | Sound classification | YAMNet, 521 AudioSet classes | 3 s window, 1 s cadence |
 | Encode | Opus, Ogg Opus or PCM | per segment, with pre-roll |
 
-Supported platforms: Android, iOS, macOS, Linux, Windows and web. The web build runs the engine
-as WebAssembly with fast VAD, the anomaly gate, RNNoise and Opus; the neural
-detectors need ONNX Runtime and are not available there.
+Supported platforms: Android, iOS, macOS, Linux, Windows and web. The web build
+runs the whole engine as WebAssembly, the neural detectors included, through a
+minimal ONNX Runtime linked into the module.
 
 ## Install
 
@@ -381,8 +381,8 @@ for hosting the files on a CDN.
 The [example](example) is a complete demo on `flutter_bloc`: presets switch
 detector recipes, a slider retunes the running engine, an RNNoise toggle, a
 level meter, the latest recognised sound and the full stats card. It runs on
-macOS, iOS, Android, Linux, Windows and the web, where the presets that need the neural
-detectors fall back to the fast tier.
+macOS, iOS, Android, Linux, Windows and the web, with every preset on every
+platform.
 
 ## Engine
 

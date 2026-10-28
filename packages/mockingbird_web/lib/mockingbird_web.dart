@@ -1,6 +1,8 @@
 /// The web implementation of the mockingbird plugin.
 library;
 
+import 'dart:typed_data';
+
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
 import 'package:mockingbird_web/src/mockingbird_web_base.dart';
@@ -8,6 +10,7 @@ import 'package:mockingbird_web/src/module_registry.dart';
 import 'package:mockingbird_web/src/web_assets.dart';
 import 'package:mockingbird_web/src/web_devices.dart';
 import 'package:mockingbird_web/src/web_engine_handle.dart';
+import 'package:mockingbird_web/src/web_model_store.dart';
 
 /// Runs the engine as WebAssembly in the page and captures through Web Audio.
 final class MockingbirdWeb extends MockingbirdWebBase {
@@ -34,4 +37,10 @@ final class MockingbirdWeb extends MockingbirdWebBase {
   @override
   int setInputDevice(MockingbirdEngineHandle handle, String? id) =>
       const WebDevices().select(handle as WebEngineHandle, id);
+
+  @override
+  Future<String> storeModel(String name, Uint8List bytes) async {
+    await initialize();
+    return WebModelStore(ModuleRegistry.module).store(name, bytes);
+  }
 }

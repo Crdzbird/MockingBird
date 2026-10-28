@@ -7,19 +7,21 @@ depending on `mockingbird` includes it automatically.
 ## What it bundles
 
 - The Mockingbird engine compiled to WebAssembly with Emscripten: capture
-  ingest, RNNoise, libfvad, the anomaly gate and the Opus encoder. The engine
+  ingest, RNNoise, libfvad, the anomaly gate, the Opus encoders, and Silero VAD
+  and YAMNet through a minimal ONNX Runtime linked into the module. The engine
   runs single-threaded inside the page; each pushed chunk is processed on the
   spot, so no cross-origin isolation headers are needed.
 - Microphone capture through Web Audio: `getUserMedia`, an `AudioContext` opened
   at the engine's sample rate, and an `AudioWorklet` that delivers 20 ms int16
   chunks, resampling if the browser would not open at that rate.
-- Four assets: `mockingbird.js`, two builds of the engine of about 6 MB each,
-  and the capture worklet. `mockingbird_simd.wasm` uses WebAssembly SIMD and
-  needs Chrome 91, Firefox 89 or Safari 16.4 or later; `mockingbird.wasm`
-  runs everywhere else. The package checks once, with
-  `WebAssembly.validate`, and fetches only the build the browser can run, so
-  a visitor downloads one of them. SIMD makes noise suppression about twice
-  as fast. Both builds produce the same packets and events.
+- Two builds of the engine, about 9 MB each with their glue, and the capture
+  worklet. `mockingbird_simd.js` and `mockingbird_simd.wasm` use WebAssembly
+  SIMD and need Chrome 91, Firefox 89 or Safari 16.4 or later;
+  `mockingbird.js` and `mockingbird.wasm` run everywhere else. The package
+  checks once, with `WebAssembly.validate`, and fetches only the build the
+  browser can run, so a visitor downloads one of them. SIMD makes noise
+  suppression and the networks about twice as fast. Both builds produce the
+  same packets and events.
 
 The Dart side reaches the engine through `dart:js_interop`; the `mockingbird`
 API is the same as on the other platforms.
@@ -29,8 +31,8 @@ API is the same as on the other platforms.
 | Feature | Web |
 |---|---|
 | Fast VAD, anomaly gate, RNNoise, Opus and PCM packets, segments, retuning, stats | available |
-| Neural VAD (Silero) and YAMNet classification | not available; `MockingbirdConfig` with those enabled is rejected with `unsupported` |
-| `MockingbirdModels` | throws `UnsupportedError`; there is no file system to extract to |
+| Neural VAD (Silero) and YAMNet classification | available; the models load from the `.ort` assets, fetched only when asked for |
+| `MockingbirdModels` | stores the `.ort` models in the module's memory and returns their paths |
 | `MockingbirdBackend.auto` | capture through Web Audio; `hostPcm` works as everywhere |
 
 Call `await Mockingbird.initialize()` before creating an engine. On the web it

@@ -10,8 +10,8 @@ extension type _EsModule(JSObject _) implements JSObject {
   external MockingbirdModuleFactory get defaultExport;
 }
 
-/// Loads `mockingbird.js` from the package assets and instantiates the SIMD
-/// module where the browser supports it, the scalar one otherwise.
+/// Loads the SIMD build, `mockingbird_simd.js` and its module, where the
+/// browser supports it, and `mockingbird.js` with the plain module otherwise.
 final class ModuleLoader {
   /// Creates the loader.
   const factory ModuleLoader() = ModuleLoader._;
@@ -21,10 +21,9 @@ final class ModuleLoader {
   /// Imports the script as an ES module and runs its factory.
   Future<MockingbirdModule> load() async {
     const assets = WebAssets();
-    final scripts = assets.candidates('mockingbird.js');
-    final wasms = assets.candidates(
-      WasmFeatures.simd ? 'mockingbird_simd.wasm' : 'mockingbird.wasm',
-    );
+    final name = WasmFeatures.simd ? 'mockingbird_simd' : 'mockingbird';
+    final scripts = assets.candidates('$name.js');
+    final wasms = assets.candidates('$name.wasm');
     Object? failure;
     for (var i = 0; i < scripts.length; i++) {
       try {

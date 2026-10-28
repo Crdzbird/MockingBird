@@ -150,6 +150,7 @@ if(EMSCRIPTEN)
             src/capture/backend_factory_host_only.cpp
             src/web/web_config.cpp
             src/web/web_event.cpp
+            src/web/web_files.cpp
             src/web/web_packet.cpp
             src/web/web_push.cpp
             src/web/web_stats.cpp)
@@ -282,6 +283,12 @@ if(MOCKINGBIRD_ENABLE_NEURAL_VAD)
     if(ONNXRUNTIME_INCLUDE_DIR AND ONNXRUNTIME_LIBRARY)
         set(MOCKINGBIRD_HAVE_NEURAL_VAD ON)
         message(STATUS "Mockingbird: Neural VAD enabled (ONNX Runtime at ${ONNXRUNTIME_LIBRARY})")
+        if(EMSCRIPTEN)
+            # ONNX Runtime's WebAssembly build catches exceptions through
+            # JavaScript; every object in the module has to agree.
+            add_compile_options(-sDISABLE_EXCEPTION_CATCHING=0)
+            add_link_options(-sDISABLE_EXCEPTION_CATCHING=0)
+        endif()
     else()
         message(WARNING "Mockingbird: MOCKINGBIRD_ENABLE_NEURAL_VAD=ON but ONNX Runtime "
                         "was not found; set ONNXRUNTIME_ROOT or install it with "

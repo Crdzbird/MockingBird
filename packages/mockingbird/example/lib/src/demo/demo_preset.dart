@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:mockingbird/mockingbird.dart';
 
@@ -36,14 +35,7 @@ final class DemoPreset {
   final bool soundClass;
   final bool denoise;
 
-  /// Whether the preset still detects something on the running platform.
-  /// The web build has no neural detectors, so a classifier-only preset
-  /// would do nothing there.
-  bool get availableHere => !kIsWeb || vad || anomaly;
-
   /// The engine configuration for this preset on the live microphone.
-  /// On the web the neural tier falls back to the fast one and the sound
-  /// classifier stays off.
   MockingbirdConfig config({
     required double sensitivity,
     required bool denoise,
@@ -54,11 +46,11 @@ final class DemoPreset {
     backend: MockingbirdBackend.platformDefault,
     denoise: denoise || this.denoise,
     vad: vad,
-    vadTier: neural && !kIsWeb ? .neural : .fast,
-    neuralVadModelPath: kIsWeb ? null : neuralVadModelPath,
+    vadTier: neural ? .neural : .fast,
+    neuralVadModelPath: neuralVadModelPath,
     anomaly: anomaly,
-    soundClass: soundClass && !kIsWeb,
-    soundClassModelPath: kIsWeb ? null : soundClassModelPath,
+    soundClass: soundClass,
+    soundClassModelPath: soundClassModelPath,
     performance: const MockingbirdPerformanceConfig.mobile(),
   );
 }

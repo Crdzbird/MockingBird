@@ -29,7 +29,7 @@ final class PresetChips extends StatelessWidget {
           avatar: Icon(preset.icon, size: 18),
           label: Text(preset.label),
           selected: selected == i,
-          onSelected: preset.availableHere ? (_) => onSelected(i) : null,
+          onSelected: (_) => onSelected(i),
         ),
     ],
   );

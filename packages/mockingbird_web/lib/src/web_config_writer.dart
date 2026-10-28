@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:js_interop';
+
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
 import 'package:mockingbird_web/src/mockingbird_module.dart';
 import 'package:mockingbird_web/src/mockingbird_record_api.dart';
@@ -60,7 +63,21 @@ final class WebConfigWriter {
     for (final MapEntry(:key, :value) in values.entries) {
       MockingbirdRecordApi(_m).configSet(cfg, key.index, value.toDouble());
     }
+    _path(cfg, 0, d.neuralVadModelPath);
+    _path(cfg, 1, d.soundClassModelPath);
     return cfg;
+  }
+
+  void _path(int cfg, int which, String? path) {
+    if (path == null) return;
+    final bytes = [...utf8.encode(path), 0];
+    final p = _m.malloc(bytes.length);
+    try {
+      _m.heapU8.toDart.setAll(p, bytes);
+      MockingbirdRecordApi(_m).configSetPath(cfg, which, p);
+    } finally {
+      _m.free(p);
+    }
   }
 
   static int _flag(bool v) => v ? 1 : 0;

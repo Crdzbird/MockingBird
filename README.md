@@ -336,21 +336,37 @@ the whole process.
 
 The engine compiles to WebAssembly with Emscripten. The worker then runs inline
 on the caller's thread, so a page needs no cross-origin isolation, and the build
-leaves out the capture backends and the ONNX detectors; the Flutter web package
-captures through Web Audio and pushes PCM in.
+leaves out the capture backends; the Flutter web package captures through Web
+Audio and pushes PCM in. The neural detectors run in the browser too, through a
+minimal ONNX Runtime linked into the module.
 
 ```bash
-scripts/build_wasm.sh                 # writes mockingbird.js, mockingbird.wasm and mockingbird_simd.wasm
-node tests/wasm/smoke.mjs             # pushes the speech fixture through the build
-node tests/wasm/smoke.mjs simd ogg    # the SIMD build, with Ogg Opus
+scripts/build_ort_wasm.sh ~/src/onnxruntime   # once: ONNX Runtime 1.30 for WebAssembly
+ORT_WASM=build-ort-wasm scripts/build_wasm.sh # both builds of the engine, with ONNX Runtime
+node tests/wasm/smoke.mjs                     # pushes the speech fixture through the build
+node tests/wasm/smoke.mjs simd ogg            # the SIMD build, with Ogg Opus
+node tests/wasm/neural.mjs build-wasm-simd    # Silero and YAMNet, against the native results
 ```
 
-The script builds the engine twice. `MOCKINGBIRD_WASM_SIMD=ON` compiles with
-WebAssembly SIMD and lets Emscripten translate the SSE and AVX intrinsics in
-RNNoise and PFFFT, which halves the cost of noise suppression. Both builds share
-one JavaScript glue file, and the script stops if they ever differ. The web
-package loads the SIMD build where `WebAssembly.validate` accepts a SIMD module
-and the plain build elsewhere.
+`build_ort_wasm.sh` builds ONNX Runtime from a v1.30.0 checkout as two static
+WebAssembly libraries, with and without SIMD, reduced with ONNX Runtime's
+minimal build to the operators in `scripts/ort_ops.config`. It uses the
+Emscripten on `PATH` instead of downloading its own, so both sides share a
+toolchain. That reduced runtime only reads ONNX Runtime's `.ort` format, so the
+web loads `silero_vad.ort` and `yamnet_3s.ort`, which
+`scripts/convert_models_ort.sh` writes from the `.onnx` models; it also
+regenerates the operator list. Without `ORT_WASM`, `build_wasm.sh` builds the
+engine with no neural detectors.
+
+`build_wasm.sh` builds the engine twice. `MOCKINGBIRD_WASM_SIMD=ON` compiles
+with WebAssembly SIMD and lets Emscripten translate the SSE and AVX intrinsics
+in RNNoise and PFFFT, which halves the cost of noise suppression, and ONNX
+Runtime's own SIMD build does the same for the networks. Each build has its own
+glue file. The web package loads the SIMD pair where `WebAssembly.validate`
+accepts a SIMD module and the plain pair elsewhere. On the bundled fixtures the
+browser builds give exactly the native detections: the same speech starts and
+the same sound classes in the same order. Silero VAD and YAMNet together cost
+6.6% of a core with SIMD and 12.2% without, under V8 on an M3 Max.
 
 The web package's own tests run the module in Chrome with a synthetic
 microphone:

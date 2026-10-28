@@ -11,7 +11,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..', '..');
 const simd = process.argv.includes('simd');
 const assets = path.join(root, 'packages', 'mockingbird_web', 'assets');
-const { default: createMockingbirdModule } = await import(path.join(assets, 'mockingbird.js'));
+const { default: createMockingbirdModule } = await import(path.join(assets, simd ? 'mockingbird_simd.js' : 'mockingbird.js'));
 const wasm = path.join(assets, simd ? 'mockingbird_simd.wasm' : 'mockingbird.wasm');
 const m = await createMockingbirdModule({ locateFile: () => wasm });
 

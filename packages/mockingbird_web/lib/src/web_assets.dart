@@ -5,15 +5,15 @@ import 'dart:ui_web' as ui_web;
 /// By default the files come from the app's asset bundle, under
 /// `packages/mockingbird_web/` inside an app and at the top level when this
 /// package is the root, as in its own tests. [baseUrl] overrides both, for
-/// apps that host `mockingbird.js`, `mockingbird.wasm`,
-/// `mockingbird_simd.wasm` and the worklet elsewhere.
+/// apps that host the two builds (`mockingbird.js` and `.wasm`,
+/// `mockingbird_simd.js` and `.wasm`) and the worklet elsewhere.
 final class WebAssets {
   /// Creates the resolver.
   const factory WebAssets() = WebAssets._;
 
   const WebAssets._();
 
-  /// A directory URL that holds the four files, or null for the bundle.
+  /// A directory URL that holds the five files, or null for the bundle.
   static String? baseUrl;
 
   /// Absolute URLs to try, in order, for the asset called [name].

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:mockingbird_platform_interface/src/mockingbird_engine_handle.dart';
 import 'package:mockingbird_platform_interface/src/mockingbird_native_device.dart';
 import 'package:mockingbird_platform_interface/src/mockingbird_results.dart';
@@ -29,4 +31,9 @@ abstract class MockingbirdPlatformExtras extends PlatformInterface {
   /// Chooses the device the next start opens; null follows the default.
   int setInputDevice(MockingbirdEngineHandle handle, String? id) =>
       MockingbirdStatusCode.unsupported;
+
+  /// Stores model [bytes] where the engine can open them and returns the
+  /// path; only platforms without a file system need it.
+  Future<String> storeModel(String name, Uint8List bytes) =>
+      throw UnsupportedError('storeModel is only needed on the web.');
 }
