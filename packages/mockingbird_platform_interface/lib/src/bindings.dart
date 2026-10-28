@@ -407,7 +407,8 @@ enum mockingbird_backend {
 enum mockingbird_codec {
   MOCKINGBIRD_CODEC_PCM_S16LE(0),
   MOCKINGBIRD_CODEC_OPUS(1),
-  MOCKINGBIRD_CODEC_FLAC(2);
+  MOCKINGBIRD_CODEC_FLAC(2),
+  MOCKINGBIRD_CODEC_OGG_OPUS(3);
 
   final int value;
   const mockingbird_codec(this.value);
@@ -416,6 +417,7 @@ enum mockingbird_codec {
     0 => MOCKINGBIRD_CODEC_PCM_S16LE,
     1 => MOCKINGBIRD_CODEC_OPUS,
     2 => MOCKINGBIRD_CODEC_FLAC,
+    3 => MOCKINGBIRD_CODEC_OGG_OPUS,
     _ => throw ArgumentError('Unknown value for mockingbird_codec: $value'),
   };
 }

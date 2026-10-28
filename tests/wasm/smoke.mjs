@@ -1,6 +1,8 @@
 // Pushes the speech fixture through the WebAssembly build with fast VAD,
-// RNNoise and Opus on, and checks events, packets and stats come back.
-//   node tests/wasm/smoke.mjs
+// RNNoise and Opus on, and checks events, packets and stats come back, and
+// that closed segments end on a LAST packet. Pass `ogg` to run Ogg Opus and
+// check that a segment's first packet opens an Ogg stream.
+//   node tests/wasm/smoke.mjs [ogg]
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -22,12 +24,14 @@ function wavSamples(file) {
   throw new Error('no data chunk');
 }
 
+const ogg = process.argv[2] === 'ogg';
+const codec = ogg ? 3 : 1;
 const F = { backend: 0, enableRnnoise: 3, enableVad: 4, codec: 19, pcmRingFrames: 23 };
 const cfg = m._mockingbird_web_config_new();
 m._mockingbird_web_config_set(cfg, F.backend, 4);
 m._mockingbird_web_config_set(cfg, F.enableVad, 1);
 m._mockingbird_web_config_set(cfg, F.enableRnnoise, 1);
-m._mockingbird_web_config_set(cfg, F.codec, 1);
+m._mockingbird_web_config_set(cfg, F.codec, codec);
 m._mockingbird_web_config_set(cfg, F.pcmRingFrames, 1 << 16);
 const statusPtr = m._malloc(4);
 const engine = m._mockingbird_web_create(cfg, statusPtr);
@@ -42,7 +46,22 @@ const buf = m._malloc(chunk * 2);
 const evt = m._mockingbird_web_event_new();
 const pkt = m._mockingbird_web_packet_new();
 const counts = {};
-let packets = 0, bytes = 0;
+let packets = 0, bytes = 0, last = 0, badStart = 0;
+function take() {
+  while (m._mockingbird_drain(engine, pkt) === 0) {
+    packets++;
+    const size = m._mockingbird_web_packet_get(pkt, 5);
+    const flags = m._mockingbird_web_packet_get(pkt, 3);
+    bytes += size;
+    if (flags & 8) last++;
+    if (m._mockingbird_web_packet_get(pkt, 4) !== codec) badStart++;
+    if (ogg && (flags & 4)) {
+      const at = m._mockingbird_web_packet_get(pkt, 6);
+      if (String.fromCharCode(...m.HEAPU8.subarray(at, at + 4)) !== 'OggS') badStart++;
+    }
+    m._mockingbird_release(engine, pkt);
+  }
+}
 const t0 = performance.now();
 for (let i = 0, ts = 0; i + chunk <= pcm.length; i += chunk, ts += 20000) {
   m.HEAP16.set(pcm.subarray(i, i + chunk), buf >> 1);
@@ -51,14 +70,11 @@ for (let i = 0, ts = 0; i + chunk <= pcm.length; i += chunk, ts += 20000) {
     const type = m._mockingbird_web_event_get(evt, 0);
     counts[type] = (counts[type] ?? 0) + 1;
   }
-  while (m._mockingbird_drain(engine, pkt) === 0) {
-    packets++;
-    bytes += m._mockingbird_web_packet_get(pkt, 5);
-    m._mockingbird_release(engine, pkt);
-  }
+  take();
 }
 const ms = performance.now() - t0;
 m._mockingbird_stop(engine);
+take();
 while (m._mockingbird_poll_event(engine, evt) === 0) {
   const type = m._mockingbird_web_event_get(evt, 0);
   counts[type] = (counts[type] ?? 0) + 1;
@@ -76,9 +92,9 @@ m._free(statusPtr);
 m._mockingbird_destroy(engine);
 
 const seconds = pcm.length / 16000;
-console.log(JSON.stringify({ version: m.UTF8ToString(m._mockingbird_version_string()), seconds, captured, dropped, rms, packets, bytes, events: counts, cpu_share: ms / 1000 / seconds }));
-if (!(counts[1] >= 1 && counts[4] >= 1 && packets > 0 && dropped === 0)) {
-  console.error('expected speech and segment events with packets and no drops');
+console.log(JSON.stringify({ version: m.UTF8ToString(m._mockingbird_version_string()), codec, seconds, captured, dropped, rms, packets, bytes, last, events: counts, cpu_share: ms / 1000 / seconds }));
+if (!(counts[1] >= 1 && counts[4] >= 1 && packets > 0 && dropped === 0 && last >= 1 && badStart === 0)) {
+  console.error('expected speech and segment events, LAST packets, the right codec and no drops');
   process.exit(1);
 }
 console.log('wasm smoke: PASS');

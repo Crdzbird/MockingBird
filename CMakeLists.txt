@@ -38,9 +38,9 @@ if(APPLE)
 endif()
 
 if(ANDROID)
-    # // VERIFY: NDK r28+ is required for 16KB-page-aligned shared libraries.
-    # Toolchain file should set ANDROID_PLATFORM=android-21 (minSdk) and
-    # use a compileSdk >= 35 caller-side to surface the 16KB requirement.
+    # NDK r28 or later is required for 16KB-page-aligned shared libraries.
+    # The toolchain file sets ANDROID_PLATFORM to the minSdk, and the app
+    # builds with compileSdk 35 or later so the 16KB check applies.
     if(NOT DEFINED ANDROID_PLATFORM)
         set(ANDROID_PLATFORM android-21)
     endif()
@@ -108,6 +108,8 @@ set(MOCKINGBIRD_SOURCES
         src/encode/factory.cpp
         src/encode/pcm_encoder.cpp
         src/encode/opus_encoder.cpp
+        src/encode/ogg_opus_encoder.cpp
+        src/encode/ogg_page_writer.cpp
         src/preprocess/rnnoise_preprocessor.cpp)
 
 if(APPLE)
@@ -163,6 +165,9 @@ set(MOCKINGBIRD_INTERNAL_HEADERS
         src/detect/spectral_metrics.hpp
         src/detect/yamnet_classifier.hpp
         src/encode/encoder.hpp
+        src/encode/ogg_crc.hpp
+        src/encode/ogg_opus_headers.hpp
+        src/encode/ogg_page_writer.hpp
         src/engine.hpp
         src/engine_events.hpp
         src/engine_ingest.hpp
@@ -187,13 +192,12 @@ set(MOCKINGBIRD_INTERNAL_HEADERS
         src/worker/worker_driver.hpp
         src/worker/worker_health.hpp)
 
-# Vendored single-header dep. // VERIFY  Pinned to 0.11.25 (downloaded
-# 2026-06-08 from github.com/mackron/miniaudio). Public domain / MIT-0.
+# Vendored single-header dep, pinned to miniaudio 0.11.25 (downloaded
+# 2026-06-08 from github.com/mackron/miniaudio). Public domain or MIT-0.
 set(MOCKINGBIRD_MINIAUDIO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/miniaudio)
 
-# Vendored VAD dep. BSD-3-Clause (WebRTC origin) + MIT (Pirch fork).
-# // VERIFY  Pinned to commit 532ab66 of github.com/dpirch/libfvad
-# downloaded 2026-06-08.
+# Vendored VAD dep. BSD-3-Clause (WebRTC origin) and MIT (Pirch fork),
+# pinned to commit 532ab66 of github.com/dpirch/libfvad, downloaded 2026-06-08.
 set(MOCKINGBIRD_LIBFVAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libfvad)
 set(MOCKINGBIRD_LIBFVAD_SOURCES
         ${MOCKINGBIRD_LIBFVAD_DIR}/src/fvad.c
@@ -211,7 +215,7 @@ set(MOCKINGBIRD_LIBFVAD_SOURCES
 list(APPEND MOCKINGBIRD_SOURCES ${MOCKINGBIRD_LIBFVAD_SOURCES})
 
 # Vendored FFT dep. BSD-like license, FFTPACK-derived.
-# // VERIFY  Pommier's original PFFFT, downloaded 2026-06-08 from
+# Pommier's original PFFFT, downloaded 2026-06-08 from
 # bitbucket.org/jpommier/pffft (master).
 set(MOCKINGBIRD_PFFFT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/pffft)
 set(MOCKINGBIRD_PFFFT_SOURCES ${MOCKINGBIRD_PFFFT_DIR}/pffft.c)
@@ -239,9 +243,9 @@ else()
     set(MOCKINGBIRD_HAVE_RNNOISE OFF)
 endif()
 
-# ONNX Runtime for the Silero VAD neural detector. v1 looks for a Homebrew
-# install on macOS; iOS / Android pods will use their own dep mechanisms in
-# follow-up turns. // VERIFY  Set MOCKINGBIRD_ENABLE_NEURAL_VAD=ON to compile in.
+# ONNX Runtime for Silero VAD and YAMNet. This build looks for a Homebrew
+# install on macOS; the iOS and Android packages bring their own. Set
+# MOCKINGBIRD_ENABLE_NEURAL_VAD=ON to compile it in.
 if(MOCKINGBIRD_ENABLE_NEURAL_VAD)
     find_path(ONNXRUNTIME_INCLUDE_DIR onnxruntime_cxx_api.h
               PATHS /opt/homebrew/opt/onnxruntime/include/onnxruntime
@@ -312,8 +316,6 @@ function(_mockingbird_configure_target tgt)
     endif()
 
     # Platform link surface for miniaudio.
-    # // VERIFY  Confirm each framework / lib against the host toolchain when
-    # the first device-target build runs.
     if(APPLE)
         target_link_libraries(${tgt} PRIVATE
                 "-framework CoreFoundation"
@@ -442,8 +444,8 @@ endif()
 if(MOCKINGBIRD_ENABLE_TESTS AND TARGET mockingbird_static)
     enable_testing()
 
-    # Vendored doctest. // VERIFY  Pinned to v2.4.12 single header
-    # (downloaded 2026-06-08 from github.com/doctest/doctest, MIT).
+    # Vendored doctest single header (downloaded 2026-06-08 from
+    # github.com/doctest/doctest, MIT).
     set(MOCKINGBIRD_DOCTEST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/doctest)
 
     add_executable(test_mockingbird
@@ -460,6 +462,7 @@ if(MOCKINGBIRD_ENABLE_TESTS AND TARGET mockingbird_static)
             tests/test_wake_batching.cpp
             tests/test_host_pcm.cpp
             tests/test_opus_encoder.cpp
+            tests/test_ogg_opus.cpp
             tests/test_detectors_golden.cpp
             tests/test_anomaly_reason.cpp
             tests/test_real_voice.cpp

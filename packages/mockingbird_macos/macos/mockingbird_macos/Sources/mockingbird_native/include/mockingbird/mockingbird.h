@@ -26,27 +26,27 @@
  * OWNERSHIP / SAFETY CONTRACT  (binding authors MUST honor)
  * ============================================================================
  *
- * 1. // NATIVE-FREE
+ * 1. Create and destroy pair up.
  *    Every successful mockingbird_create() pairs with exactly one mockingbird_destroy().
  *    mockingbird_destroy() is idempotent on NULL.
  *
- * 2. // ZERO-COPY
+ * 2. Packets are borrowed.
  *    mockingbird_packet.data is a BORROWED pointer into an engine-owned pool. It is
  *    valid only until the matching mockingbird_release(). The host MUST copy or
  *    forward the bytes, then release promptly. Holding packets indefinitely
  *    will exhaust the pool and force overruns.
  *
- * 3. // ABI-SAFE
+ * 3. No exception crosses the ABI.
  *    No C++ exception ever crosses this surface. All errors flow through
  *    mockingbird_status_t. No errno reads, no thread-local error state.
  *
- * 4. // CONTRACT  Single-host-thread on the drain side.
+ * 4. One host thread drains.
  *    mockingbird_drain / mockingbird_release / mockingbird_poll_event are safe to call from ONE
  *    host thread concurrent with T1/T2. They are NOT safe to call from
  *    multiple host threads at once on the same engine. The host is responsible
  *    for serializing these calls if it wishes to fan out.
  *
- *    // CONTRACT  Lifecycle calls must be externally serialized.
+ *    Lifecycle calls are serialized by the host.
  *    mockingbird_create / mockingbird_start / mockingbird_stop / mockingbird_push_pcm / mockingbird_get_stats
  *    and especially mockingbird_destroy must not overlap in time on the same engine.
  *    mockingbird_destroy FREES the engine: calling it while any other call is still in
@@ -55,24 +55,24 @@
  *    object being freed. start/stop are internally serialized against each other
  *    (no double-join), but the host still owns the destroy ordering.
  *
- * 5. // CONTRACT  Event callback discipline.
+ * 5. The event callback stays short.
  *    The callback registered via mockingbird_set_event_callback fires on T2
  *    (the worker thread). It MUST be non-blocking and MUST NOT re-enter the
  *    engine except for mockingbird_drain / mockingbird_release. Garbage-collected
  *    runtimes must marshal across a thread-safe shim (Dart
  *    NativeCallable.listener, JNI AttachCurrentThread, .NET pinned GCHandle).
  *
- * 6. // CONTRACT  Microphone permission is the host's problem.
+ * 6. Microphone permission belongs to the host.
  *    mockingbird_start() will return MOCKINGBIRD_ERR_PERMISSION if the OS denies capture,
  *    but the engine does not prompt. Host obtains permission first.
  *
- * 7. // CONTRACT  No raw audio is logged or persisted by the library.
+ * 7. No raw audio is logged or stored by the library.
  *    The PCM stream is treated as sensitive (potentially voice / private
  *    interior audio). Encoded packets are emitted only via mockingbird_drain.
  *    The library writes nothing to disk and writes no audio bytes to stderr
  *    or syslog.
  *
- * 8. // CONTRACT  Caller-supplied pointers are validated at the boundary.
+ * 8. Caller input is validated at the boundary.
  *    mockingbird_create() validates every field of mockingbird_config_t. Lengths and
  *    pointers in mockingbird_push_pcm are bounds-checked. Invalid input returns
  *    MOCKINGBIRD_ERR_INVALID_ARG; it never crashes the engine.
@@ -109,11 +109,8 @@ extern "C" {
 /* ============================================================================
  * STATUS CODES
  *
- * // CONTRACT  Distinct error codes must NOT leak information about why
- * something failed in a way that could form a side channel for the host's
- * upstream data. For audio we are not adversarial against the host, so a
- * granular taxonomy is fine here. (Crypto-style error collapsing does not
- * apply to this domain.)
+ * Each failure has its own code. The host is not an adversary of the audio
+ * it captures, so there is no reason to collapse failures into one code.
  * ========================================================================== */
 
 typedef enum mockingbird_status {
@@ -159,8 +156,13 @@ typedef enum mockingbird_vad_tier {
 
 typedef enum mockingbird_codec {
     MOCKINGBIRD_CODEC_PCM_S16LE = 0,      /* passthrough, host-side encode */
-    MOCKINGBIRD_CODEC_OPUS      = 1,      /* live path */
-    MOCKINGBIRD_CODEC_FLAC      = 2       /* archival (Sentinel) */
+    MOCKINGBIRD_CODEC_OPUS      = 1,      /* raw Opus packets, live path */
+    MOCKINGBIRD_CODEC_FLAC      = 2,      /* reserved, not built in */
+    /* Opus in Ogg (RFC 7845), one page per packet. A segment's first packet
+     * starts with the OpusHead and OpusTags pages and its LAST packet ends
+     * the stream, so concatenating one segment's payloads in order gives a
+     * playable .opus file. The stream serial is the segment id. */
+    MOCKINGBIRD_CODEC_OGG_OPUS  = 3
 } mockingbird_codec_t;
 
 typedef enum mockingbird_event_type {
@@ -185,7 +187,13 @@ enum {
     MOCKINGBIRD_PKT_FLAG_PREROLL  = 1u << 0,  /* pre-segment frames captured before trigger */
     MOCKINGBIRD_PKT_FLAG_POSTROLL = 1u << 1,  /* trailing frames after detector closes */
     MOCKINGBIRD_PKT_FLAG_KEYFRAME = 1u << 2,  /* first encoded frame of a segment */
-    MOCKINGBIRD_PKT_FLAG_LAST     = 1u << 3   /* terminal packet of a segment */
+    MOCKINGBIRD_PKT_FLAG_LAST     = 1u << 3   /* terminal packet of a segment. Set on the
+                                               * frame that closes it after trailing
+                                               * silence or at segment_max_ms. When stop
+                                               * cuts a segment short, only an encoder
+                                               * with a container to finish (Ogg Opus)
+                                               * emits a LAST packet; SEGMENT_END always
+                                               * arrives. */
 };
 
 /* Anomaly trigger reason. Bitmask in mockingbird_event.reason_mask when
@@ -199,22 +207,17 @@ enum {
 /* ============================================================================
  * CONFIG
  *
- * // CONTRACT  All fields are validated by mockingbird_create. Out-of-range values
+ * All fields are validated by mockingbird_create. Out-of-range values
  * return MOCKINGBIRD_ERR_INVALID_ARG without partial construction.
  * ========================================================================== */
 
 typedef struct mockingbird_config {
     /* --- Capture ----------------------------------------------------------- */
     mockingbird_backend_t        backend;
-    uint32_t               sample_rate_hz;
-    /* // VERIFY: libfvad sample-rate constraints. Documented set is
-     * {8000, 16000, 32000, 48000} Hz. Confirm against the vendored
-     * libfvad version before locking. */
+    uint32_t               sample_rate_hz;    /* 8000, 16000, 32000 or 48000 */
     uint16_t               channels;          /* v1: 1 (mono). Validated. */
     mockingbird_sample_format_t  sample_format;
-    uint32_t               frame_ms;
-    /* // VERIFY: libfvad frame-length constraints. Documented set is
-     * {10, 20, 30} ms. Confirm against vendored version. */
+    uint32_t               frame_ms;          /* 10, 20 or 30 */
 
     /* --- Preprocess -------------------------------------------------------- */
     int  enable_rnnoise;                      /* 0 = off, 1 = on */
@@ -236,15 +239,16 @@ typedef struct mockingbird_config {
 
     /* --- Segmentation ------------------------------------------------------ */
     uint32_t  pre_roll_ms;                    /* frames retained ahead of trigger */
-    uint32_t  post_roll_ms;                   /* trailing frames after close */
-    uint32_t  segment_max_ms;                 /* hard cap; 0 = unbounded */
+    uint32_t  post_roll_ms;                   /* trailing audio kept after the detectors
+                                               * go quiet; the segment closes after the
+                                               * longer of this and vad_hangover_ms */
+    uint32_t  segment_max_ms;                 /* hard cap: the frame that reaches it is
+                                               * LAST and the next active frame opens a
+                                               * new segment; 0 = unbounded */
 
     /* --- Encoder ----------------------------------------------------------- */
     mockingbird_codec_t  codec;
-    uint32_t       opus_bitrate_bps;
-    /* // VERIFY: libopus bitrate range. Documented as roughly 6000..510000
-     * bps. Confirm exact bounds and any per-mode constraints (NB/WB/SWB/FB)
-     * against vendored libopus version. */
+    uint32_t       opus_bitrate_bps;          /* 6000..510000, for OPUS and OGG_OPUS */
     int            opus_vbr;                  /* 0 = CBR, 1 = VBR */
     int            opus_complexity;           /* 0..10 */
 
@@ -355,7 +359,7 @@ typedef struct mockingbird_config {
 /* ============================================================================
  * PACKET (borrowed view)
  *
- * // ZERO-COPY  data is owned by the engine pool. Valid only until the
+ * The data pointer is owned by the engine pool. Valid only until the
  * matching mockingbird_release. After release the bytes may be overwritten.
  * ========================================================================== */
 
@@ -365,7 +369,7 @@ typedef struct mockingbird_packet {
     uint64_t       capture_ts_us;             /* monotonic capture clock */
     uint32_t       flags;                     /* MOCKINGBIRD_PKT_FLAG_* bitmask */
     mockingbird_codec_t  codec;
-    const uint8_t* data;                      /* // ZERO-COPY  borrowed */
+    const uint8_t* data;                      /* borrowed */
     uint32_t       size;
     uint32_t       _reserved;                 /* engine-internal cookie.
                                                * Bindings: do not read or modify.
@@ -444,7 +448,7 @@ typedef struct mockingbird_stats {
 /* ============================================================================
  * EVENT CALLBACK TYPE
  *
- * // CONTRACT  Fires on T2 (worker thread). Non-blocking. Must not re-enter
+ * Fires on T2 (worker thread). Non-blocking. Must not re-enter
  * the engine except mockingbird_drain / mockingbird_release. Pointer to evt is borrowed
  * for the duration of the call.
  * ========================================================================== */
@@ -463,8 +467,8 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_config_defaults(mockingbird_con
  * On success *out_engine is non-NULL and ownership transfers to caller.
  * On failure *out_engine is set to NULL and nothing is allocated.
  *
- * // NATIVE-FREE  pair with mockingbird_destroy.
- * // ABI-SAFE    no exception escapes. */
+ * Pair with mockingbird_destroy.
+ * No exception escapes. */
 MOCKINGBIRD_API mockingbird_status_t mockingbird_create(const mockingbird_config_t* cfg,
                                       mockingbird_engine_t**      out_engine);
 
@@ -490,7 +494,7 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_stop(mockingbird_engine_t* engi
  * ========================================================================== */
 
 /* Push model: register a callback. Pass cb == NULL to unregister.
- * // CONTRACT  Callback fires on T2; see callback discipline above. */
+ * Callback fires on T2; see callback discipline above. */
 MOCKINGBIRD_API mockingbird_status_t mockingbird_set_event_callback(mockingbird_engine_t* engine,
                                                   mockingbird_event_cb  cb,
                                                   void*           user);
@@ -503,7 +507,7 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_poll_event(mockingbird_engine_t
 /* ============================================================================
  * SEPARATED SEND PATH
  *
- * // ZERO-COPY  data is borrowed. The host must copy/forward then call
+ * The data pointer is borrowed. The host must copy/forward then call
  * mockingbird_release with the same packet struct. Holding more than
  * packet_queue_capacity packets at once will exhaust the pool and force
  * overruns on the producing side.
@@ -581,18 +585,9 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_get_stats(mockingbird_engine_t*
 /* ============================================================================
  * OPTIONAL WAIT HANDLE
  *
- * Lets the host block instead of spin-polling mockingbird_drain.
- *
- * // VERIFY  Per-platform realization of intptr_t:
- *   Linux:   int  (eventfd)
- *   Android: int  (eventfd)
- *   Apple (iOS + macOS): DECISION PENDING. Candidates:
- *     - int read end of a pipe (portable, simple)
- *     - kqueue ident
- *     - dispatch_semaphore_t as void*
- *   Windows: HANDLE  (not in v1 scope; macros guarded for later)
- *
- * If cfg.enable_wait_handle was 0, returns MOCKINGBIRD_ERR_UNSUPPORTED. */
+ * Reserved for a pollable handle that lets the host block instead of
+ * polling mockingbird_drain. No platform implements it yet: the call
+ * validates its arguments and returns MOCKINGBIRD_ERR_UNSUPPORTED. */
 MOCKINGBIRD_API mockingbird_status_t mockingbird_wait_handle(mockingbird_engine_t*  engine,
                                            intptr_t*        out_handle);
 
@@ -602,7 +597,7 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_wait_handle(mockingbird_engine_
  * Lets a host with its own capture path feed PCM directly. Returns
  * MOCKINGBIRD_ERR_INVALID_STATE if the engine was created with a different backend.
  *
- * // CONTRACT  samples is borrowed for the duration of the call. The engine
+ * The samples buffer is borrowed for the duration of the call. The engine
  * copies into its ring before returning. capture_ts_us is the monotonic
  * timestamp of the FIRST sample in the buffer.
  *

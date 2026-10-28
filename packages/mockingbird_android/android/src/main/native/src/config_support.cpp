@@ -25,7 +25,7 @@ mockingbird_status_t check_detector_ranges(const mockingbird_config_t& c, int va
     if (vad_tier == MOCKINGBIRD_VAD_FAST && (c.vad_aggressiveness < 0 || c.vad_aggressiveness > 3)) {
         return MOCKINGBIRD_ERR_INVALID_ARG;
     }
-    if (codec == MOCKINGBIRD_CODEC_OPUS) {
+    if (codec == MOCKINGBIRD_CODEC_OPUS || codec == MOCKINGBIRD_CODEC_OGG_OPUS) {
         if (c.opus_bitrate_bps < 6000u || c.opus_bitrate_bps > 510000u) return MOCKINGBIRD_ERR_INVALID_ARG;
         if (c.opus_complexity < 0 || c.opus_complexity > 10)           return MOCKINGBIRD_ERR_INVALID_ARG;
     }
@@ -46,7 +46,9 @@ mockingbird_status_t check_build_support(const mockingbird_config_t& c, int vad_
     }
 #endif
 #ifndef MOCKINGBIRD_HAVE_OPUS
-    if (codec == MOCKINGBIRD_CODEC_OPUS) return MOCKINGBIRD_ERR_UNSUPPORTED;
+    if (codec == MOCKINGBIRD_CODEC_OPUS || codec == MOCKINGBIRD_CODEC_OGG_OPUS) {
+        return MOCKINGBIRD_ERR_UNSUPPORTED;
+    }
 #endif
 #ifndef MOCKINGBIRD_HAVE_FLAC
     if (codec == MOCKINGBIRD_CODEC_FLAC) return MOCKINGBIRD_ERR_UNSUPPORTED;

@@ -60,7 +60,7 @@ Everything else is grouped by concern:
 | `Anomaly` | `AnomalyConfig`: z-score triggers, background window |
 | `SoundClass` | `SoundClassConfig`: threshold, cadence, model path |
 | `Segments` | `SegmentConfig`: pre-roll, post-roll, max length |
-| `Encoder` | `EncoderConfig`: `OpusEncoder()` for Opus |
+| `Encoder` | `EncoderConfig`: `OpusEncoder()` for Opus, `OggOpusEncoder()` for Ogg Opus |
 | `Queues` | `QueueConfig`: ring sizes and the ungated PCM tap |
 | `Performance` | `PerformanceConfig`: silence gate, degradation, wake batching; `MobilePerformance()` |
 
@@ -104,6 +104,12 @@ carry one: `Category()`, `IsHumanVoice()`, `AnomalyReasons()`,
 `DegradationLevel()`, `BusyFraction()`, `BackendError()`. `Packet.Data` is a
 Go-owned copy, with `IsPreroll()`, `IsPostroll()`, `IsKeyframe()` and
 `IsLast()`. `Stats` nests `WorkerHealth`.
+
+The packet that closes a segment has `IsLast()` set. Concatenate a segment's
+payloads in order: with `CodecOggOpus` they form an `.opus` file, and with
+`CodecPCMS16LE`, `WAV(pcm, 16000, 1)` returns a WAV file. A segment cut short by
+`Stop` ends with an `IsLast()` packet only under Ogg Opus; `EventSegmentEnd`
+arrives either way.
 
 ## Ownership and threading
 

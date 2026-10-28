@@ -24,4 +24,5 @@ export 'package:mockingbird/src/mockingbird_sound_category.dart';
 export 'package:mockingbird/src/mockingbird_stats.dart';
 export 'package:mockingbird/src/mockingbird_status.dart';
 export 'package:mockingbird/src/mockingbird_vad_tier.dart';
+export 'package:mockingbird/src/mockingbird_wav.dart';
 export 'package:mockingbird/src/mockingbird_worker_health.dart';

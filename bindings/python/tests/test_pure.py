@@ -62,3 +62,19 @@ class DefaultsTest(unittest.TestCase):
         self.assertRegex(mockingbird.version(), r"^\d+\.\d+\.\d+")
         self.assertEqual(mockingbird.Status.of(-7), mockingbird.Status.ERR_QUEUE_EMPTY)
         self.assertEqual(mockingbird.Status.of(99), 99)
+
+
+class WavTest(unittest.TestCase):
+    def test_header(self) -> None:
+        import struct
+
+        pcm = bytes([1, 0, 2, 0, 3, 0, 4, 0])
+        wav = mockingbird.wav_from_pcm16(pcm, 16000)
+        self.assertEqual(len(wav), mockingbird.WAV_HEADER_BYTES + 8)
+        fields = struct.unpack("<4sI8sIHHIIHH4sI", wav[:44])
+        self.assertEqual(fields, (b"RIFF", 44, b"WAVEfmt ", 16, 1, 1, 16000, 32000, 2, 16, b"data", 8))
+        self.assertEqual(wav[44:], pcm)
+
+    def test_ogg_opus_codec(self) -> None:
+        self.assertEqual(int(mockingbird.Codec.OGG_OPUS), 3)
+        self.assertIs(mockingbird.EncoderConfig.ogg_opus().codec, mockingbird.Codec.OGG_OPUS)

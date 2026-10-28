@@ -14,7 +14,7 @@ channels on the hot path.
 | Voice detection | libfvad (fast) or Silero v6 (neural) | language-agnostic |
 | Anomaly gate | RMS, spectral flux and centroid z-scores | adaptive rolling background |
 | Sound classification | YAMNet, 521 AudioSet classes | 3 s window, 1 s cadence |
-| Encode | Opus or PCM | per segment, with pre-roll |
+| Encode | Opus, Ogg Opus or PCM | per segment, with pre-roll |
 
 Supported platforms: Android, iOS, macOS and web. The web build runs the engine
 as WebAssembly with fast VAD, the anomaly gate, RNNoise and Opus; the neural
@@ -107,7 +107,7 @@ you want to change.
 | `anomaly` | `MockingbirdAnomalyConfig` | z-score triggers, background window |
 | `soundClass` | `MockingbirdSoundClassConfig` | threshold, cadence, model path |
 | `segments` | `MockingbirdSegmentConfig` | pre-roll, post-roll, maximum length |
-| `encoder` | `MockingbirdEncoderConfig` | `pcm16` or `opus` (`MockingbirdEncoderConfig.opus()`), bitrate, VBR, complexity |
+| `encoder` | `MockingbirdEncoderConfig` | `pcm16`, `opus` (`MockingbirdEncoderConfig.opus()`) or `oggOpus` (`MockingbirdEncoderConfig.oggOpus()`), bitrate, VBR, complexity |
 | `queues` | `MockingbirdQueueConfig` | ring sizes and the ungated PCM tap |
 | `performance` | `MockingbirdPerformanceConfig` | silence gate, adaptive degradation, wake batching (`MockingbirdPerformanceConfig.mobile()`) |
 
@@ -131,6 +131,24 @@ Dart side engine-owned and copy-safe. A native error inside a poll surfaces as a
 ```dart
 engine.packets.listen((p) => socket.add(p.data));
 ```
+
+A segment closes after the longer of the VAD hangover and the post-roll, or
+when it reaches its maximum length, and the packet that closes it has `isLast`
+set. To save segments as files, collect each segment's payloads in order. With
+`oggOpus` the bytes already form an `.opus` file; with `pcm16`,
+`MockingbirdWav.fromPcm16` adds a WAV header.
+
+```dart
+final open = <int, BytesBuilder>{};
+engine.packets.listen((p) {
+  (open[p.segmentId] ??= BytesBuilder()).add(p.data);
+  if (p.isLast) save(p.segmentId, open.remove(p.segmentId)!.takeBytes());
+});
+```
+
+When `stop` cuts a segment short, the last packet only has `isLast` set with
+`oggOpus`, which has a container to finish. With every codec,
+`MockingbirdSegmentEndEvent` marks the end.
 
 ## Retune without restarting
 
@@ -184,7 +202,7 @@ about scope; the second is measured.
 | Noise suppression | RNNoise | no | platform flags via the recorder | gtcrn, dpdfnet | RNNoise | platform flags |
 | Sound classification | YAMNet, 521 classes | no | no | CED and zipformer audio tagging | no | no |
 | Non-speech event gate | yes | no | no | no | no | no |
-| Encoded output | Opus or PCM, per segment with pre-roll | PCM speech segments | PCM speech segments | PCM speech segments | PCM | AAC, Opus, WAV, FLAC, PCM |
+| Encoded output | Opus, Ogg Opus or PCM with a WAV helper, per segment with pre-roll | PCM speech segments | PCM speech segments | PCM speech segments | PCM | AAC, Opus, WAV, FLAC, PCM |
 | Retune while running | yes | no | no | no | no | no |
 | Silence gate and adaptive load shedding | yes | no | no | no | no | no |
 | Native path | `dart:ffi` | `dart:ffi` | `dart:ffi`, JS on web | `dart:ffi` | Rust bridge | platform channels |

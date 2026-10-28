@@ -59,6 +59,8 @@ set(MOCKINGBIRD_SOURCES
         ${MOCKINGBIRD_ROOT}/src/encode/factory.cpp
         ${MOCKINGBIRD_ROOT}/src/encode/pcm_encoder.cpp
         ${MOCKINGBIRD_ROOT}/src/encode/opus_encoder.cpp
+        ${MOCKINGBIRD_ROOT}/src/encode/ogg_opus_encoder.cpp
+        ${MOCKINGBIRD_ROOT}/src/encode/ogg_page_writer.cpp
         ${MOCKINGBIRD_ROOT}/src/preprocess/rnnoise_preprocessor.cpp
         ${MOCKINGBIRD_ROOT}/src/capture/oboe_backend.cpp)
 
@@ -131,7 +133,7 @@ set_source_files_properties(${MOCKINGBIRD_RNNOISE_SOURCES}
         PROPERTIES COMPILE_FLAGS "-w")
 
 # 16KB-aligned shared libraries for Android 15+.
-# // VERIFY  Both max-page-size AND common-page-size are needed: lld uses
+# Both max-page-size and common-page-size are needed: lld uses
 # common-page-size to lay out segments while max-page-size only controls
 # what the loader expects. Without common, segment alignment falls back to
 # 4KB and Android's ELF check fails.
@@ -161,7 +163,7 @@ target_link_libraries(mockingbird PRIVATE oboe::oboe)
 # import the .so as a SHARED IMPORTED library, and add its bundled headers
 # to the include search path.
 #
-# // VERIFY  Gradle caches AARs under
+# Gradle caches AARs under
 #   $HOME/.gradle/caches/<gradle-version>/transforms/<hash>/transformed/
 #       jetified-onnxruntime-android-<version>/{headers, jni/<abi>/*.so}
 # Resilient to gradle version + hash by globbing both.

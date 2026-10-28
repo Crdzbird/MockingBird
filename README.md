@@ -39,7 +39,7 @@ under AddressSanitizer, UndefinedBehaviorSanitizer and ThreadSanitizer.
 | Voice detection | libfvad (fast) or Silero v6 through ONNX Runtime (neural) | language-agnostic |
 | Anomaly gate | RMS, spectral flux and centroid z-scores (PFFFT) | adaptive rolling background |
 | Sound classification | YAMNet through ONNX Runtime | all 521 AudioSet classes |
-| Encode | libopus or PCM | per segment |
+| Encode | libopus, raw or in Ogg, or PCM | per segment |
 
 A segment opens when the voice detector or the anomaly gate triggers. Packets
 flow only while a segment is open, so the host receives speech and events, not
@@ -374,7 +374,7 @@ flowchart TB
         RN --> YAM["YAMNet: 521 AudioSet classes"]
         VAD --> SEG["Segmenter<br/>pre-roll, hangover"]
         ANO --> SEG
-        SEG --> ENC["Encoder: Opus or PCM"]
+        SEG --> ENC["Encoder: Opus, Ogg Opus or PCM"]
     end
 
     ENC --> POOL(["Packet pool<br/>bounded, drops oldest and reports OVERRUN"])
@@ -418,7 +418,7 @@ src/
   capture/                  backend factory, miniaudio, Core Audio, Oboe
   web/                      the WebAssembly shim (Emscripten builds only)
   preprocess/               RNNoise and the integer-ratio resamplers
-  encode/                   Opus and PCM encoders
+  encode/                   Opus, Ogg Opus and PCM encoders
   engine.hpp                the engine state behind the opaque handle
   config_validation.*       config checks and derived sizes
 third_party/                vendored, permissive-only dependencies

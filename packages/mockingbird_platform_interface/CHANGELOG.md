@@ -1,3 +1,7 @@
+## Unreleased
+
+- FFI bindings regenerated for `MOCKINGBIRD_CODEC_OGG_OPUS`.
+
 ## 0.1.0
 
 First release.

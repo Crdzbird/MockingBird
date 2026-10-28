@@ -19,8 +19,8 @@ compiler-opts:
 
 # Mockingbird targets clang only (iOS/macOS/Android with clang >= 17), where the
 # C enum underlying type is int by default. Acknowledging that explicitly
-# silences ffigen's portability warning. // VERIFY  Re-check if we ever
-# add a target that uses a different enum ABI (e.g. some embedded toolchains).
+# silences ffigen's portability warning. A target with a different enum ABI
+# would need this revisited.
 silence-enum-warning: true
 
 preamble: |

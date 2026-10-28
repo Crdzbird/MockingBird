@@ -47,7 +47,7 @@ Everything else is grouped by concern:
 | `anomaly` | `AnomalyConfig`: z-score triggers, background window |
 | `sound_class` | `SoundClassConfig`: threshold, cadence, model path |
 | `segments` | `SegmentConfig`: pre-roll, post-roll, max length |
-| `encoder` | `EncoderConfig`: `EncoderConfig.opus()` for Opus |
+| `encoder` | `EncoderConfig`: `EncoderConfig.opus()` for Opus, `EncoderConfig.ogg_opus()` for Ogg Opus |
 | `queues` | `QueueConfig`: ring sizes and the ungated PCM tap |
 | `performance` | `PerformanceConfig`: silence gate, degradation, wake batching; `.mobile()` |
 
@@ -99,6 +99,12 @@ level = engine.stats().input_rms_dbfs
 `busy_fraction`, `backend_error`. Match on `type` with keyword patterns, as
 above. `Packet.data` is bytes you own, with `is_preroll`, `is_postroll`,
 `is_keyframe` and `is_last`. `Stats.worker` is a `WorkerHealth`.
+
+The packet that closes a segment has `is_last` set. Join a segment's payloads
+in order: with `Codec.OGG_OPUS` they form an `.opus` file, and with
+`Codec.PCM_S16LE`, `mockingbird.wav_from_pcm16(pcm, 16000)` returns a WAV file.
+A segment cut short by `stop` ends with an `is_last` packet only under Ogg Opus;
+`SEGMENT_END` arrives either way.
 
 Errors raise `MockingbirdError`, whose `status` is a `Status`:
 

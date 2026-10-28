@@ -78,15 +78,12 @@ Pod::Spec.new do |s|
   s.public_header_files = 'Sources/include/mockingbird/*.h'
 
   s.dependency 'Flutter'
-  # Silero VAD via Microsoft's prebuilt iOS framework. // VERIFY  pin to a
-  # released version; ~> 1.20 matches the brew install we ship on macOS.
+  # ONNX Runtime for Silero VAD and YAMNet, from Microsoft's prebuilt iOS
+  # framework.
   s.dependency 'onnxruntime-c', '~> 1.20'
-  # // VERIFY  Bumped from 13.0 to 14.0 to unlock std::jthread,
-  # std::stop_token, and std::atomic::wait/notify, which libc++ marks as
-  # introduced in iOS 14. iOS 14 ships on every device made since 2015,
-  # so the practical compatibility loss is essentially zero.
-  # Xcode 27's SDK refuses deployment targets below 15.0 (and 15 is also the
-  # ONNX Runtime Swift package's floor, so SPM and CocoaPods now agree).
+  # std::jthread, std::stop_token and std::atomic::wait need iOS 14, and
+  # Xcode 27's SDK refuses deployment targets below 15.0, which is also the
+  # ONNX Runtime Swift package's floor, so SPM and CocoaPods agree.
   s.platform     = :ios, '15.0'
   s.swift_version = '5.0'
 

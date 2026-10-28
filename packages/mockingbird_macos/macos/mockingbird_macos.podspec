@@ -45,9 +45,8 @@ Pod::Spec.new do |s|
     # custom-mode API we don't compile (CUSTOM_MODES off); drop it so
     # force_load doesn't drag in unresolved opus_custom_* symbols.
     rm -f Sources/third_party/opus/celt/opus_custom_demo.c
-    # // VERIFY  miniaudio uses CoreAudio (plain C) on macOS, so the .m
-    # rename is not strictly required. Keeping it symmetric with iOS avoids
-    # platform-specific branching in shared infra.
+    # miniaudio uses Core Audio (plain C) on macOS, so the .m rename is not
+    # strictly required; it keeps the build the same as on iOS.
     mv Sources/src/mockingbird/capture/miniaudio_impl.c \
        Sources/src/mockingbird/capture/miniaudio_impl.m
   CMD

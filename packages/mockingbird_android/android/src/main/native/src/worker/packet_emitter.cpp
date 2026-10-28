@@ -1,5 +1,6 @@
 // A pool with no free slot, or a full ready queue, drops a packet and
 // reports it as an overrun; an encoder returning no bytes recycles the slot.
+// The encoder learns before each frame whether it opens or ends a segment.
 #include "worker/packet_emitter.hpp"
 
 #include "engine.hpp"
@@ -24,8 +25,32 @@ void PacketEmitter::emit(const int16_t* samples, uint64_t now_ts, uint32_t flags
         overrun(now_ts);
         return;
     }
+    FrameContext ctx;
+    ctx.segment_id = segment_id;
+    ctx.first      = segment_pkt_index == 0;
+    ctx.last       = (flags & MOCKINGBIRD_PKT_FLAG_LAST) != 0;
+    e_->encoder->begin_frame(ctx);
     const int n = e_->encoder->encode(samples, frame_samples_, slot->buf.get(),
                                       static_cast<uint32_t>(e_->packets.max_payload_bytes()));
+    commit(slot, n, now_ts, flags, segment_id, segment_start_us, segment_pkt_index);
+}
+
+void PacketEmitter::emit_tail(uint64_t now_ts, uint64_t segment_id, uint64_t segment_start_us,
+                              uint32_t& segment_pkt_index) {
+    auto* slot = e_->packets.acquire();
+    if (slot == nullptr) {
+        overrun(now_ts);
+        return;
+    }
+    const int n = e_->encoder->end_segment(
+        slot->buf.get(), static_cast<uint32_t>(e_->packets.max_payload_bytes()));
+    commit(slot, n, now_ts, MOCKINGBIRD_PKT_FLAG_LAST, segment_id, segment_start_us,
+           segment_pkt_index);
+}
+
+void PacketEmitter::commit(PacketPool::Slot* slot, int n, uint64_t now_ts, uint32_t flags,
+                           uint64_t segment_id, uint64_t segment_start_us,
+                           uint32_t& segment_pkt_index) {
     if (n <= 0) {
         slot->size = 0;
         e_->packets.release_unused(slot);

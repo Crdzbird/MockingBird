@@ -10,6 +10,8 @@ class SegmentConfig:
     pre_roll_ms: int = 300
     """Audio kept from before the trigger."""
     post_roll_ms: int = 300
-    """Audio kept after the detector closes."""
+    """Audio kept after the detectors go quiet; the segment closes after the
+    longer of this and the VAD hangover."""
     max_ms: int = 60000
-    """Hard cap on one segment; 0 is unbounded."""
+    """Hard cap: the packet that reaches it is the last, and the next active
+    frame opens a new segment. 0 is unbounded."""

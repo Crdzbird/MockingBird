@@ -7,6 +7,7 @@ std::unique_ptr<Encoder> make_encoder(mockingbird_codec_t codec) {
         case MOCKINGBIRD_CODEC_PCM_S16LE: return make_passthrough_encoder();
         case MOCKINGBIRD_CODEC_OPUS:      return make_opus_encoder();
         case MOCKINGBIRD_CODEC_FLAC:      return nullptr;
+        case MOCKINGBIRD_CODEC_OGG_OPUS:  return make_ogg_opus_encoder();
     }
     return nullptr;
 }

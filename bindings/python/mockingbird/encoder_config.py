@@ -21,3 +21,8 @@ class EncoderConfig:
     def opus(cls) -> EncoderConfig:
         """Opus at 32 kbps VBR, the usual choice for live voice."""
         return cls(codec=Codec.OPUS)
+
+    @classmethod
+    def ogg_opus(cls) -> EncoderConfig:
+        """Ogg Opus at 32 kbps VBR, for segments saved as files."""
+        return cls(codec=Codec.OGG_OPUS)

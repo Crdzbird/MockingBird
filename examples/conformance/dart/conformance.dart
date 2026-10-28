@@ -98,7 +98,8 @@ ProcResult process(MockingbirdBindings b, Int16List pcm) {
   final ev = calloc<mockingbird_event_t>();
   final stats = calloc<mockingbird_stats_t>();
   try {
-    if (b.mockingbird_config_defaults(cfg) != mockingbird_status.MOCKINGBIRD_OK) {
+    if (b.mockingbird_config_defaults(cfg) !=
+        mockingbird_status.MOCKINGBIRD_OK) {
       throw StateError('mockingbird_config_defaults failed');
     }
     cfg.ref.backendAsInt = 4;
@@ -106,7 +107,8 @@ ProcResult process(MockingbirdBindings b, Int16List pcm) {
     cfg.ref.pcm_ring_frames = 1 << 17;
     cfg.ref.packet_queue_capacity = 4096;
 
-    if (b.mockingbird_create(cfg, outEngine) != mockingbird_status.MOCKINGBIRD_OK) {
+    if (b.mockingbird_create(cfg, outEngine) !=
+        mockingbird_status.MOCKINGBIRD_OK) {
       throw StateError('mockingbird_create failed');
     }
     final engine = outEngine.value;
@@ -131,10 +133,18 @@ ProcResult process(MockingbirdBindings b, Int16List pcm) {
     final h = Hasher();
     final packets = <List<int>>[];
     final datas = <Uint8List>[];
-    while (b.mockingbird_drain(engine, pkt) == mockingbird_status.MOCKINGBIRD_OK) {
+    while (
+        b.mockingbird_drain(engine, pkt) == mockingbird_status.MOCKINGBIRD_OK) {
       final r = pkt.ref;
       final data = Uint8List.fromList(r.data.asTypedList(r.size));
-      packets.add([r.segment_id, r.pts_us, r.capture_ts_us, r.flags, r.codecAsInt, r.size]);
+      packets.add([
+        r.segment_id,
+        r.pts_us,
+        r.capture_ts_us,
+        r.flags,
+        r.codecAsInt,
+        r.size
+      ]);
       datas.add(data);
       b.mockingbird_release(engine, pkt);
     }
@@ -153,9 +163,16 @@ ProcResult process(MockingbirdBindings b, Int16List pcm) {
     }
 
     final events = <List<int>>[];
-    while (b.mockingbird_poll_event(engine, ev) == mockingbird_status.MOCKINGBIRD_OK) {
+    while (b.mockingbird_poll_event(engine, ev) ==
+        mockingbird_status.MOCKINGBIRD_OK) {
       final r = ev.ref;
-      events.add([r.typeAsInt, r.segment_id, r.timestamp_us, r.reason_mask, float32bits(r.confidence)]);
+      events.add([
+        r.typeAsInt,
+        r.segment_id,
+        r.timestamp_us,
+        r.reason_mask,
+        float32bits(r.confidence)
+      ]);
     }
     h.u32(events.length);
     for (final e in events) {
@@ -176,15 +193,18 @@ ProcResult process(MockingbirdBindings b, Int16List pcm) {
     if (debug) {
       for (int i = 0; i < packets.length; i++) {
         final p = packets[i];
-        stdout.writeln('P ${i.toString().padLeft(2, '0')} size=${p[5]} flags=${p[3]} '
+        stdout.writeln(
+            'P ${i.toString().padLeft(2, '0')} size=${p[5]} flags=${p[3]} '
             'seg=${p[0]} pts=${p[1]} cap=${p[2]}');
       }
       for (int i = 0; i < events.length; i++) {
         final e = events[i];
-        stdout.writeln('E ${i.toString().padLeft(2, '0')} type=${e[0]} reason=${e[3]} '
+        stdout.writeln(
+            'E ${i.toString().padLeft(2, '0')} type=${e[0]} reason=${e[3]} '
             'conf=${e[4].toRadixString(16).padLeft(8, '0')} seg=${e[1]} ts=${e[2]}');
       }
-      stdout.writeln('S captured=${s.frames_captured} dropped=${s.frames_dropped_capture} '
+      stdout.writeln(
+          'S captured=${s.frames_captured} dropped=${s.frames_dropped_capture} '
           'emitted=${s.packets_emitted} pktDropped=${s.packets_dropped} '
           'segOpen=${s.segments_opened} segClose=${s.segments_closed}');
     }
@@ -264,7 +284,8 @@ Int16List bytesToPcm(Uint8List b) {
   return out;
 }
 
-Uint8List encodeResult(int computedDigest, int expectedDigest, int nPkts, int nEvents, int nBytes) {
+Uint8List encodeResult(int computedDigest, int expectedDigest, int nPkts,
+    int nEvents, int nBytes) {
   final bd = ByteData(28);
   bd.setUint64(0, computedDigest, Endian.big);
   bd.setUint64(8, expectedDigest, Endian.big);
@@ -282,7 +303,8 @@ bool bytesEqual(Uint8List a, Uint8List b) {
   return true;
 }
 
-String hex16(int v) => '0x${(v & 0xFFFFFFFFFFFFFFFF).toRadixString(16).padLeft(16, '0')}';
+String hex16(int v) =>
+    '0x${BigInt.from(v).toUnsigned(64).toRadixString(16).padLeft(16, '0')}';
 String ok(bool b) => b ? 'MATCH' : 'MISMATCH';
 
 String resolveLib(List<String> args) {
@@ -301,7 +323,8 @@ bool debug = false;
 
 Future<void> main(List<String> args) async {
   if (args.isEmpty) {
-    stderr.writeln('usage: dart run conformance.dart host:port [libmockingbird-path]');
+    stderr.writeln(
+        'usage: dart run conformance.dart host:port [libmockingbird-path]');
     exit(2);
   }
   if (args[0] == 'dump') {
@@ -328,7 +351,8 @@ Future<void> main(List<String> args) async {
       .substring('--peer='.length);
   final own = genSignal(dartSeed);
   final expected = process(b, own);
-  stdout.writeln('[$name] generated ${own.length} samples (seed ${hex16(dartSeed)}); '
+  stdout.writeln(
+      '[$name] generated ${own.length} samples (seed ${hex16(dartSeed)}); '
       'my engine: ${expected.nPackets} packets / ${expected.nEvents} events / ${expected.nBytes} bytes, '
       'digest ${hex16(expected.digest)}');
 
@@ -336,7 +360,8 @@ Future<void> main(List<String> args) async {
   final peerBytes = await readFrame(reader);
 
   if (!bytesEqual(peerBytes, pcmToBytes(genSignal(goSeed)))) {
-    stdout.writeln('[$name] GENERATOR MISMATCH: $peerName signal differs from our local regeneration');
+    stdout.writeln(
+        '[$name] GENERATOR MISMATCH: $peerName signal differs from our local regeneration');
     await socket.close();
     exit(1);
   }
@@ -345,10 +370,14 @@ Future<void> main(List<String> args) async {
       'generator parity MATCH, processing through MY binding...');
 
   final computed = process(b, peerPcm);
-  stdout.writeln('[$name] my result for $peerName\'s audio: ${computed.nPackets} packets / '
+  stdout.writeln(
+      '[$name] my result for $peerName\'s audio: ${computed.nPackets} packets / '
       '${computed.nEvents} events / ${computed.nBytes} bytes, digest ${hex16(computed.digest)}');
 
-  writeFrame(socket, encodeResult(computed.digest, expected.digest, computed.nPackets, computed.nEvents, computed.nBytes));
+  writeFrame(
+      socket,
+      encodeResult(computed.digest, expected.digest, computed.nPackets,
+          computed.nEvents, computed.nBytes));
   final rb = await readFrame(reader);
   final rd = rb.buffer.asByteData();
   final peerComputedForMine = rd.getUint64(0, Endian.big);

@@ -1,3 +1,13 @@
+## Unreleased
+
+- `MockingbirdCodec.oggOpus` and `MockingbirdEncoderConfig.oggOpus()`: a segment's packets, concatenated, form a playable `.opus` file.
+- `MockingbirdWav.fromPcm16` wraps a PCM segment in a WAV header.
+- The packet that closes a segment now has `isLast` set; it was never set before.
+- `segments.maxMs` is enforced: a segment that reaches it closes and the next active frame opens a new one with fresh begin events.
+- `segments.postRollMs` is honoured: a segment keeps the longer of the hangover and the post-roll after the detectors go quiet.
+- Each segment's encoder state starts fresh, so every segment decodes on its own.
+- A flickering voice inside one segment no longer repeats `MockingbirdSpeechBeginEvent` without an end in between.
+
 ## 0.1.0
 
 First release.

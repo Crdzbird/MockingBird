@@ -10,3 +10,5 @@ class Codec(IntEnum):
     OPUS = 1
     FLAC = 2
     """Declared by the ABI, not implemented yet."""
+    OGG_OPUS = 3
+    """Opus in Ogg: one segment's payloads, concatenated, form a .opus file."""

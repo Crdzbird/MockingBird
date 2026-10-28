@@ -17,7 +17,8 @@ bool valid_sample_rate(uint32_t hz) {
 bool valid_frame_ms(uint32_t ms) { return ms == 10 || ms == 20 || ms == 30; }
 
 bool valid_codec(int c) {
-    return c == MOCKINGBIRD_CODEC_PCM_S16LE || c == MOCKINGBIRD_CODEC_OPUS || c == MOCKINGBIRD_CODEC_FLAC;
+    return c == MOCKINGBIRD_CODEC_PCM_S16LE || c == MOCKINGBIRD_CODEC_OPUS ||
+           c == MOCKINGBIRD_CODEC_FLAC || c == MOCKINGBIRD_CODEC_OGG_OPUS;
 }
 
 bool valid_backend(int b) {

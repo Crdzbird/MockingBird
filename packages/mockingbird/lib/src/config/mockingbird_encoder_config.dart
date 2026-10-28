@@ -23,6 +23,12 @@ final class MockingbirdEncoderConfig {
 
   const MockingbirdEncoderConfig._opus() : this._(codec: .opus);
 
+  /// Ogg Opus at 32 kbps VBR, for segments saved or uploaded as files.
+  const factory MockingbirdEncoderConfig.oggOpus() =
+      MockingbirdEncoderConfig._oggOpus;
+
+  const MockingbirdEncoderConfig._oggOpus() : this._(codec: .oggOpus);
+
   /// The packet encoding.
   final MockingbirdCodec codec;
 

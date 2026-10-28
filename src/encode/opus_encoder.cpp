@@ -34,6 +34,7 @@ public:
         if (enc_ == nullptr || err != OPUS_OK) return MOCKINGBIRD_ERR_BACKEND;
 
         apply_settings(cfg);
+        lookahead_ = query_lookahead();
 
         frame_samples_ = (cfg.sample_rate_hz / 1000u) * cfg.frame_ms;
         return MOCKINGBIRD_OK;
@@ -41,6 +42,11 @@ public:
 
     mockingbird_codec_t codec() const override { return MOCKINGBIRD_CODEC_OPUS; }
     size_t max_packet_bytes() const override { return kOpusMaxPacketBytes; }
+    uint32_t lookahead_samples() const override { return lookahead_; }
+
+    void begin_frame(const FrameContext& ctx) override {
+        if (ctx.first && enc_ != nullptr) reset();
+    }
 
     int encode(const int16_t* in_samples, uint32_t n, uint8_t* out_buf,
                uint32_t out_cap) override {
@@ -57,10 +63,19 @@ private:
         opus_encoder_ctl(enc_, OPUS_SET_VBR(cfg.opus_vbr));
         opus_encoder_ctl(enc_, OPUS_SET_COMPLEXITY(cfg.opus_complexity));
     }
+
+    void reset() { opus_encoder_ctl(enc_, OPUS_RESET_STATE); }
+
+    uint32_t query_lookahead() {
+        opus_int32 v = 0;
+        if (opus_encoder_ctl(enc_, OPUS_GET_LOOKAHEAD(&v)) != OPUS_OK || v < 0) return 0;
+        return static_cast<uint32_t>(v);
+    }
 #pragma clang diagnostic pop
 
     ::OpusEncoder* enc_           = nullptr;
     uint32_t       frame_samples_ = 0;
+    uint32_t       lookahead_     = 0;
 };
 
 }

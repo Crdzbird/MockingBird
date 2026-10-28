@@ -20,3 +20,10 @@ func OpusEncoder() EncoderConfig {
 	e.Codec = CodecOpus
 	return e
 }
+
+// OggOpusEncoder is Ogg Opus at 32 kbps VBR, for segments saved as files.
+func OggOpusEncoder() EncoderConfig {
+	e := DefaultEncoderConfig()
+	e.Codec = CodecOggOpus
+	return e
+}

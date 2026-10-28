@@ -43,6 +43,7 @@ from mockingbird.stats import Stats
 from mockingbird.status import Status
 from mockingbird.vad_config import VadConfig
 from mockingbird.vad_tier import VadTier
+from mockingbird.wav import WAV_HEADER_BYTES, wav_from_pcm16
 from mockingbird.worker_health import WorkerHealth
 
 __all__ = [
@@ -68,11 +69,13 @@ __all__ = [
     "Status",
     "VadConfig",
     "VadTier",
+    "WAV_HEADER_BYTES",
     "WorkerHealth",
     "load_library",
     "sensitive",
     "status_name",
     "version",
+    "wav_from_pcm16",
 ]
 
 __version__ = "0.1.0"
