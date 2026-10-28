@@ -297,6 +297,34 @@ its training notebook makes your own from synthetic speech. On the web, bundle
 the model's `.ort` conversion instead. Keyword spotting needs 16 kHz input,
 and the first score arrives about 1.3 s after `start`.
 
+## Speaker verification
+
+Enroll a person once, then learn for every utterance whether it was them:
+
+```dart
+final engine = MockingbirdEngine.create(const MockingbirdConfig())
+  ..setSpeakerModel(await MockingbirdModels.speakerModelPath());
+final voicePrint = engine.speakerEmbedding(fiveSecondsOfTheirVoice);
+engine
+  ..setTargetSpeaker(voicePrint)
+  ..start();
+engine.events.listen((e) {
+  if (e case MockingbirdSpeakerEvent(:final isTarget, :final segmentId)) {
+    print('segment $segmentId is ${isTarget ? '' : 'not '}them');
+  }
+});
+```
+
+The voice print is a `Float32List`; store it and pass it to
+`setTargetSpeaker` in later sessions instead of recording again. The model,
+CAM++ from 3D-Speaker (8.4 MB), downloads on first use. Speaker verification
+needs 16 kHz input and voice detection. It recognises a voice; it does not
+separate voices that overlap. On LibriSpeech's 40 test speakers, at the
+default threshold of 0.5, it accepted at most one impostor in 7,800 trials,
+and recognised its speaker every time on 4 s of clean speech and 93.5% of the
+time on 2 s at 10 dB SNR; pass `threshold: 0.4` to reject fewer of their
+utterances, for at most 0.7% false accepts.
+
 ## How it compares
 
 The pub.dev packages below each cover part of the same job. The first table is
@@ -310,6 +338,7 @@ about scope; the second is measured.
 | Noise suppression | RNNoise | no | platform flags via the recorder | gtcrn, dpdfnet | RNNoise | platform flags |
 | Sound classification | YAMNet, 521 classes | no | no | CED and zipformer audio tagging | no | no |
 | Keyword spotting | openWakeWord models | no | no | open-vocabulary zipformer | no | no |
+| Speaker verification | CAM++, per utterance | no | no | yes, with speaker identification | no | no |
 | Non-speech event gate | yes | no | no | no | no | no |
 | Encoded output | Opus, Ogg Opus or PCM with a WAV helper, per segment with pre-roll | PCM speech segments | PCM speech segments | PCM speech segments | PCM | AAC, Opus, WAV, FLAC, PCM |
 | Retune while running | yes | no | no | no | no | no |
@@ -318,8 +347,8 @@ about scope; the second is measured.
 | Platforms | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS, Windows, Linux, web |
 | License | MIT | MIT | MIT | Apache-2.0 | LGPL-3.0 | BSD-3-Clause |
 
-sherpa_onnx also ships speech recognition, synthesis and speaker
-identification, which Mockingbird does not attempt. Its keyword spotter takes
+sherpa_onnx also ships speech recognition and synthesis, which Mockingbird
+does not attempt. Its keyword spotter takes
 keywords as text; Mockingbird's needs a trained model per keyword.
 
 ### Measured

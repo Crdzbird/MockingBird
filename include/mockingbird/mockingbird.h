@@ -198,7 +198,12 @@ typedef enum mockingbird_event_type {
     /* A keyword added with mockingbird_add_keyword was heard. reason_mask is
      * the id mockingbird_add_keyword returned; confidence is the keyword
      * model's score in [0, 1]. Does not open a segment. */
-    MOCKINGBIRD_EVT_KEYWORD             = 13
+    MOCKINGBIRD_EVT_KEYWORD             = 13,
+    /* An utterance was compared with the target speaker set with
+     * mockingbird_set_target_speaker. reason_mask is 1 when the similarity
+     * reached the threshold and 0 when it did not; confidence is the cosine
+     * similarity, clamped to [0, 1]. segment_id is the utterance's segment. */
+    MOCKINGBIRD_EVT_SPEAKER             = 14
 } mockingbird_event_type_t;
 
 /* Bits of mockingbird_config_t.voice_processing. */
@@ -721,6 +726,50 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_add_keyword(mockingbird_engine_
                                            uint32_t*             out_id);
 
 MOCKINGBIRD_API mockingbird_status_t mockingbird_clear_keywords(mockingbird_engine_t* engine);
+
+/* ============================================================================
+ * SPEAKER VERIFICATION
+ *
+ * Tells whether each utterance comes from one enrolled person, with a speaker
+ * embedding model: by default CAM++ from 3D-Speaker, trained on Chinese and
+ * English speakers and used for any language. 16 kHz only; utterances come
+ * from voice detection, so enable_vad must be set; needs a build with ONNX
+ * Runtime. It recognises a voice, it does not separate overlapping ones.
+ *
+ * mockingbird_set_speaker_model names the model; NULL or "" falls back to
+ * the MOCKINGBIRD_SPEAKER_MODEL env var, then "speaker_campplus.onnx" in the
+ * working directory. Only while stopped; the path is copied.
+ *
+ * mockingbird_speaker_embedding computes the voice print of 16 kHz mono
+ * samples on the calling thread: at least 0.5 s, and 3 to 10 s of one person
+ * speaking gives the steadiest result. It writes at most capacity values to
+ * out and sets *out_dim to the print's length (192 for the default model).
+ * The first call loads the model. Keep the print to enroll the speaker again
+ * later without recording.
+ *
+ * mockingbird_set_target_speaker sets the print utterances are compared
+ * with, and the cosine similarity that counts as a match; 0 falls back to
+ * 0.5. NULL clears the target. Allowed while running; the print is copied.
+ *
+ * While a target is set, each utterance of at least 0.5 s, from SPEECH_BEGIN
+ * to SPEECH_END and at most its first 8 s, produces one
+ * MOCKINGBIRD_EVT_SPEAKER. The comparison runs on the worker thread when the
+ * utterance ends.
+ * ========================================================================== */
+MOCKINGBIRD_API mockingbird_status_t mockingbird_set_speaker_model(mockingbird_engine_t* engine,
+                                                 const char*           model_path);
+
+MOCKINGBIRD_API mockingbird_status_t mockingbird_speaker_embedding(mockingbird_engine_t* engine,
+                                                 const int16_t*        samples,
+                                                 uint32_t              count,
+                                                 float*                out,
+                                                 uint32_t              capacity,
+                                                 uint32_t*             out_dim);
+
+MOCKINGBIRD_API mockingbird_status_t mockingbird_set_target_speaker(mockingbird_engine_t* engine,
+                                                  const float*          embedding,
+                                                  uint32_t              dim,
+                                                  float                 threshold);
 
 /* ============================================================================
  * HOST PCM PUSH  (only when backend == MOCKINGBIRD_BACKEND_HOST_PCM)

@@ -86,6 +86,7 @@ set(MOCKINGBIRD_SOURCES
         src/api/api_create.cpp
         src/api/api_devices.cpp
         src/api/api_keywords.cpp
+        src/api/api_speaker.cpp
         src/api/api_defaults.cpp
         src/api/api_push.cpp
         src/api/api_queues.cpp
@@ -104,6 +105,7 @@ set(MOCKINGBIRD_SOURCES
         src/worker/packet_emitter.cpp
         src/worker/segmenter.cpp
         src/worker/segmenter_frame.cpp
+        src/worker/speaker_verifier.cpp
         src/worker/tunables.cpp
         src/worker/worker.cpp
         src/worker/worker_frame.cpp
@@ -124,6 +126,8 @@ set(MOCKINGBIRD_SOURCES
         src/detect/yamnet_classifier_inference.cpp
         src/detect/oww_keyword_spotter.cpp
         src/detect/oww_keyword_spotter_feed.cpp
+        src/detect/kaldi_fbank.cpp
+        src/detect/speaker_model.cpp
         src/encode/factory.cpp
         src/encode/pcm_encoder.cpp
         src/encode/opus_encoder.cpp
@@ -182,6 +186,7 @@ set(MOCKINGBIRD_INTERNAL_HEADERS
         src/detect/feed_hints.hpp
         src/detect/keyword_set.hpp
         src/detect/keyword_spotter.hpp
+        src/detect/kaldi_fbank.hpp
         src/detect/model_path.hpp
         src/detect/neural_vad_detector.hpp
         src/detect/oww_keyword_spotter.hpp
@@ -189,6 +194,8 @@ set(MOCKINGBIRD_INTERNAL_HEADERS
         src/detect/ort_headers.hpp
         src/detect/rolling_stats.hpp
         src/detect/sound_classifier.hpp
+        src/detect/speaker_model.hpp
+        src/detect/speaker_state.hpp
         src/detect/spectral_metrics.hpp
         src/detect/yamnet_classifier.hpp
         src/encode/encoder.hpp
@@ -542,6 +549,7 @@ if(MOCKINGBIRD_ENABLE_TESTS AND TARGET mockingbird_static)
             tests/test_neural_vad.cpp
             tests/test_sound_classifier.cpp
             tests/test_keywords.cpp
+            tests/test_speaker.cpp
             tests/test_preprocess_rnnoise.cpp
             tests/test_abi_fuzz.cpp
             tests/test_stress.cpp

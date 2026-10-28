@@ -28,6 +28,7 @@ void main() {
     expect(decode(11), isA<MockingbirdCaptureResumedEvent>());
     expect(decode(12), isA<MockingbirdRouteChangedEvent>());
     expect(decode(13, reason: 1), isA<MockingbirdKeywordEvent>());
+    expect(decode(14, reason: 1), isA<MockingbirdSpeakerEvent>());
     expect(decode(42), isA<MockingbirdUnknownEvent>());
   });
 
@@ -67,5 +68,13 @@ void main() {
         decode(13, reason: 3, confidence: 0.92) as MockingbirdKeywordEvent;
     expect(e.keywordId, 3);
     expect(e.score, closeTo(0.92, 1e-6));
+  });
+
+  test('a speaker event says whether it matched and how closely', () {
+    final e =
+        decode(14, reason: 1, confidence: 0.81) as MockingbirdSpeakerEvent;
+    expect(e.isTarget, isTrue);
+    expect(e.similarity, closeTo(0.81, 1e-6));
+    expect((decode(14) as MockingbirdSpeakerEvent).isTarget, isFalse);
   });
 }

@@ -1,5 +1,7 @@
 """Unpacks LibriSpeech test-clean and ESC-50 from the cache and writes 16 kHz
-mono WAV copies the evaluations read. Needs ffmpeg on PATH.
+mono WAV copies the evaluations read: 60 utterances for voice detection, six
+utterances longer than 4 s from each of the 40 speakers for speaker
+verification, and every ESC-50 clip. Needs ffmpeg on PATH.
 
     python3 prepare.py ~/.cache/mockingbird-bench
 """
@@ -8,6 +10,7 @@ import csv
 import subprocess
 import sys
 import tarfile
+import wave
 import zipfile
 from pathlib import Path
 
@@ -40,6 +43,25 @@ def librispeech(cache: Path, utterances: int) -> None:
         to_wav(f, cache / "speech" / f"{f.stem}.wav")
 
 
+def speakers(cache: Path, per_speaker: int = 6) -> None:
+    for spk in sorted((cache / "LibriSpeech" / "test-clean").iterdir()):
+        n = 0
+        for f in sorted(spk.rglob("*.flac")):
+            dst = cache / "speakers" / f"{spk.name}_{f.stem}.wav"
+            to_wav(f, dst)
+            if audio_seconds(dst) <= 4:
+                dst.unlink()
+                continue
+            n += 1
+            if n == per_speaker:
+                break
+
+
+def audio_seconds(path: Path) -> float:
+    with wave.open(str(path)) as w:
+        return w.getnframes() / w.getframerate()
+
+
 def esc50(cache: Path) -> None:
     root = cache / "ESC-50-master"
     if not root.exists():
@@ -59,5 +81,6 @@ def esc50(cache: Path) -> None:
 if __name__ == "__main__":
     cache = Path(sys.argv[1]).expanduser()
     librispeech(cache, int(sys.argv[2]) if len(sys.argv) > 2 else 60)
+    speakers(cache)
     esc50(cache)
     print("prepared", cache)

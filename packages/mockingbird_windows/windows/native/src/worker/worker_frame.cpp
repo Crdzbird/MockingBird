@@ -1,5 +1,6 @@
 // One frame, in the fixed order every binding's conformance digest depends
-// on: retune, meter, denoise, tap, detect, classify, spot, segment, account.
+// on: retune, meter, denoise, tap, detect, classify, spot, segment, verify
+// the speaker, account.
 #include "worker/worker.hpp"
 
 #include "engine.hpp"
@@ -23,6 +24,8 @@ void Worker::process_frame(uint64_t now_ts) {
                    segmenter_.open_segment_id(), now_ts);
     bank_.spot(e_, scratch_.data(), frame_samples_, quiet, d, segmenter_.open_segment_id(), now_ts);
     segmenter_.on_frame(scratch_.data(), now_ts, d, tunables_.hangover_frames);
+    speaker_.on_frame(e_, scratch_.data(), frame_samples_, segmenter_.speech_open(),
+                      segmenter_.open_segment_id(), now_ts);
 
     health_.end_frame(e_, now_ts, tunables_);
 }

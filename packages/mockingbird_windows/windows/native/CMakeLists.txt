@@ -86,6 +86,7 @@ set(MOCKINGBIRD_SOURCES
         src/api/api_create.cpp
         src/api/api_devices.cpp
         src/api/api_keywords.cpp
+        src/api/api_speaker.cpp
         src/api/api_defaults.cpp
         src/api/api_push.cpp
         src/api/api_queues.cpp
@@ -104,6 +105,7 @@ set(MOCKINGBIRD_SOURCES
         src/worker/packet_emitter.cpp
         src/worker/segmenter.cpp
         src/worker/segmenter_frame.cpp
+        src/worker/speaker_verifier.cpp
         src/worker/tunables.cpp
         src/worker/worker.cpp
         src/worker/worker_frame.cpp
@@ -124,6 +126,8 @@ set(MOCKINGBIRD_SOURCES
         src/detect/yamnet_classifier_inference.cpp
         src/detect/oww_keyword_spotter.cpp
         src/detect/oww_keyword_spotter_feed.cpp
+        src/detect/kaldi_fbank.cpp
+        src/detect/speaker_model.cpp
         src/encode/factory.cpp
         src/encode/pcm_encoder.cpp
         src/encode/opus_encoder.cpp
@@ -182,6 +186,7 @@ set(MOCKINGBIRD_INTERNAL_HEADERS
         src/detect/feed_hints.hpp
         src/detect/keyword_set.hpp
         src/detect/keyword_spotter.hpp
+        src/detect/kaldi_fbank.hpp
         src/detect/model_path.hpp
         src/detect/neural_vad_detector.hpp
         src/detect/oww_keyword_spotter.hpp
@@ -189,6 +194,8 @@ set(MOCKINGBIRD_INTERNAL_HEADERS
         src/detect/ort_headers.hpp
         src/detect/rolling_stats.hpp
         src/detect/sound_classifier.hpp
+        src/detect/speaker_model.hpp
+        src/detect/speaker_state.hpp
         src/detect/spectral_metrics.hpp
         src/detect/yamnet_classifier.hpp
         src/encode/encoder.hpp
@@ -290,6 +297,14 @@ if(MOCKINGBIRD_ENABLE_NEURAL_VAD)
     if(ONNXRUNTIME_INCLUDE_DIR AND ONNXRUNTIME_LIBRARY)
         set(MOCKINGBIRD_HAVE_NEURAL_VAD ON)
         message(STATUS "Mockingbird: Neural VAD enabled (ONNX Runtime at ${ONNXRUNTIME_LIBRARY})")
+        # A static ONNX Runtime (scripts/build_ort_static.sh) links into the
+        # engine itself; its symbols stay hidden so an app can also load
+        # another ONNX Runtime without clashes.
+        if(ONNXRUNTIME_LIBRARY MATCHES "\\.a$" AND NOT EMSCRIPTEN)
+            set(MOCKINGBIRD_ORT_STATIC ON)
+        elseif(WIN32 AND NOT EXISTS "${ONNXRUNTIME_ROOT}/lib/onnxruntime.dll")
+            set(MOCKINGBIRD_ORT_STATIC ON)
+        endif()
         if(EMSCRIPTEN)
             # ONNX Runtime's WebAssembly build catches exceptions through
             # JavaScript; every object in the module has to agree.
@@ -382,6 +397,16 @@ function(_mockingbird_configure_target tgt)
         target_compile_definitions(${tgt} PRIVATE MOCKINGBIRD_HAVE_NEURAL_VAD=1)
         target_include_directories(${tgt} SYSTEM PRIVATE ${ONNXRUNTIME_INCLUDE_DIR})
         target_link_libraries(${tgt} PRIVATE ${ONNXRUNTIME_LIBRARY})
+        if(MOCKINGBIRD_ORT_STATIC AND NOT WIN32)
+            find_package(Threads REQUIRED)
+            target_link_libraries(${tgt} PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
+            if(ANDROID)
+                target_link_libraries(${tgt} PRIVATE log)
+            endif()
+            if(NOT APPLE)
+                target_link_options(${tgt} PRIVATE "LINKER:--exclude-libs,ALL")
+            endif()
+        endif()
         # YAMNet sound classifier reuses the same ORT integration.
         target_compile_definitions(${tgt} PRIVATE MOCKINGBIRD_HAVE_SOUND_CLASS=1)
     endif()
@@ -524,6 +549,7 @@ if(MOCKINGBIRD_ENABLE_TESTS AND TARGET mockingbird_static)
             tests/test_neural_vad.cpp
             tests/test_sound_classifier.cpp
             tests/test_keywords.cpp
+            tests/test_speaker.cpp
             tests/test_preprocess_rnnoise.cpp
             tests/test_abi_fuzz.cpp
             tests/test_stress.cpp
@@ -549,7 +575,7 @@ if(MOCKINGBIRD_ENABLE_TESTS AND TARGET mockingbird_static)
         target_compile_definitions(test_mockingbird PRIVATE MOCKINGBIRD_HAVE_RNNOISE=1)
     endif()
 
-    if(WIN32 AND MOCKINGBIRD_HAVE_NEURAL_VAD)
+    if(WIN32 AND MOCKINGBIRD_HAVE_NEURAL_VAD AND NOT MOCKINGBIRD_ORT_STATIC)
         add_custom_command(TARGET test_mockingbird POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
                         ${ONNXRUNTIME_ROOT}/lib/onnxruntime.dll

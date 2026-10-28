@@ -22,3 +22,6 @@ class EventType(IntEnum):
     """The input device changed; capture continues on the new route."""
     KEYWORD = 13
     """A keyword was heard: ``reason_mask`` is its id, ``confidence`` its score."""
+    SPEAKER = 14
+    """An utterance was compared with the target speaker: ``reason_mask`` is 1
+    on a match, ``confidence`` the similarity."""

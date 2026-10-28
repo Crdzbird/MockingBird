@@ -52,6 +52,23 @@ abstract class MockingbirdPlatformExtras extends PlatformInterface {
   int clearKeywords(MockingbirdEngineHandle handle) =>
       MockingbirdStatusCode.unsupported;
 
+  /// Names the speaker embedding model; null uses the default.
+  int setSpeakerModel(MockingbirdEngineHandle handle, String? path) =>
+      MockingbirdStatusCode.unsupported;
+
+  /// The voice print of 16 kHz mono [samples].
+  MockingbirdSpeakerEmbeddingResult speakerEmbedding(
+    MockingbirdEngineHandle handle,
+    Int16List samples,
+  ) => (status: MockingbirdStatusCode.unsupported, embedding: Float32List(0));
+
+  /// Sets the voice print utterances are compared with; null stops.
+  int setTargetSpeaker(
+    MockingbirdEngineHandle handle,
+    Float32List? embedding,
+    double threshold,
+  ) => MockingbirdStatusCode.unsupported;
+
   /// Downloads [spec], checks it, keeps it under [directory], and returns
   /// the path the engine opens it from. A kept copy is reused without any
   /// network access.

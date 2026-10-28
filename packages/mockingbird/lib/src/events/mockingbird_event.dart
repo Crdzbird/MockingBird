@@ -14,6 +14,7 @@ part 'mockingbird_overrun_event.dart';
 part 'mockingbird_route_changed_event.dart';
 part 'mockingbird_segment_begin_event.dart';
 part 'mockingbird_segment_end_event.dart';
+part 'mockingbird_speaker_event.dart';
 part 'mockingbird_sound_class_event.dart';
 part 'mockingbird_speech_begin_event.dart';
 part 'mockingbird_speech_end_event.dart';
@@ -42,6 +43,7 @@ sealed class MockingbirdEvent {
       11 => MockingbirdCaptureResumedEvent._(id, ts),
       12 => MockingbirdRouteChangedEvent._(id, ts),
       13 => MockingbirdKeywordEvent._(id, ts, e.reasonMask, e.confidence),
+      14 => MockingbirdSpeakerEvent._(id, ts, e.reasonMask == 1, e.confidence),
       final other => MockingbirdUnknownEvent._(id, ts, other),
     };
   }

@@ -41,6 +41,7 @@ under AddressSanitizer, UndefinedBehaviorSanitizer and ThreadSanitizer.
 | Anomaly gate | RMS, spectral flux and centroid z-scores (PFFFT) | adaptive rolling background |
 | Sound classification | YAMNet through ONNX Runtime | all 521 AudioSet classes |
 | Keyword spotting (optional) | openWakeWord's front end through ONNX Runtime | your own openWakeWord keyword models |
+| Speaker verification (optional) | CAM++ speaker embeddings through ONNX Runtime | is each utterance the enrolled person |
 | Encode | libopus, raw or in Ogg, or PCM | per segment |
 
 A segment opens when the voice detector or the anomaly gate triggers. Packets
@@ -297,6 +298,7 @@ cmake --build build-tsan -j && ./build-tsan/test_mockingbird
 | YAMNet, 3 s window, int8 weights | `yamnet_3s.onnx` | about 5 MB |
 | Keyword front end: mel spectrogram, int8 weights | `melspectrogram.onnx` | about 0.3 MB |
 | Keyword front end: Google speech embedding | `embedding_model.onnx` | about 1.3 MB |
+| Speaker embedding: CAM++ from 3D-Speaker, int8 weights | `models/speaker_campplus.onnx` | about 8.4 MB, downloaded on first use |
 | RNNoise | compiled into the library | |
 
 YAMNet's convolution and dense weights are stored as int8 with one scale per
@@ -354,6 +356,28 @@ above the silence gate and, when voice detection is on, for 1.5 s after the
 last voiced frame. The mel model keeps running, and when listening resumes
 the engine computes the embeddings the classifiers need from the kept mel
 frames, so the scores are the same as if it had run throughout.
+
+### Speaker verification
+
+`mockingbird_speaker_embedding` turns a few seconds of someone talking into
+a 192-value voice print, and `mockingbird_set_target_speaker` makes the
+engine compare every utterance voice detection finds with it, reporting
+`MOCKINGBIRD_EVT_SPEAKER` with the similarity and whether it reached the
+threshold. Apps keep the print to enroll the same person again without
+recording. It recognises a voice; it does not pull one voice out of several
+talking at once.
+
+The model is CAM++ from Alibaba's 3D-Speaker, trained on about 200,000
+Chinese and English speakers (Apache-2.0), with its convolution weights stored
+as int8. Its input is the Kaldi filterbank sherpa-onnx feeds it, which
+`src/detect/kaldi_fbank.cpp` reproduces: on the same audio the engine's voice
+prints match a reference built on kaldi-native-fbank to a cosine similarity of
+1.000000. On the 40 LibriSpeech test-clean speakers (`bench/accuracy`), with
+the default threshold of 0.5, it accepted at most one impostor in 7,800
+trials at any length or noise level tested, and turned away its own speaker
+0% of the time on 4 s of clean speech, 6.5% on 2 s at 10 dB SNR and 50% on
+1 s at 0 dB; a threshold of 0.4 halves those rejections or better, for at most
+0.7% false accepts.
 
 ### ONNX Runtime telemetry
 
@@ -813,6 +837,8 @@ are permissive-only, with no GPL or LGPL code:
 | RNNoise | 0.2 release with the full `0b50c45` model; see `third_party/rnnoise/VENDORED_FROM.txt` | BSD-3-Clause (Xiph) |
 | Silero VAD | v6.2 model | MIT |
 | YAMNet | TensorFlow Hub model, converted | Apache-2.0 |
+| CAM++ speaker embedding model | 3D-Speaker `speech_campplus_sv_zh_en_16k-common_advanced`, sherpa-onnx's export | Apache-2.0 |
+| LibriSpeech clips in `tests/fixtures` | test-clean | CC BY 4.0 |
 | openWakeWord mel spectrogram and speech embedding models | v0.5.1 release; the embedding model re-implements Google's `speech_embedding` | Apache-2.0 |
 | ONNX Runtime | Homebrew 1.30, Android `onnxruntime-android:1.30.0`, SwiftPM 1.24.2, CocoaPods `onnxruntime-c ~> 1.20` | MIT, linked rather than vendored |
 | doctest | 2.5.3 | MIT, tests only |

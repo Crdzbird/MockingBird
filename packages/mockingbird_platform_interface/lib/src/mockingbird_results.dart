@@ -30,6 +30,12 @@ typedef MockingbirdStatsResult = ({int status, MockingbirdNativeStats? stats});
 /// A status code with the id a keyword was given.
 typedef MockingbirdKeywordResult = ({int status, int id});
 
+/// A status code with a voice print, empty on failure.
+typedef MockingbirdSpeakerEmbeddingResult = ({
+  int status,
+  Float32List embedding,
+});
+
 /// A status code with the input devices listed.
 typedef MockingbirdDevicesResult = ({
   int status,

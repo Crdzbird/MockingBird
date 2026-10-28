@@ -8,6 +8,7 @@ measures what each package costs; this directory measures whether it is right.
 |---|---|
 | `vad_eval.py` | voice activity detection: speech frames found, noise taken for speech, at five signal-to-noise ratios |
 | `classify_eval.py` | sound classification on ESC-50: YAMNet as Mockingbird ships it, the float model it came from, and CED tiny as sherpa_onnx runs it |
+| `speaker_eval.py` | speaker verification on 40 LibriSpeech speakers, by test length and noise |
 
 ## Data
 
@@ -26,8 +27,8 @@ curl -L -o esc50.zip https://github.com/karolpiczak/ESC-50/archive/master.zip
 ```
 
 `prepare.py` unpacks both and writes 16 kHz mono WAV copies with ffmpeg: 60
-LibriSpeech utterances, taken round-robin across the 40 speakers, and all 2000
-ESC-50 clips.
+LibriSpeech utterances, taken round-robin across the 40 speakers, six
+utterances longer than 4 s from each speaker, and all 2000 ESC-50 clips.
 
 ## Running
 
@@ -40,11 +41,12 @@ python3 bench/accuracy/prepare.py ~/.cache/mockingbird-bench
 python3 bench/accuracy/vad_eval.py ~/.cache/mockingbird-bench
 git show 2966238~1:packages/mockingbird/assets/yamnet_3s.onnx > /tmp/yamnet_float.onnx
 python3 bench/accuracy/classify_eval.py ~/.cache/mockingbird-bench /tmp/yamnet_float.onnx
+python3 bench/accuracy/speaker_eval.py ~/.cache/mockingbird-bench
 ```
 
 The classification run also needs the CED tiny model that
 `bench/flutter_compare/README.md` tells you how to fetch. Results land in
-`results/vad.json` and `results/classify.json`; the committed copies are the
+`results/vad.json`, `results/classify.json` and `results/speaker.json`; the committed copies are the
 ones quoted below.
 
 ## Voice activity detection
@@ -137,3 +139,43 @@ every noise level with no loss of precision.
 - CED tiny is 13 points better at top-1 for about the same compute. YAMNet's
   weakest categories are mouse clicks, wooden door creaks, roosters and wind;
   CED's are hens, crickets and wind.
+
+## Speaker verification
+
+### Method
+
+- Each of the 40 speakers is enrolled with the engine's voice print of one
+  clean utterance longer than 4 s.
+- Their other five utterances are cut to 1, 2 or 4 s, starting 0.3 s in,
+  mixed with ESC-50 sounds that contain no voice at the given SNR, and scored
+  against all 40 enrollments: 200 target and 7,800 impostor trials per row.
+- The equal error rate is where false rejects and false accepts meet; the
+  other columns use fixed thresholds on the cosine similarity.
+- Then 40 whole utterances at 10 dB run through the engine itself, with the
+  neural voice detector cutting them into utterances and the verifier
+  reporting each one, once against their own speaker and once against another.
+
+### Results
+
+| Test audio | EER | Threshold 0.5: false reject | false accept | Threshold 0.4: false reject | false accept |
+|---|---|---|---|---|---|
+| clean, 1 s | 0.50% | 8.0% | 0% | 0.5% | 0.35% |
+| clean, 2 s | 0% | 0% | 0% | 0% | 0.44% |
+| clean, 4 s | 0% | 0% | 0.01% | 0% | 0.71% |
+| 10 dB, 1 s | 4.5% | 26.0% | 0.01% | 10.0% | 0.32% |
+| 10 dB, 2 s | 3.0% | 6.5% | 0% | 3.0% | 0.37% |
+| 10 dB, 4 s | 0.01% | 0% | 0.01% | 0% | 0.62% |
+| 0 dB, 1 s | 7.0% | 50.5% | 0% | 24.0% | 0.15% |
+| 0 dB, 2 s | 2.0% | 11.0% | 0.01% | 4.5% | 0.27% |
+| 0 dB, 4 s | 0.74% | 2.5% | 0.01% | 1.0% | 0.64% |
+
+Through the engine, voice detection cut the 40 utterances into 82 pieces. No
+impostor piece reached 0.5 (the highest scored 0.43); 5 of the 82 genuine
+pieces fell below it, all short ones.
+
+What the numbers say: two seconds of speech is enough in most rooms, one
+second is not in noise, and 0.5 keeps strangers out at the cost of asking the
+enrolled person to repeat a short phrase now and then. LibriSpeech is read
+English with a clean microphone, so expect more misses with far-field audio or
+in other languages, although the model was trained on Chinese and English.
+

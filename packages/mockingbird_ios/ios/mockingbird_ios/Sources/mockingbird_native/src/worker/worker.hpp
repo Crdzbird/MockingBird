@@ -5,6 +5,7 @@
 #include "frame_clock.hpp"
 #include "worker/detector_bank.hpp"
 #include "worker/segmenter.hpp"
+#include "worker/speaker_verifier.hpp"
 #include "worker/tunables.hpp"
 #include "worker/worker_health.hpp"
 
@@ -34,6 +35,7 @@ private:
     Tunables             tunables_;
     DetectorBank         bank_;
     Segmenter            segmenter_;
+    SpeakerVerifier      speaker_;
     WorkerHealth         health_;
     uint64_t             last_seen_wake_ = 0;
 };

@@ -24,6 +24,8 @@ public:
 
     uint64_t open_segment_id() const { return open_id_; }
 
+    bool speech_open() const { return speech_open_; }
+
 private:
     void open(uint64_t at_us, float confidence);
     void close(uint64_t at_us);

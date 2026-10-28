@@ -16,6 +16,7 @@ part 'mockingbird_engine_devices.dart';
 part 'mockingbird_engine_keywords.dart';
 part 'mockingbird_engine_lifecycle.dart';
 part 'mockingbird_engine_pcm.dart';
+part 'mockingbird_engine_speaker.dart';
 part 'mockingbird_engine_tuning.dart';
 
 /// One native engine. Create it, [start] it, listen to [events], [packets],

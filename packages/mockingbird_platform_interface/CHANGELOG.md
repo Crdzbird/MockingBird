@@ -1,5 +1,6 @@
 ## Unreleased
 
+- `setSpeakerModel`, `speakerEmbedding` and `setTargetSpeaker`, with `MockingbirdSpeakerEmbeddingResult`.
 - `downloadModel`, `MockingbirdModelSpec`, `MockingbirdModelCatalog` and `MockingbirdDownloadException`: verified, resumable model downloads with mirrors.
 - `setKeywordFrontend`, `addKeyword` and `clearKeywords`, with `MockingbirdKeywordResult`.
 - `storeModel`, for platforms without a file system.

@@ -414,6 +414,62 @@ class MockingbirdBindings {
             )
           >();
 
+  mockingbird_status mockingbird_set_speaker_model(
+    ffi.Pointer<mockingbird_engine_t> engine,
+    ffi.Pointer<ffi.Char> model_path,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_set_speaker_model(engine, model_path),
+    );
+  }
+
+  late final _mockingbird_set_speaker_modelPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<mockingbird_engine_t>,
+            ffi.Pointer<ffi.Char>,
+          )
+        >
+      >('mockingbird_set_speaker_model');
+  late final _mockingbird_set_speaker_model = _mockingbird_set_speaker_modelPtr
+      .asFunction<
+        int Function(ffi.Pointer<mockingbird_engine_t>, ffi.Pointer<ffi.Char>)
+      >();
+
+  mockingbird_status mockingbird_set_target_speaker(
+    ffi.Pointer<mockingbird_engine_t> engine,
+    ffi.Pointer<ffi.Float> embedding,
+    int dim,
+    double threshold,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_set_target_speaker(engine, embedding, dim, threshold),
+    );
+  }
+
+  late final _mockingbird_set_target_speakerPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<mockingbird_engine_t>,
+            ffi.Pointer<ffi.Float>,
+            ffi.Uint32,
+            ffi.Float,
+          )
+        >
+      >('mockingbird_set_target_speaker');
+  late final _mockingbird_set_target_speaker =
+      _mockingbird_set_target_speakerPtr
+          .asFunction<
+            int Function(
+              ffi.Pointer<mockingbird_engine_t>,
+              ffi.Pointer<ffi.Float>,
+              int,
+              double,
+            )
+          >();
+
   mockingbird_status mockingbird_set_wake_callback(
     ffi.Pointer<mockingbird_engine_t> engine,
     mockingbird_wake_cb cb,
@@ -440,6 +496,51 @@ class MockingbirdBindings {
           ffi.Pointer<mockingbird_engine_t>,
           mockingbird_wake_cb,
           ffi.Pointer<ffi.Void>,
+        )
+      >();
+
+  mockingbird_status mockingbird_speaker_embedding(
+    ffi.Pointer<mockingbird_engine_t> engine,
+    ffi.Pointer<ffi.Int16> samples,
+    int count,
+    ffi.Pointer<ffi.Float> out,
+    int capacity,
+    ffi.Pointer<ffi.Uint32> out_dim,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_speaker_embedding(
+        engine,
+        samples,
+        count,
+        out,
+        capacity,
+        out_dim,
+      ),
+    );
+  }
+
+  late final _mockingbird_speaker_embeddingPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<mockingbird_engine_t>,
+            ffi.Pointer<ffi.Int16>,
+            ffi.Uint32,
+            ffi.Pointer<ffi.Float>,
+            ffi.Uint32,
+            ffi.Pointer<ffi.Uint32>,
+          )
+        >
+      >('mockingbird_speaker_embedding');
+  late final _mockingbird_speaker_embedding = _mockingbird_speaker_embeddingPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<mockingbird_engine_t>,
+          ffi.Pointer<ffi.Int16>,
+          int,
+          ffi.Pointer<ffi.Float>,
+          int,
+          ffi.Pointer<ffi.Uint32>,
         )
       >();
 
@@ -824,7 +925,8 @@ enum mockingbird_event_type {
   MOCKINGBIRD_EVT_CAPTURE_INTERRUPTED(10),
   MOCKINGBIRD_EVT_CAPTURE_RESUMED(11),
   MOCKINGBIRD_EVT_ROUTE_CHANGED(12),
-  MOCKINGBIRD_EVT_KEYWORD(13);
+  MOCKINGBIRD_EVT_KEYWORD(13),
+  MOCKINGBIRD_EVT_SPEAKER(14);
 
   final int value;
   const mockingbird_event_type(this.value);
@@ -843,6 +945,7 @@ enum mockingbird_event_type {
     11 => MOCKINGBIRD_EVT_CAPTURE_RESUMED,
     12 => MOCKINGBIRD_EVT_ROUTE_CHANGED,
     13 => MOCKINGBIRD_EVT_KEYWORD,
+    14 => MOCKINGBIRD_EVT_SPEAKER,
     _ => throw ArgumentError(
       'Unknown value for mockingbird_event_type: $value',
     ),

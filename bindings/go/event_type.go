@@ -23,6 +23,9 @@ const (
 	// EventKeyword: a keyword added with Engine.AddKeyword was heard.
 	// ReasonMask is its id and Confidence its score.
 	EventKeyword EventType = 13
+	// EventSpeaker: an utterance was compared with the target speaker.
+	// ReasonMask is 1 on a match and Confidence the similarity.
+	EventSpeaker EventType = 14
 )
 
 // String returns the event type's name.
@@ -54,6 +57,8 @@ func (t EventType) String() string {
 		return "ROUTE_CHANGED"
 	case EventKeyword:
 		return "KEYWORD"
+	case EventSpeaker:
+		return "SPEAKER"
 	}
 	return "UNKNOWN"
 }

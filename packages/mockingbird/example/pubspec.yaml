@@ -31,3 +31,5 @@ flutter:
       platforms: [android, ios, macos, linux, windows]
     - path: assets/keyword_test.ort
       platforms: [web]
+    - assets/speaker_a1.wav
+    - assets/speaker_b.wav

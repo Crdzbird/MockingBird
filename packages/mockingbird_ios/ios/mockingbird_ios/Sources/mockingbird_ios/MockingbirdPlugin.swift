@@ -43,6 +43,11 @@ enum MockingbirdSymbolAnchor {
     _ = mockingbird_set_keyword_frontend(engine, nil, nil)
     _ = mockingbird_add_keyword(engine, "", 0, &keyword)
     _ = mockingbird_clear_keywords(engine)
+    var voice: Float = 0
+    var dim: UInt32 = 0
+    _ = mockingbird_set_speaker_model(engine, nil)
+    _ = mockingbird_speaker_embedding(engine, &sample, 0, &voice, 1, &dim)
+    _ = mockingbird_set_target_speaker(engine, nil, 0, 0)
     _ = mockingbird_push_pcm(engine, &sample, 0, 0)
     _ = mockingbird_poll_event(engine, &event)
     _ = mockingbird_drain(engine, &packet)
