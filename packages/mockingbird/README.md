@@ -9,14 +9,14 @@ channels on the hot path.
 
 | Stage | What runs | Notes |
 |---|---|---|
-| Capture | Oboe on Android, Core Audio on iOS and macOS | int16 mono at 8, 16, 32 or 48 kHz |
+| Capture | Oboe on Android, Core Audio on iOS and macOS, miniaudio on Linux and Windows | int16 mono at 8, 16, 32 or 48 kHz |
 | Denoise (optional) | RNNoise 0.2, full model | bridged to its native 48 kHz |
 | Voice detection | libfvad (fast) or Silero v6 (neural) | language-agnostic |
 | Anomaly gate | RMS, spectral flux and centroid z-scores | adaptive rolling background |
 | Sound classification | YAMNet, 521 AudioSet classes | 3 s window, 1 s cadence |
 | Encode | Opus, Ogg Opus or PCM | per segment, with pre-roll |
 
-Supported platforms: Android, iOS, macOS and web. The web build runs the engine
+Supported platforms: Android, iOS, macOS, Linux, Windows and web. The web build runs the engine
 as WebAssembly with fast VAD, the anomaly gate, RNNoise and Opus; the neural
 detectors need ONNX Runtime and are not available there.
 
@@ -31,9 +31,13 @@ document the exact keys:
 [mockingbird_android](https://pub.dev/packages/mockingbird_android),
 [mockingbird_ios](https://pub.dev/packages/mockingbird_ios),
 [mockingbird_macos](https://pub.dev/packages/mockingbird_macos),
+[mockingbird_linux](https://pub.dev/packages/mockingbird_linux),
+[mockingbird_windows](https://pub.dev/packages/mockingbird_windows),
 [mockingbird_web](https://pub.dev/packages/mockingbird_web). You need the
 `RECORD_AUDIO` permission on Android, `NSMicrophoneUsageDescription` on iOS and
-macOS, the audio-input entitlement on macOS, and a secure context on the web.
+macOS, the audio-input entitlement on macOS, microphone access for desktop apps
+in the Windows privacy settings, and a secure context on the web. Linux has no
+prompt.
 Engines that only receive pushed PCM need none of it.
 
 | Platform | Minimum |
@@ -41,6 +45,8 @@ Engines that only receive pushed PCM need none of it.
 | Android | API 21, compileSdk 37, NDK r28 or newer (16 KB pages) |
 | iOS | 15.0 |
 | macOS | 12.0 with CocoaPods, 14.0 with Swift Package Manager |
+| Linux | x64 or arm64, CMake 3.24; the first build downloads ONNX Runtime |
+| Windows | Windows 10, x64 or ARM64, Visual Studio 2022; the first build downloads ONNX Runtime |
 | Web | a browser with AudioWorklet and ES modules; no cross-origin isolation needed |
 
 Call `Mockingbird.initialize()` once at startup. It loads the WebAssembly module
@@ -206,7 +212,7 @@ about scope; the second is measured.
 | Retune while running | yes | no | no | no | no | no |
 | Silence gate and adaptive load shedding | yes | no | no | no | no | no |
 | Native path | `dart:ffi` | `dart:ffi` | `dart:ffi`, JS on web | `dart:ffi` | Rust bridge | platform channels |
-| Platforms | Android, iOS, macOS, web | Android, iOS, macOS | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS, Windows, Linux, web |
+| Platforms | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS, Windows, Linux, web | Android, iOS, macOS, Windows, Linux, web |
 | License | MIT | MIT | MIT | Apache-2.0 | LGPL-3.0 | BSD-3-Clause |
 
 sherpa_onnx also ships speech recognition, synthesis, keyword spotting and
@@ -328,7 +334,7 @@ for hosting the files on a CDN.
 The [example](example) is a complete demo on `flutter_bloc`: presets switch
 detector recipes, a slider retunes the running engine, an RNNoise toggle, a
 level meter, the latest recognised sound and the full stats card. It runs on
-macOS, iOS, Android and the web, where the presets that need the neural
+macOS, iOS, Android, Linux, Windows and the web, where the presets that need the neural
 detectors fall back to the fast tier.
 
 ## Engine

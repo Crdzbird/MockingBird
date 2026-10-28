@@ -56,8 +56,10 @@ public:
     }
 
 private:
+#if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wold-style-cast"
+#endif
     void apply_settings(const mockingbird_config_t& cfg) {
         opus_encoder_ctl(enc_, OPUS_SET_BITRATE(static_cast<opus_int32>(cfg.opus_bitrate_bps)));
         opus_encoder_ctl(enc_, OPUS_SET_VBR(cfg.opus_vbr));
@@ -71,7 +73,9 @@ private:
         if (opus_encoder_ctl(enc_, OPUS_GET_LOOKAHEAD(&v)) != OPUS_OK || v < 0) return 0;
         return static_cast<uint32_t>(v);
     }
+#if defined(__clang__)
 #pragma clang diagnostic pop
+#endif
 
     ::OpusEncoder* enc_           = nullptr;
     uint32_t       frame_samples_ = 0;

@@ -7,8 +7,8 @@ relevant audio out as encoded packets. The same engine is used from
 Dart/Flutter, Go and Python through the bindings in this repository, and from
 any other language that can call C.
 
-The pipeline runs live on Android, iOS, macOS and, as WebAssembly, in the
-browser. The core is fuzzed, stress-tested and fault-injected, and it runs clean
+The pipeline runs live on Android, iOS, macOS, Linux, Windows and, as
+WebAssembly, in the browser. The core is fuzzed, stress-tested and fault-injected, and it runs clean
 under AddressSanitizer, UndefinedBehaviorSanitizer and ThreadSanitizer.
 
 - Source: https://github.com/Crdzbird/MockingBird
@@ -122,7 +122,7 @@ crashes.
 ### Flutter
 
 The `mockingbird` package on pub.dev is a federated plugin for Android, iOS,
-macOS and the web; its sources are in `packages/`. Dart reaches the C ABI
+macOS, Linux, Windows and the web; its sources are in `packages/`. Dart reaches the C ABI
 through `dart:ffi` with no platform channels on the hot path, and events,
 packets and stats arrive as streams.
 
@@ -208,8 +208,8 @@ Details in [bindings/python/README.md](bindings/python/README.md).
 | Tool | Version | Notes |
 |---|---|---|
 | CMake | 3.24 or newer | |
-| C++ compiler | Clang 17 or newer | C++20, C11 |
-| ONNX Runtime | 1.20 or newer | only for neural VAD and YAMNet; `brew install onnxruntime` on macOS |
+| C++ compiler | Clang 17, GCC 13 or MSVC 2022, or newer | C++20, C11 |
+| ONNX Runtime | 1.20 or newer | only for neural VAD and YAMNet; `brew install onnxruntime` on macOS, or an extracted release passed as `ONNXRUNTIME_ROOT` |
 
 Everything else is vendored under `third_party/`: miniaudio, libfvad, PFFFT,
 libopus and RNNoise are compiled into the library on every build.
@@ -223,7 +223,7 @@ cmake --build build -j
 ./build/bench_mockingbird 20
 ```
 
-`test_mockingbird` runs 118 doctest cases, including fuzz, stress and
+`test_mockingbird` runs 122 doctest cases, including fuzz, stress and
 fault-injection cases. `bench_mockingbird` pushes synthetic audio through the
 engine faster than real time and prints the CPU share per feature; the optional
 argument is the number of seconds of audio per configuration (default 30).
@@ -236,15 +236,21 @@ that text.
 |---|---|---|
 | `MOCKINGBIRD_BUILD_SHARED` | ON | build `libmockingbird.dylib` / `libmockingbird.so` (the bindings need this) |
 | `MOCKINGBIRD_BUILD_STATIC` | ON | build `libmockingbird.a` (the tests link this) |
-| `MOCKINGBIRD_ENABLE_NEURAL_VAD` | OFF | compile Silero VAD and YAMNet; needs ONNX Runtime on the system |
+| `MOCKINGBIRD_VERSIONED_SONAME` | ON | give the shared library a versioned file name; the Linux and Windows plugins turn it off |
+| `MOCKINGBIRD_ENABLE_NEURAL_VAD` | OFF | compile Silero VAD and YAMNet; needs ONNX Runtime |
+| `ONNXRUNTIME_ROOT` | empty | an extracted ONNX Runtime release to build against |
 | `MOCKINGBIRD_ENABLE_TESTS` | OFF | build `test_mockingbird` and `bench_mockingbird` |
 | `MOCKINGBIRD_ENABLE_EXAMPLES` | ON | build `examples/smoke.cpp` |
 | `MOCKINGBIRD_ENABLE_LOG` | OFF | print init, model and backend diagnostics to stderr or logcat; release builds are silent without it |
 
 If `MOCKINGBIRD_ENABLE_NEURAL_VAD` is on but ONNX Runtime is not found, CMake
 prints a warning and builds without the neural detectors. On macOS the Homebrew
-install is found automatically; elsewhere make sure `onnxruntime_cxx_api.h` and
-the library are under `/usr/local`.
+install is found automatically. Elsewhere, extract a release from
+[Microsoft's releases page](https://github.com/microsoft/onnxruntime/releases)
+and pass its folder as `-DONNXRUNTIME_ROOT=...`, which is what CI does on Linux
+and Windows. On Windows, build with `--config Release` and run
+`build/Release/test_mockingbird.exe`; the build copies `onnxruntime.dll` next to
+it.
 
 ### Sanitizers
 
@@ -422,10 +428,10 @@ src/
   engine.hpp                the engine state behind the opaque handle
   config_validation.*       config checks and derived sizes
 third_party/                vendored, permissive-only dependencies
-tests/                      118 doctest cases and the audio and model fixtures
+tests/                      122 doctest cases and the audio and model fixtures
 bench/                      the throughput benchmark and the package comparison
 packages/                   Flutter federated plugin (mockingbird, platform interface,
-                            android, ios, macos, web) and the example app
+                            android, ios, macos, linux, windows, web) and the example app
 bindings/go/                cgo binding, example and tests
 bindings/python/            ctypes binding, example and tests
 examples/conformance/       Go, Dart and Python byte-parity harness
@@ -605,12 +611,31 @@ podspecs and Swift packages glob the tree and pick it up on their own. A file
 meant for one build only must be guarded (`#ifdef __EMSCRIPTEN__` or its
 negation) for the same reason.
 
+### Linux and Windows (`packages/mockingbird_linux`, `packages/mockingbird_windows`)
+
+- Both are FFI plugins: Flutter runs the plugin's CMake file, which builds the
+  engine with the root `CMakeLists.txt` copied into `native/` and bundles the
+  shared library with the app.
+- ONNX Runtime 1.30.0 comes from Microsoft's GitHub release. The plugin
+  downloads it once per build tree and fails the build if the archive's SHA-256
+  differs from the value pinned in the CMake file. On Windows only the headers,
+  the import library and `onnxruntime.dll` are extracted.
+- On Linux the bundled `libonnxruntime.so.1` is a real copy, not a symlink, and
+  `libmockingbird.so` carries an `$ORIGIN` run path, so it finds ONNX Runtime
+  next to itself and nothing in the binary points at the build machine.
+- Capture is miniaudio: PulseAudio or ALSA on Linux, loaded at run time, and
+  WASAPI on Windows. The engine builds with Clang or GCC on Linux and with MSVC
+  on Windows; CI runs the full C++ suite and the example's integration tests on
+  both.
+
 ### The native copies inside the platform packages
 
 A pub.dev package must be self-contained, so `mockingbird_android`,
-`mockingbird_ios` and `mockingbird_macos` each carry a copy of `include/`,
-`src/` and the vendored third-party sources, and their build files point at that
-copy. The repository root stays the only place to edit. After any change there,
+`mockingbird_ios`, `mockingbird_macos`, `mockingbird_linux` and
+`mockingbird_windows` each carry a copy of `include/`, `src/` and the vendored
+third-party sources, and their build files point at that copy. The Linux and
+Windows copies also hold the root `CMakeLists.txt`, so they build from the same
+source list as the repository. The repository root stays the only place to edit. After any change there,
 run:
 
 ```bash
@@ -628,6 +653,7 @@ All six packages are on pub.dev:
 [mockingbird_ios](https://pub.dev/packages/mockingbird_ios),
 [mockingbird_macos](https://pub.dev/packages/mockingbird_macos) and
 [mockingbird_web](https://pub.dev/packages/mockingbird_web).
+`mockingbird_linux` and `mockingbird_windows` are new and not published yet.
 
 In this repository they form a pub workspace (the `pubspec.yaml` at the root),
 so `flutter pub get` anywhere in it resolves them against each other while their
@@ -639,7 +665,8 @@ To release a new version, bump the version and changelog in every package that
 changed, rebuild the WebAssembly and run `scripts/sync_native.sh`, then run
 `dart pub publish --dry-run` in each package. Publish in dependency order:
 `mockingbird_platform_interface`; then `mockingbird_android`, `mockingbird_ios`,
-`mockingbird_macos` and `mockingbird_web`; then `mockingbird`. Each one must be
+`mockingbird_macos`, `mockingbird_linux`, `mockingbird_windows` and
+`mockingbird_web`; then `mockingbird`. Each one must be
 visible on pub.dev before the packages that depend on it are uploaded.
 
 ### Adding a C ABI entry point

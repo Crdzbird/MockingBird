@@ -10,6 +10,8 @@ workspace:
   - packages/mockingbird_android
   - packages/mockingbird_ios
   - packages/mockingbird_macos
+  - packages/mockingbird_linux
+  - packages/mockingbird_windows
   - packages/mockingbird_web
   - packages/mockingbird
   - packages/mockingbird/example

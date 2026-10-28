@@ -84,11 +84,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if defined(_WIN32) && defined(MOCKINGBIRD_BUILD_SHARED)
-#  ifdef MOCKINGBIRD_BUILDING
+#if defined(_WIN32)
+#  if defined(MOCKINGBIRD_BUILDING) && defined(MOCKINGBIRD_BUILD_SHARED)
 #    define MOCKINGBIRD_API __declspec(dllexport)
 #  else
-#    define MOCKINGBIRD_API __declspec(dllimport)
+#    define MOCKINGBIRD_API
 #  endif
 #else
 #  define MOCKINGBIRD_API __attribute__((visibility("default")))

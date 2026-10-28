@@ -23,4 +23,9 @@ sync_into() {
 sync_into "$ROOT/packages/mockingbird_android/android/src/main/native"
 sync_into "$ROOT/packages/mockingbird_ios/ios/mockingbird_ios/Sources/mockingbird_native"
 sync_into "$ROOT/packages/mockingbird_macos/macos/mockingbird_macos/Sources/mockingbird_native"
+for desktop in linux windows; do
+  dest="$ROOT/packages/mockingbird_$desktop/$desktop/native"
+  sync_into "$dest"
+  cp "$ROOT/CMakeLists.txt" "$dest/CMakeLists.txt"
+done
 echo "native sources synced"

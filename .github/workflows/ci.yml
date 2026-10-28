@@ -34,6 +34,89 @@ jobs:
         run: scripts/sync_native.sh && git diff --exit-code --stat -- packages
 
   # ---------------------------------------------------------------------------
+  # Core library and the full suite on Linux (GCC) and Windows (MSVC), with
+  # ONNX Runtime from Microsoft's release, checked against its SHA-256, so the
+  # Silero and YAMNet cases run too.
+  # ---------------------------------------------------------------------------
+  cpp-desktop:
+    name: build + test (C++, ${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux
+            os: ubuntu-latest
+            ort: onnxruntime-linux-x64-1.30.0
+            ext: tgz
+            sha: a5ed5a3cac51fbb2e90da632ae43d19212faaa20e76484e62bcb7c23ddb3b3fd
+            test: ./build/test_mockingbird
+          - name: windows
+            os: windows-latest
+            ort: onnxruntime-win-x64-1.30.0
+            ext: zip
+            sha: c6ba983baf5681af108599675d2a89c2d145512d02de28aed0bff177cd0ba949
+            test: ./build/Release/test_mockingbird.exe
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - name: Fetch ONNX Runtime
+        run: |
+          curl -sSL -o ort.${{ matrix.ext }} \
+            https://github.com/microsoft/onnxruntime/releases/download/v1.30.0/${{ matrix.ort }}.${{ matrix.ext }}
+          echo "${{ matrix.sha }}  ort.${{ matrix.ext }}" | sha256sum -c -
+          cmake -E tar xf ort.${{ matrix.ext }}
+      - name: Configure
+        run: >
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DMOCKINGBIRD_ENABLE_TESTS=ON
+          -DMOCKINGBIRD_ENABLE_NEURAL_VAD=ON -DONNXRUNTIME_ROOT="$PWD/${{ matrix.ort }}"
+      - name: Build
+        run: cmake --build build --config Release -j 4
+      - name: Test
+        run: ${{ matrix.test }} --no-intro
+
+  # ---------------------------------------------------------------------------
+  # The Flutter example on Linux and Windows: the plugin builds the engine from
+  # its own copy of the sources, bundles ONNX Runtime, and the integration
+  # tests run against the real native library.
+  # ---------------------------------------------------------------------------
+  flutter-desktop:
+    name: integration (Flutter, ${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux
+            os: ubuntu-latest
+            run: xvfb-run -a flutter test integration_test -d linux
+          - name: windows
+            os: windows-latest
+            run: flutter test integration_test -d windows
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/mockingbird/example
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Linux build dependencies
+        if: matrix.name == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev xvfb
+      - name: pub get
+        run: flutter pub get
+      - name: Build
+        run: flutter build ${{ matrix.name }} --release
+      - name: Integration tests
+        run: ${{ matrix.run }}
+
+  # ---------------------------------------------------------------------------
   # Sanitizers: lock in the hardening so it cannot regress.
   # ---------------------------------------------------------------------------
   sanitizers:
@@ -64,8 +147,12 @@ jobs:
   # wrapper functionally and under the race detector.
   # ---------------------------------------------------------------------------
   go:
-    name: build + test (Go)
-    runs-on: macos-latest
+    name: build + test (Go, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
@@ -86,8 +173,12 @@ jobs:
   # Python binding: pure ctypes, so it only needs libmockingbird + stdlib unittest.
   # ---------------------------------------------------------------------------
   python:
-    name: test (Python)
-    runs-on: macos-latest
+    name: test (Python, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7

@@ -1,0 +1,34 @@
+name: mockingbird_linux
+description: >-
+  The Linux implementation of the mockingbird plugin: the Mockingbird engine built from source with PulseAudio or ALSA capture and ONNX Runtime detectors.
+version: 0.1.0
+repository: https://github.com/Crdzbird/MockingBird/tree/main/packages/mockingbird_linux
+issue_tracker: https://github.com/Crdzbird/MockingBird/issues
+topics:
+  - audio
+  - vad
+  - linux
+  - ffi
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+  flutter: ">=3.44.0"
+
+flutter:
+  plugin:
+    implements: mockingbird
+    platforms:
+      linux:
+        ffiPlugin: true
+        dartPluginClass: MockingbirdLinux
+
+dependencies:
+  flutter:
+    sdk: flutter
+  mockingbird_platform_interface: ^0.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^11.0.0

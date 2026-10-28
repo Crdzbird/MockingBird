@@ -10,6 +10,11 @@
 #include <algorithm>
 
 namespace mockingbird {
+namespace {
+constexpr uint32_t kLast     = MOCKINGBIRD_PKT_FLAG_LAST;
+constexpr uint32_t kPostroll = MOCKINGBIRD_PKT_FLAG_POSTROLL;
+}
+
 void Segmenter::on_frame(const int16_t* samples, uint64_t now_ts, const DetectionPair& d,
                          uint32_t hangover_frames) {
     const bool is_active = d.vad.active || d.anomaly.active || !d.running();
@@ -43,7 +48,7 @@ void Segmenter::on_active(const int16_t* samples, uint64_t now_ts, const Detecti
                                   d.anomaly.reason_mask, d.anomaly.confidence));
     }
     const bool capped = reaches_cap(now_ts);
-    emit(samples, now_ts, capped ? MOCKINGBIRD_PKT_FLAG_LAST : 0u);
+    emit(samples, now_ts, capped ? kLast : 0u);
     if (!capped) return;
     end_segment(now_ts);
     cut_ = true;
@@ -54,8 +59,7 @@ void Segmenter::on_trailing_silence(const int16_t* samples, uint64_t now_ts,
     ++silence_frames_;
     const bool done = silence_frames_ >= std::max(hangover_frames, post_roll_frames_) ||
                       reaches_cap(now_ts);
-    emit(samples, now_ts,
-         MOCKINGBIRD_PKT_FLAG_POSTROLL | (done ? MOCKINGBIRD_PKT_FLAG_LAST : 0u));
+    emit(samples, now_ts, kPostroll | (done ? kLast : 0u));
     if (speech_open_ && silence_frames_ >= hangover_frames) emit_speech_end(now_ts);
     if (done) end_segment(now_ts);
 }

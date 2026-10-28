@@ -20,6 +20,14 @@
 #ifdef MOCKINGBIRD_HAVE_NEURAL_VAD
 
 namespace {
+void set_model_env(const std::string& path) {
+#if defined(_WIN32)
+    _putenv_s("MOCKINGBIRD_NEURAL_VAD_MODEL", path.c_str());
+#else
+    setenv("MOCKINGBIRD_NEURAL_VAD_MODEL", path.c_str(), 1);
+#endif
+}
+
 struct WavInts16 {
     std::vector<int16_t> samples;
     uint32_t             sample_rate_hz = 0;
@@ -162,16 +170,12 @@ bool neural_vad_available() {
 }
 
 TEST_CASE("Neural VAD: model loads when MOCKINGBIRD_NEURAL_VAD_MODEL points at the fixture") {
-    setenv("MOCKINGBIRD_NEURAL_VAD_MODEL",
-           (std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/silero_vad.onnx").c_str(),
-           1);
+    set_model_env(std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/silero_vad.onnx");
     CHECK(neural_vad_available());
 }
 
 TEST_CASE("Neural VAD: detects speech in hello.wav, balanced events") {
-    setenv("MOCKINGBIRD_NEURAL_VAD_MODEL",
-           (std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/silero_vad.onnx").c_str(),
-           1);
+    set_model_env(std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/silero_vad.onnx");
     const auto wav = read_wav_int16(
         std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/hello.wav");
     REQUIRE(wav.samples.size() > 0);
@@ -193,9 +197,7 @@ TEST_CASE("Neural VAD: detects speech in hello.wav, balanced events") {
 }
 
 TEST_CASE("Neural VAD: 8 kHz uses the 256-sample Silero window (detects speech)") {
-    setenv("MOCKINGBIRD_NEURAL_VAD_MODEL",
-           (std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/silero_vad.onnx").c_str(),
-           1);
+    set_model_env(std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/silero_vad.onnx");
     const auto wav16 = read_wav_int16(
         std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/hello.wav");
     REQUIRE(wav16.samples.size() > 0);
@@ -255,9 +257,7 @@ TEST_CASE("Neural VAD: 8 kHz uses the 256-sample Silero window (detects speech)"
 }
 
 TEST_CASE("Neural VAD vs FAST VAD: differential on hello.wav, both detect speech") {
-    setenv("MOCKINGBIRD_NEURAL_VAD_MODEL",
-           (std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/silero_vad.onnx").c_str(),
-           1);
+    set_model_env(std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/silero_vad.onnx");
     const auto wav = read_wav_int16(
         std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/hello.wav");
     REQUIRE(wav.samples.size() > 0);

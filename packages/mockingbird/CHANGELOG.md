@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Linux and Windows support through `mockingbird_linux` and `mockingbird_windows`; the bundled models now ship to both.
 - `MockingbirdCodec.oggOpus` and `MockingbirdEncoderConfig.oggOpus()`: a segment's packets, concatenated, form a playable `.opus` file.
 - `MockingbirdWav.fromPcm16` wraps a PCM segment in a WAV header.
 - The packet that closes a segment now has `isLast` set; it was never set before.

@@ -5,7 +5,7 @@ project(mockingbird
         LANGUAGES C CXX)
 
 # ----------------------------------------------------------------------------
-# Standards. Clang >= 17 across the board.
+# Standards. Clang 17 or GCC 13 and later, or MSVC 2022 on Windows.
 # ----------------------------------------------------------------------------
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -21,8 +21,13 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Strip the checkout location from __FILE__ and debug paths, so no absolute
-# path of the machine that built a binary ends up inside it.
-add_compile_options("-ffile-prefix-map=${CMAKE_SOURCE_DIR}/=")
+# path of the machine that built a binary ends up inside it. MSVC gets the
+# same for the PDB path through /PDBALTPATH on the shared library.
+if(MSVC)
+    add_compile_options(/utf-8 /Zc:__cplusplus)
+else()
+    add_compile_options("-ffile-prefix-map=${CMAKE_CURRENT_SOURCE_DIR}/=")
+endif()
 
 # ----------------------------------------------------------------------------
 # Platform deployment targets (lowest sensible for v1).
@@ -52,10 +57,10 @@ endif()
 # Options.
 # ----------------------------------------------------------------------------
 option(MOCKINGBIRD_BUILD_SHARED   "Build the shared library (libmockingbird.so/.dylib)" ON)
-option(MOCKINGBIRD_ENABLE_NEURAL_VAD "Compile in Silero VAD via ONNX Runtime"   OFF)
 option(MOCKINGBIRD_BUILD_STATIC   "Build the static library (libmockingbird.a)"         ON)
-option(MOCKINGBIRD_ENABLE_RNNOISE "Compile in RNNoise preprocess (optional dep)"  OFF)
-option(MOCKINGBIRD_ENABLE_NEURAL_VAD "Compile in Silero/ONNX neural VAD"          OFF)
+option(MOCKINGBIRD_VERSIONED_SONAME "Give the shared library a versioned file name" ON)
+option(MOCKINGBIRD_ENABLE_NEURAL_VAD "Compile in Silero VAD and YAMNet via ONNX Runtime" OFF)
+set(ONNXRUNTIME_ROOT "" CACHE PATH "An extracted ONNX Runtime release to build against")
 option(MOCKINGBIRD_ENABLE_OPUS    "Compile in libopus encoder"                    ON)
 option(MOCKINGBIRD_ENABLE_FLAC    "Compile in FLAC archival encoder"              OFF)
 option(MOCKINGBIRD_ENABLE_EXAMPLES "Build examples/ targets"                      ON)
@@ -243,16 +248,19 @@ else()
     set(MOCKINGBIRD_HAVE_RNNOISE OFF)
 endif()
 
-# ONNX Runtime for Silero VAD and YAMNet. This build looks for a Homebrew
-# install on macOS; the iOS and Android packages bring their own. Set
-# MOCKINGBIRD_ENABLE_NEURAL_VAD=ON to compile it in.
+# ONNX Runtime for Silero VAD and YAMNet. Set MOCKINGBIRD_ENABLE_NEURAL_VAD=ON
+# to compile it in. ONNXRUNTIME_ROOT points at an extracted release, which is
+# how the Linux and Windows packages build; otherwise this looks for Homebrew.
+# The iOS and Android packages bring their own.
 if(MOCKINGBIRD_ENABLE_NEURAL_VAD)
     find_path(ONNXRUNTIME_INCLUDE_DIR onnxruntime_cxx_api.h
+              HINTS ${ONNXRUNTIME_ROOT}/include
               PATHS /opt/homebrew/opt/onnxruntime/include/onnxruntime
                     /usr/local/opt/onnxruntime/include/onnxruntime
                     /opt/homebrew/include/onnxruntime
                     /usr/local/include/onnxruntime)
     find_library(ONNXRUNTIME_LIBRARY onnxruntime
+                 HINTS ${ONNXRUNTIME_ROOT}/lib
                  PATHS /opt/homebrew/opt/onnxruntime/lib
                        /usr/local/opt/onnxruntime/lib
                        /opt/homebrew/lib
@@ -262,8 +270,8 @@ if(MOCKINGBIRD_ENABLE_NEURAL_VAD)
         message(STATUS "Mockingbird: Neural VAD enabled (ONNX Runtime at ${ONNXRUNTIME_LIBRARY})")
     else()
         message(WARNING "Mockingbird: MOCKINGBIRD_ENABLE_NEURAL_VAD=ON but ONNX Runtime "
-                        "not found; install with `brew install onnxruntime`. "
-                        "Neural VAD will be unavailable.")
+                        "was not found; set ONNXRUNTIME_ROOT or install it with "
+                        "`brew install onnxruntime`. Neural VAD will be unavailable.")
     endif()
 endif()
 
@@ -279,7 +287,7 @@ if(EXISTS ${MOCKINGBIRD_OPUS_DIR}/CMakeLists.txt)
     set(OPUS_BUILD_SHARED_LIBRARY        OFF CACHE BOOL "" FORCE)
     set(OPUS_ENABLE_FLOAT_API            ON  CACHE BOOL "" FORCE)
     set(OPUS_FIXED_POINT                 OFF CACHE BOOL "" FORCE)
-    add_subdirectory(${MOCKINGBIRD_OPUS_DIR} ${CMAKE_BINARY_DIR}/_opus EXCLUDE_FROM_ALL)
+    add_subdirectory(${MOCKINGBIRD_OPUS_DIR} ${CMAKE_CURRENT_BINARY_DIR}/_opus EXCLUDE_FROM_ALL)
     set(MOCKINGBIRD_HAVE_OPUS ON)
 else()
     set(MOCKINGBIRD_HAVE_OPUS OFF)
@@ -331,6 +339,11 @@ function(_mockingbird_configure_target tgt)
     elseif(UNIX)
         target_link_libraries(${tgt} PRIVATE pthread dl m)
     endif()
+    if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT EMSCRIPTEN)
+        set_target_properties(${tgt} PROPERTIES
+                BUILD_WITH_INSTALL_RPATH ON
+                INSTALL_RPATH "$ORIGIN")
+    endif()
 
     if(MOCKINGBIRD_HAVE_OPUS)
         target_compile_definitions(${tgt} PRIVATE MOCKINGBIRD_HAVE_OPUS=1)
@@ -355,19 +368,19 @@ function(_mockingbird_configure_target tgt)
 
     # Suppress warnings inside vendored third-party TUs. We do not want to
     # paper over warnings in OUR code, just the third-party sources.
+    if(MSVC)
+        set(_quiet "/w")
+    else()
+        set(_quiet "-w")
+    endif()
     set_source_files_properties(src/capture/miniaudio_impl.c
+            ${MOCKINGBIRD_LIBFVAD_SOURCES} ${MOCKINGBIRD_PFFFT_SOURCES}
             TARGET_DIRECTORY ${tgt}
-            PROPERTIES COMPILE_FLAGS "-w")
-    set_source_files_properties(${MOCKINGBIRD_LIBFVAD_SOURCES}
-            TARGET_DIRECTORY ${tgt}
-            PROPERTIES COMPILE_FLAGS "-w")
-    set_source_files_properties(${MOCKINGBIRD_PFFFT_SOURCES}
-            TARGET_DIRECTORY ${tgt}
-            PROPERTIES COMPILE_FLAGS "-w")
+            PROPERTIES COMPILE_FLAGS "${_quiet}")
     if(MOCKINGBIRD_HAVE_RNNOISE)
         set_source_files_properties(${MOCKINGBIRD_RNNOISE_SOURCES}
                 TARGET_DIRECTORY ${tgt}
-                PROPERTIES COMPILE_FLAGS "-w")
+                PROPERTIES COMPILE_FLAGS "${_quiet}")
     endif()
 endfunction()
 
@@ -378,16 +391,25 @@ if(MOCKINGBIRD_SOURCES)
         add_library(mockingbird SHARED ${_mockingbird_all_sources})
         target_compile_definitions(mockingbird PRIVATE MOCKINGBIRD_BUILD_SHARED)
         _mockingbird_configure_target(mockingbird)
-        set_target_properties(mockingbird PROPERTIES
-                VERSION   ${PROJECT_VERSION}
-                SOVERSION ${PROJECT_VERSION_MAJOR}
-                OUTPUT_NAME mockingbird)
+        set_target_properties(mockingbird PROPERTIES OUTPUT_NAME mockingbird)
+        if(MOCKINGBIRD_VERSIONED_SONAME)
+            set_target_properties(mockingbird PROPERTIES
+                    VERSION   ${PROJECT_VERSION}
+                    SOVERSION ${PROJECT_VERSION_MAJOR})
+        endif()
+        if(MSVC)
+            target_link_options(mockingbird PRIVATE "/PDBALTPATH:%_PDB%")
+        endif()
     endif()
 
     if(MOCKINGBIRD_BUILD_STATIC)
         add_library(mockingbird_static STATIC ${_mockingbird_all_sources})
         _mockingbird_configure_target(mockingbird_static)
-        set_target_properties(mockingbird_static PROPERTIES OUTPUT_NAME mockingbird)
+        if(MSVC)
+            set_target_properties(mockingbird_static PROPERTIES OUTPUT_NAME mockingbird_static)
+        else()
+            set_target_properties(mockingbird_static PROPERTIES OUTPUT_NAME mockingbird)
+        endif()
     endif()
 
     if(EMSCRIPTEN)
@@ -406,7 +428,7 @@ if(MOCKINGBIRD_SOURCES)
 endif()
 
 # ----------------------------------------------------------------------------
-# Warnings (Clang-focused; Mockingbird does not target MSVC in v1).
+# Warnings: strict on Clang and GCC, the default level on MSVC.
 # ----------------------------------------------------------------------------
 # Common warnings for every source. C++-only warnings are guarded so the
 # C miniaudio TU does not get spurious "applied to C" notes.
@@ -420,6 +442,9 @@ set(MOCKINGBIRD_WARN_CXX_ONLY
 set(MOCKINGBIRD_WARN_FLAGS
         ${MOCKINGBIRD_WARN_COMMON}
         "$<$<COMPILE_LANGUAGE:CXX>:${MOCKINGBIRD_WARN_CXX_ONLY}>")
+if(MSVC)
+    set(MOCKINGBIRD_WARN_FLAGS /W3)
+endif()
 
 if(MOCKINGBIRD_SOURCES)
     foreach(_tgt mockingbird mockingbird_static)
@@ -491,6 +516,13 @@ if(MOCKINGBIRD_ENABLE_TESTS AND TARGET mockingbird_static)
     endif()
     if(MOCKINGBIRD_HAVE_RNNOISE)
         target_compile_definitions(test_mockingbird PRIVATE MOCKINGBIRD_HAVE_RNNOISE=1)
+    endif()
+
+    if(WIN32 AND MOCKINGBIRD_HAVE_NEURAL_VAD)
+        add_custom_command(TARGET test_mockingbird POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        ${ONNXRUNTIME_ROOT}/lib/onnxruntime.dll
+                        $<TARGET_FILE_DIR:test_mockingbird>)
     endif()
 
     add_test(NAME mockingbird_unit COMMAND test_mockingbird)

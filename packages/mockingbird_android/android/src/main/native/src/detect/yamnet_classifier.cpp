@@ -20,7 +20,8 @@ mockingbird_status_t YamnetClassifier::load_session(const mockingbird_config_t& 
         opts.SetIntraOpNumThreads(1);
         opts.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
         apply_execution_provider(opts);
-        session_ = std::make_unique<Ort::Session>(shared_ort_env(), path.c_str(), opts);
+        const std::filesystem::path model = ort_model_path(path);
+        session_ = std::make_unique<Ort::Session>(shared_ort_env(), model.c_str(), opts);
         select_output_head();
         return MOCKINGBIRD_OK;
     } catch (const Ort::Exception& ex) {

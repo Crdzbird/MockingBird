@@ -20,7 +20,8 @@ mockingbird_status_t NeuralVadDetector::load_session(const mockingbird_config_t&
         opts.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
         apply_execution_provider(opts);
         MOCKINGBIRD_VLOG("neural-vad loading model: '%s'", path.c_str());
-        session_ = std::make_unique<Ort::Session>(shared_ort_env(), path.c_str(), opts);
+        const std::filesystem::path model = ort_model_path(path);
+        session_ = std::make_unique<Ort::Session>(shared_ort_env(), model.c_str(), opts);
         return MOCKINGBIRD_OK;
     } catch (const Ort::Exception& ex) {
         MOCKINGBIRD_VLOG("neural-vad ORT exception: %s", ex.what());

@@ -25,26 +25,32 @@ flutter:
         default_package: mockingbird_ios
       macos:
         default_package: mockingbird_macos
+      linux:
+        default_package: mockingbird_linux
+      windows:
+        default_package: mockingbird_windows
       web:
         default_package: mockingbird_web
   # ONNX models bundled with the plugin so the demo (or any consumer)
   # gets Neural VAD + YAMNet sound classification with no extra setup.
   assets:
     - path: assets/silero_vad.onnx
-      platforms: [android, ios, macos]
+      platforms: [android, ios, macos, linux, windows]
     - path: assets/yamnet_3s.onnx
-      platforms: [android, ios, macos]
+      platforms: [android, ios, macos, linux, windows]
     - path: assets/yamnet_class_map.txt
-      platforms: [android, ios, macos]
+      platforms: [android, ios, macos, linux, windows]
 
 dependencies:
   flutter:
     sdk: flutter
   mockingbird_android: ^0.1.0
   mockingbird_ios: ^0.1.0
+  mockingbird_linux: ^0.1.0
   mockingbird_macos: ^0.1.0
   mockingbird_platform_interface: ^0.1.0
   mockingbird_web: ^0.1.0
+  mockingbird_windows: ^0.1.0
   path_provider: ^2.1.6
 
 dev_dependencies:
