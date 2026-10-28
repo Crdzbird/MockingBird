@@ -34,7 +34,7 @@ under AddressSanitizer, UndefinedBehaviorSanitizer and ThreadSanitizer.
 
 | Stage | Component | Notes |
 |---|---|---|
-| Capture | miniaudio, Oboe (Android), Core Audio (Apple) | int16 mono at 8, 16, 32 or 48 kHz |
+| Capture | Oboe (Android), Core Audio (Apple), miniaudio (Linux, Windows) | int16 mono at 8, 16, 32 or 48 kHz |
 | Preprocess (optional) | RNNoise 0.2, full model | recurrent noise suppression, bridged to its native 48 kHz |
 | Voice detection | libfvad (fast) or Silero v6 through ONNX Runtime (neural) | language-agnostic |
 | Anomaly gate | RMS, spectral flux and centroid z-scores (PFFFT) | adaptive rolling background |
@@ -62,6 +62,15 @@ Other things the engine provides:
   Dart and Python bindings produce byte-identical output over the shared engine.
 - Live or offline. Capture from the microphone, or push your own PCM to run
   files, network audio or test vectors through the same pipeline.
+- Whole utterances. Each segment ends on a packet flagged LAST, a length cap
+  splits long ones, and with Ogg Opus a segment's packets form a playable
+  `.opus` file. The Flutter package also hands over each finished segment as a
+  WAV or Ogg Opus file.
+- A wake signal instead of polling. The engine calls the host once when it
+  queues an event or packet and waits for an acknowledgement, so the Flutter
+  package reacts within a frame without a timer.
+- Nothing leaves the device. The engine writes nothing to disk, logs no audio,
+  and switches off ONNX Runtime's telemetry.
 
 ## Quick start
 
