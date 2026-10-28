@@ -48,8 +48,8 @@ final class WebDecoders {
     );
   }
 
-  /// Reads the stats record at [p].
-  MockingbirdNativeStats stats(int p) => MockingbirdNativeStats(
+  /// Reads the stats record at [p]; the browser's capture reports [voice].
+  MockingbirdNativeStats stats(int p, int voice) => MockingbirdNativeStats(
     framesCaptured: _s(p, WebStatsField.framesCaptured).toInt(),
     framesDroppedCapture: _s(p, WebStatsField.framesDroppedCapture).toInt(),
     packetsEmitted: _s(p, WebStatsField.packetsEmitted).toInt(),
@@ -61,15 +61,19 @@ final class WebDecoders {
     inputRmsDbfs: _s(p, WebStatsField.inputRmsDbfs),
     inputPeakDbfs: _s(p, WebStatsField.inputPeakDbfs),
     tapSamplesDropped: _s(p, WebStatsField.tapSamplesDropped).toInt(),
-    workerBusyPpm: _s(p, WebStatsField.workerBusyPpm).toInt(),
-    workerMaxFrameUs: _s(p, WebStatsField.workerMaxFrameUs).toInt(),
-    workerWakeups: _s(p, WebStatsField.workerWakeups).toInt(),
-    soundClassInferences: _s(p, WebStatsField.soundClassInferences).toInt(),
-    soundClassInferencesSkipped: _s(
-      p,
-      WebStatsField.soundClassInferencesSkipped,
-    ).toInt(),
-    preprocFramesSkipped: _s(p, WebStatsField.preprocFramesSkipped).toInt(),
-    degradationLevel: _s(p, WebStatsField.degradationLevel).toInt(),
+    worker: MockingbirdNativeWorkerStats(
+      busyPpm: _s(p, WebStatsField.workerBusyPpm).toInt(),
+      maxFrameUs: _s(p, WebStatsField.workerMaxFrameUs).toInt(),
+      wakeups: _s(p, WebStatsField.workerWakeups).toInt(),
+      soundClassInferences: _s(p, WebStatsField.soundClassInferences).toInt(),
+      soundClassInferencesSkipped: _s(
+        p,
+        WebStatsField.soundClassInferencesSkipped,
+      ).toInt(),
+      preprocFramesSkipped: _s(p, WebStatsField.preprocFramesSkipped).toInt(),
+      degradationLevel: _s(p, WebStatsField.degradationLevel).toInt(),
+    ),
+    voiceProcessingActive: voice,
+    captureRestarts: 0,
   );
 }

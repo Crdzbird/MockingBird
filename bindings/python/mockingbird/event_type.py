@@ -15,3 +15,8 @@ class EventType(IntEnum):
     BACKEND_ERROR = 7
     SOUND_CLASS = 8
     DEGRADATION = 9
+    CAPTURE_INTERRUPTED = 10
+    """The OS took the microphone away until CAPTURE_RESUMED."""
+    CAPTURE_RESUMED = 11
+    ROUTE_CHANGED = 12
+    """The input device changed; capture continues on the new route."""

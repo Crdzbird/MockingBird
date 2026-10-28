@@ -29,6 +29,8 @@ final class WebLifecycle {
       final capture = WebCapture(
         h.sampleRateHz,
         (pcm, ts) => _pushPcm(h, pcm, ts),
+        voice: h.voiceProcessing,
+        deviceId: h.deviceId,
       );
       h
         ..capture = capture

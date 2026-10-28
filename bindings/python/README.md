@@ -106,6 +106,12 @@ in order: with `Codec.OGG_OPUS` they form an `.opus` file, and with
 A segment cut short by `stop` ends with an `is_last` packet only under Ogg Opus;
 `SEGMENT_END` arrives either way.
 
+`Config.voice_processing` (a `VoiceProcessing` flag) asks the platform for its
+echo cancellation, gain control and noise suppression; `Stats.capture` reports
+what applied. `mockingbird.input_devices(backend)` lists microphones and
+`Engine.select_input_device` picks one before `start`. Interruptions and route
+changes arrive as `CAPTURE_INTERRUPTED`, `CAPTURE_RESUMED` and `ROUTE_CHANGED`.
+
 Errors raise `MockingbirdError`, whose `status` is a `Status`:
 
 ```python

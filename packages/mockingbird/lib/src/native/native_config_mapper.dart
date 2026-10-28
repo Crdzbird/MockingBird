@@ -17,6 +17,7 @@ final class NativeConfigMapper {
         sampleRateHz: config.sampleRateHz,
         frameMs: config.frameMs,
         enableRnnoise: config.denoise,
+        voiceProcessing: config.voiceProcessing.nativeValue,
         detectors: const NativeDetectorMapper().map(config),
         output: const NativeOutputMapper().map(config),
       );

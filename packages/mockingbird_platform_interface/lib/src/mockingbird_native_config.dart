@@ -9,6 +9,7 @@ final class MockingbirdNativeConfig {
     required int sampleRateHz,
     required int frameMs,
     required bool enableRnnoise,
+    required int voiceProcessing,
     required MockingbirdNativeDetectorConfig detectors,
     required MockingbirdNativeOutputConfig output,
   }) = MockingbirdNativeConfig._;
@@ -18,6 +19,7 @@ final class MockingbirdNativeConfig {
     required this.sampleRateHz,
     required this.frameMs,
     required this.enableRnnoise,
+    required this.voiceProcessing,
     required this.detectors,
     required this.output,
   });
@@ -33,6 +35,9 @@ final class MockingbirdNativeConfig {
 
   /// Whether RNNoise runs before the detectors.
   final bool enableRnnoise;
+
+  /// Mirrors `voice_processing`, a `MOCKINGBIRD_VOICE_*` mask.
+  final int voiceProcessing;
 
   /// The detector fields.
   final MockingbirdNativeDetectorConfig detectors;

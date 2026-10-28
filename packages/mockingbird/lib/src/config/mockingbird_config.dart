@@ -5,6 +5,7 @@ import 'package:mockingbird/src/config/mockingbird_queue_config.dart';
 import 'package:mockingbird/src/config/mockingbird_segment_config.dart';
 import 'package:mockingbird/src/config/mockingbird_sound_class_config.dart';
 import 'package:mockingbird/src/config/mockingbird_vad_config.dart';
+import 'package:mockingbird/src/config/mockingbird_voice_processing.dart';
 import 'package:mockingbird/src/config/sensitivity.dart';
 import 'package:mockingbird/src/mockingbird_backend.dart';
 import 'package:mockingbird/src/mockingbird_vad_tier.dart';
@@ -20,6 +21,7 @@ final class MockingbirdConfig {
     int sampleRateHz,
     int frameMs,
     bool denoise,
+    MockingbirdVoiceProcessing voiceProcessing,
     MockingbirdVadConfig vad,
     MockingbirdAnomalyConfig anomaly,
     MockingbirdSoundClassConfig soundClass,
@@ -34,6 +36,7 @@ final class MockingbirdConfig {
     this.sampleRateHz = 16000,
     this.frameMs = 20,
     this.denoise = false,
+    this.voiceProcessing = const MockingbirdVoiceProcessing(),
     this.vad = const MockingbirdVadConfig(),
     this.anomaly = const MockingbirdAnomalyConfig(),
     this.soundClass = const MockingbirdSoundClassConfig(),
@@ -70,6 +73,9 @@ final class MockingbirdConfig {
 
   /// RNNoise ahead of every detector; needs 8, 16 or 48 kHz.
   final bool denoise;
+
+  /// The platform's echo cancellation, gain control and noise suppression.
+  final MockingbirdVoiceProcessing voiceProcessing;
 
   /// Voice-activity detection.
   final MockingbirdVadConfig vad;

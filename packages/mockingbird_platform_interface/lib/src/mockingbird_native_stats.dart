@@ -1,6 +1,8 @@
-/// A flat mirror of `mockingbird_stats_t`.
+import 'package:mockingbird_platform_interface/src/mockingbird_native_worker_stats.dart';
+
+/// A mirror of `mockingbird_stats_t`.
 final class MockingbirdNativeStats {
-  /// Creates a stats record.
+  /// Creates the record.
   const factory MockingbirdNativeStats({
     required int framesCaptured,
     required int framesDroppedCapture,
@@ -13,13 +15,9 @@ final class MockingbirdNativeStats {
     required double inputRmsDbfs,
     required double inputPeakDbfs,
     required int tapSamplesDropped,
-    required int workerBusyPpm,
-    required int workerMaxFrameUs,
-    required int workerWakeups,
-    required int soundClassInferences,
-    required int soundClassInferencesSkipped,
-    required int preprocFramesSkipped,
-    required int degradationLevel,
+    required MockingbirdNativeWorkerStats worker,
+    required int voiceProcessingActive,
+    required int captureRestarts,
   }) = MockingbirdNativeStats._;
 
   const MockingbirdNativeStats._({
@@ -34,13 +32,9 @@ final class MockingbirdNativeStats {
     required this.inputRmsDbfs,
     required this.inputPeakDbfs,
     required this.tapSamplesDropped,
-    required this.workerBusyPpm,
-    required this.workerMaxFrameUs,
-    required this.workerWakeups,
-    required this.soundClassInferences,
-    required this.soundClassInferencesSkipped,
-    required this.preprocFramesSkipped,
-    required this.degradationLevel,
+    required this.worker,
+    required this.voiceProcessingActive,
+    required this.captureRestarts,
   });
 
   /// Mirrors `mockingbird_stats_t.frames_captured`.
@@ -76,24 +70,12 @@ final class MockingbirdNativeStats {
   /// Mirrors `mockingbird_stats_t.tap_samples_dropped`.
   final int tapSamplesDropped;
 
-  /// Mirrors `mockingbird_stats_t.worker_busy_ppm`.
-  final int workerBusyPpm;
+  /// The worker-health fields.
+  final MockingbirdNativeWorkerStats worker;
 
-  /// Mirrors `mockingbird_stats_t.worker_max_frame_us`.
-  final int workerMaxFrameUs;
+  /// Mirrors `mockingbird_stats_t.voice_processing_active`.
+  final int voiceProcessingActive;
 
-  /// Mirrors `mockingbird_stats_t.worker_wakeups`.
-  final int workerWakeups;
-
-  /// Mirrors `mockingbird_stats_t.sound_class_inferences`.
-  final int soundClassInferences;
-
-  /// Mirrors `mockingbird_stats_t.sound_class_inferences_skipped`.
-  final int soundClassInferencesSkipped;
-
-  /// Mirrors `mockingbird_stats_t.preproc_frames_skipped`.
-  final int preprocFramesSkipped;
-
-  /// Mirrors `mockingbird_stats_t.degradation_level`.
-  final int degradationLevel;
+  /// Mirrors `mockingbird_stats_t.capture_restarts`.
+  final int captureRestarts;
 }

@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 
 from mockingbird._stats_struct import StatsStruct
 
+from mockingbird.capture_health import CaptureHealth
 from mockingbird.worker_health import WorkerHealth
 
 
@@ -27,6 +28,7 @@ class Stats:
     tap_samples_dropped: int = 0
     """PCM-tap samples the host did not drain in time."""
     worker: WorkerHealth = field(default_factory=WorkerHealth)
+    capture: CaptureHealth = field(default_factory=CaptureHealth)
 
     @classmethod
     def from_struct(cls, s: StatsStruct) -> Stats:
@@ -44,4 +46,5 @@ class Stats:
             s.input_peak_dbfs,
             s.tap_samples_dropped,
             WorkerHealth.from_struct(s),
+            CaptureHealth.from_struct(s),
         )

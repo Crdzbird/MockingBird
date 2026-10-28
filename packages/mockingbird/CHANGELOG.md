@@ -1,5 +1,9 @@
 ## Unreleased
 
+- `MockingbirdConfig.voiceProcessing` turns on the platform's echo cancellation, gain control and noise suppression; `stats.capture.voiceProcessing` reports what applied.
+- `MockingbirdDevices.input()` lists microphones and `engine.selectInputDevice` picks one.
+- Interruptions and route changes arrive as `MockingbirdCaptureInterruptedEvent`, `MockingbirdCaptureResumedEvent` and `MockingbirdRouteChangedEvent`; on Android a disconnected stream now reopens on the new device instead of going silent.
+- `MockingbirdBackend.auto` now means Core Audio on Apple and Oboe on Android, as documented, instead of miniaudio.
 - An engine that captures from the microphone can be started again after `stop`; the second start used to fail with an invalid-state error.
 - ONNX Runtime telemetry is switched off: its 1.30 builds would otherwise upload usage events and a device id to Microsoft. The engine sets `ORT_DISABLE_TELEMETRY=1` before its first ONNX Runtime environment, unless the app set it, and disables telemetry events on it.
 - `engine.segments` delivers each finished segment with all its packets, and `MockingbirdSegment.toFile()` turns one into a WAV or Ogg Opus file.

@@ -1,3 +1,4 @@
+import 'package:mockingbird/src/mockingbird_capture_health.dart';
 import 'package:mockingbird/src/mockingbird_worker_health.dart';
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
 
@@ -17,6 +18,7 @@ final class MockingbirdStats {
     required double inputPeakDbfs,
     required int tapSamplesDropped,
     required MockingbirdWorkerHealth worker,
+    required MockingbirdCaptureHealth capture,
   }) = MockingbirdStats._;
 
   const MockingbirdStats._({
@@ -32,6 +34,7 @@ final class MockingbirdStats {
     required this.inputPeakDbfs,
     required this.tapSamplesDropped,
     required this.worker,
+    required this.capture,
   });
 
   /// Reads a native `mockingbird_stats_t`.
@@ -48,7 +51,8 @@ final class MockingbirdStats {
         inputRmsDbfs: s.inputRmsDbfs,
         inputPeakDbfs: s.inputPeakDbfs,
         tapSamplesDropped: s.tapSamplesDropped,
-        worker: MockingbirdWorkerHealth.fromNative(s),
+        worker: MockingbirdWorkerHealth.fromNative(s.worker),
+        capture: MockingbirdCaptureHealth.fromNative(s),
       );
 
   /// Samples accepted from the capture source.
@@ -86,4 +90,7 @@ final class MockingbirdStats {
 
   /// Worker-thread health and work shedding.
   final MockingbirdWorkerHealth worker;
+
+  /// Voice processing in effect and capture restarts.
+  final MockingbirdCaptureHealth capture;
 }

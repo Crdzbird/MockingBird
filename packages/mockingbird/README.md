@@ -109,6 +109,7 @@ you want to change.
 
 | Group | Type | Knobs |
 |---|---|---|
+| `voiceProcessing` | `MockingbirdVoiceProcessing` | the platform's echo cancellation, gain control and noise suppression (`MockingbirdVoiceProcessing.all()`) |
 | `vad` | `MockingbirdVadConfig` | tier (`fast` or `neural`), aggressiveness, neural threshold, hangover, model path |
 | `anomaly` | `MockingbirdAnomalyConfig` | z-score triggers, background window |
 | `soundClass` | `MockingbirdSoundClassConfig` | threshold, cadence, model path |
@@ -160,6 +161,41 @@ Segments are only kept while something listens, and one that was already under
 way when listening began is skipped. When `stop` cuts a segment short it still
 arrives, with `complete` false for `pcm16` and raw Opus; Ogg Opus writes its
 end-of-stream page at stop, so those segments are always complete files.
+
+## The microphone
+
+**Voice processing.** `voiceProcessing` asks the platform for its own echo
+cancellation, gain control and noise suppression, the processing voice calls
+use. It applies to live capture only:
+
+| Platform | What runs |
+|---|---|
+| iOS, macOS | the VoiceProcessingIO audio unit, which always cancels echo and suppresses noise; gain control is optional |
+| Android | the VOICE_COMMUNICATION input preset, which applies the device's echo canceller, gain control and noise suppressor where it has them |
+| Web | the `getUserMedia` constraints of the same names |
+| Linux, Windows | nothing; the platforms have no such processing |
+
+`stats.capture.voiceProcessing` reports what is in effect, which can be less
+than asked for.
+
+**Choosing a device.** `MockingbirdDevices.input()` lists the microphones, and
+`engine.selectInputDevice(id)` picks one for the next `start`; `null` follows
+the system default. Android has no native listing: get the devices with
+`AudioManager.getDevices` and pass `AudioDeviceInfo.getId()` as the id. Browsers
+only show device names after the page has been granted the microphone.
+
+**Interruptions and route changes.** A phone call, Siri or another app
+recording sends `MockingbirdCaptureInterruptedEvent`, and
+`MockingbirdCaptureResumedEvent` follows when capture is back. Plugging or
+unplugging a headset, or a new default input on macOS, sends
+`MockingbirdRouteChangedEvent` and capture continues on the new device.
+`stats.capture.restarts` counts the recoveries. An engine can be stopped and
+started again any number of times.
+
+**In the background.** Capture keeps running while the app is in the
+background only if the platform allows it: on iOS, add `audio` to
+`UIBackgroundModes` in `Info.plist`; on Android 14 and later, run a foreground
+service of type `microphone`. The engine needs nothing else.
 
 ## Retune without restarting
 

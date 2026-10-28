@@ -15,6 +15,7 @@ def to_struct(cfg: Config, defaults: ConfigStruct) -> ConfigStruct:
     c.channels = 1
     c.frame_ms = cfg.frame_ms
     c.enable_rnnoise = int(cfg.denoise)
+    c.voice_processing = int(cfg.voice_processing)
     c.enable_vad = int(cfg.vad.enabled)
     c.vad_tier = int(cfg.vad.tier)
     c.vad_aggressiveness = cfg.vad.aggressiveness

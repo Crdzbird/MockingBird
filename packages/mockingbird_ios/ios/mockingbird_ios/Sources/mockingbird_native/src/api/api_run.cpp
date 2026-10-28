@@ -23,8 +23,11 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_start(mockingbird_engine_t* e) 
         }
         if (e->capture_backend) {
             e->capture_backend_used = true;
-            const mockingbird_status_t r =
-                e->capture_backend->init(e->cfg, mockingbird::backend_pcm_callback, e);
+            e->capture_backend->set_notice_callback(mockingbird::backend_notice_callback, e);
+            mockingbird_status_t r = e->capture_backend->select_device(e->input_device_id);
+            if (r == MOCKINGBIRD_OK) {
+                r = e->capture_backend->init(e->cfg, mockingbird::backend_pcm_callback, e);
+            }
             if (r != MOCKINGBIRD_OK) return r;
         }
         mockingbird::driver_start(e);
@@ -34,6 +37,10 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_start(mockingbird_engine_t* e) 
                 mockingbird::driver_stop(e);
                 return r;
             }
+        }
+        if (e->capture_backend) {
+            e->voice_processing_active.store(e->capture_backend->voice_processing_active(),
+                                             std::memory_order_relaxed);
         }
         e->running.store(true, std::memory_order_release);
         return MOCKINGBIRD_OK;

@@ -1,4 +1,5 @@
-// Chooses the capture backend for a configured enum value. Tests may install
+// Chooses the capture backend for a configured enum value; AUTO is Core
+// Audio on Apple, Oboe on Android and miniaudio elsewhere. Tests may install
 // an override factory to inject synthetic or failing backends.
 #ifndef __EMSCRIPTEN__
 
@@ -10,6 +11,17 @@
 namespace mockingbird {
 namespace {
 BackendFactoryFn g_backend_override = nullptr;
+
+mockingbird_backend_t resolve(mockingbird_backend_t which) {
+    if (which != MOCKINGBIRD_BACKEND_AUTO) return which;
+#if defined(__APPLE__)
+    return MOCKINGBIRD_BACKEND_COREAUDIO;
+#elif defined(MOCKINGBIRD_HAVE_OBOE)
+    return MOCKINGBIRD_BACKEND_OBOE;
+#else
+    return MOCKINGBIRD_BACKEND_MINIAUDIO;
+#endif
+}
 }
 
 void set_backend_factory_override(BackendFactoryFn fn) {
@@ -18,8 +30,7 @@ void set_backend_factory_override(BackendFactoryFn fn) {
 
 std::unique_ptr<CaptureBackend> make_backend(mockingbird_backend_t which) {
     if (g_backend_override != nullptr) return g_backend_override(which);
-    switch (which) {
-        case MOCKINGBIRD_BACKEND_AUTO:
+    switch (resolve(which)) {
         case MOCKINGBIRD_BACKEND_MINIAUDIO:
             return std::make_unique<MiniaudioBackend>();
         case MOCKINGBIRD_BACKEND_COREAUDIO:
@@ -37,6 +48,23 @@ std::unique_ptr<CaptureBackend> make_backend(mockingbird_backend_t which) {
         case MOCKINGBIRD_BACKEND_HOST_PCM:
         default:
             return nullptr;
+    }
+}
+
+mockingbird_status_t list_input_devices(mockingbird_backend_t which, std::vector<InputDevice>& out) {
+    switch (resolve(which)) {
+        case MOCKINGBIRD_BACKEND_MINIAUDIO:
+            return miniaudio_list_input_devices(out);
+        case MOCKINGBIRD_BACKEND_COREAUDIO:
+#if defined(__APPLE__)
+            return coreaudio_list_input_devices(out);
+#else
+            return MOCKINGBIRD_ERR_UNSUPPORTED;
+#endif
+        case MOCKINGBIRD_BACKEND_OBOE:
+        case MOCKINGBIRD_BACKEND_HOST_PCM:
+        default:
+            return MOCKINGBIRD_ERR_UNSUPPORTED;
     }
 }
 

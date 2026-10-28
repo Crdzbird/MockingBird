@@ -6,8 +6,11 @@ import 'package:mockingbird_platform_interface/mockingbird_platform_interface.da
 
 part 'mockingbird_anomaly_event.dart';
 part 'mockingbird_backend_error_event.dart';
+part 'mockingbird_capture_interrupted_event.dart';
+part 'mockingbird_capture_resumed_event.dart';
 part 'mockingbird_degradation_event.dart';
 part 'mockingbird_overrun_event.dart';
+part 'mockingbird_route_changed_event.dart';
 part 'mockingbird_segment_begin_event.dart';
 part 'mockingbird_segment_end_event.dart';
 part 'mockingbird_sound_class_event.dart';
@@ -34,6 +37,9 @@ sealed class MockingbirdEvent {
       7 => MockingbirdBackendErrorEvent._(id, ts, e.reasonMask.toSigned(32)),
       8 => MockingbirdSoundClassEvent._(id, ts, e.reasonMask, e.confidence),
       9 => MockingbirdDegradationEvent._(id, ts, e.reasonMask, e.confidence),
+      10 => MockingbirdCaptureInterruptedEvent._(id, ts),
+      11 => MockingbirdCaptureResumedEvent._(id, ts),
+      12 => MockingbirdRouteChangedEvent._(id, ts),
       final other => MockingbirdUnknownEvent._(id, ts, other),
     };
   }

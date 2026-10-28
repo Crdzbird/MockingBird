@@ -27,6 +27,7 @@ set(MOCKINGBIRD_SOURCES
         ${MOCKINGBIRD_ROOT}/src/api/api_push.cpp
         ${MOCKINGBIRD_ROOT}/src/api/api_queues.cpp
         ${MOCKINGBIRD_ROOT}/src/api/api_run.cpp
+        ${MOCKINGBIRD_ROOT}/src/api/api_devices.cpp
         ${MOCKINGBIRD_ROOT}/src/api/api_stats.cpp
         ${MOCKINGBIRD_ROOT}/src/api/api_tuning.cpp
         ${MOCKINGBIRD_ROOT}/src/config_support.cpp
@@ -47,6 +48,8 @@ set(MOCKINGBIRD_SOURCES
         ${MOCKINGBIRD_ROOT}/src/worker/worker_thread.cpp
         ${MOCKINGBIRD_ROOT}/src/capture/backend_factory.cpp
         ${MOCKINGBIRD_ROOT}/src/capture/miniaudio_backend.cpp
+        ${MOCKINGBIRD_ROOT}/src/capture/miniaudio_devices.cpp
+        ${MOCKINGBIRD_ROOT}/src/capture/miniaudio_ids.cpp
         ${MOCKINGBIRD_ROOT}/src/capture/miniaudio_impl.c
         ${MOCKINGBIRD_ROOT}/src/detect/vad_detector.cpp
         ${MOCKINGBIRD_ROOT}/src/detect/neural_vad_detector.cpp

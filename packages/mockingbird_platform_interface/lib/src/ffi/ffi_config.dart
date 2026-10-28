@@ -25,6 +25,7 @@ final class FfiConfig {
       ..sample_rate_hz = c.sampleRateHz
       ..frame_ms = c.frameMs
       ..enable_rnnoise = _flag(c.enableRnnoise)
+      ..voice_processing = c.voiceProcessing
       ..enable_vad = _flag(d.enableVad)
       ..vad_tierAsInt = d.vadTier
       ..vad_aggressiveness = d.vadAggressiveness

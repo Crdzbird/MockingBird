@@ -15,11 +15,15 @@ public:
     mockingbird_status_t init(const mockingbird_config_t& cfg, PcmCallback cb, void* user) override;
     mockingbird_status_t start() override;
     mockingbird_status_t stop() override;
+    void set_notice_callback(CaptureNoticeCallback cb, void* user) override;
+    mockingbird_status_t select_device(const std::string& id) override;
 
     struct Impl;
 
 private:
     std::unique_ptr<Impl> impl_;
 };
+
+mockingbird_status_t miniaudio_list_input_devices(std::vector<InputDevice>& out);
 
 }

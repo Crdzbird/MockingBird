@@ -5,22 +5,25 @@ import 'package:mockingbird_web/src/web_capture.dart';
 
 /// A WebAssembly engine pointer plus its scratch records and capture.
 final class WebEngineHandle extends MockingbirdEngineHandle {
-  /// Allocates the scratch records for [pointer].
+  /// Allocates the scratch records for [pointer], created from [config].
   factory WebEngineHandle(
     MockingbirdModule m,
-    int pointer, {
-    required bool captures,
-    required int sampleRateHz,
-  }) = WebEngineHandle._;
+    int pointer,
+    MockingbirdNativeConfig config,
+  ) = WebEngineHandle._;
 
   WebEngineHandle._(
     MockingbirdModule m,
-    this.pointer, {
-    required this.captures,
-    required this.sampleRateHz,
-  }) : event = MockingbirdRecordApi(m).eventNew(),
-       packet = MockingbirdRecordApi(m).packetNew(),
-       stats = MockingbirdRecordApi(m).statsNew();
+    this.pointer,
+    MockingbirdNativeConfig c,
+  ) : captures = c.backend != _hostPcm,
+      sampleRateHz = c.sampleRateHz,
+      voiceProcessing = c.voiceProcessing,
+      event = MockingbirdRecordApi(m).eventNew(),
+      packet = MockingbirdRecordApi(m).packetNew(),
+      stats = MockingbirdRecordApi(m).statsNew();
+
+  static const _hostPcm = 4;
 
   /// The engine in linear memory.
   final int pointer;
@@ -31,6 +34,12 @@ final class WebEngineHandle extends MockingbirdEngineHandle {
   /// The engine's sample rate, which capture must deliver.
   final int sampleRateHz;
 
+  /// The `MOCKINGBIRD_VOICE_*` bits to ask the browser for.
+  final int voiceProcessing;
+
+  /// The microphone the next start opens, or null for the default.
+  String? deviceId;
+
   /// Scratch event record.
   final int event;
 
@@ -40,7 +49,7 @@ final class WebEngineHandle extends MockingbirdEngineHandle {
   /// Scratch stats record.
   final int stats;
 
-  /// The running capture, if any.
+  /// The running capture, if any; it knows what the browser applied.
   WebCapture? capture;
 
   /// Completes when [capture] has started or failed.

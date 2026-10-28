@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:mockingbird_platform_interface/src/mockingbird_engine_handle.dart';
+import 'package:mockingbird_platform_interface/src/mockingbird_native_device.dart';
 import 'package:mockingbird_platform_interface/src/mockingbird_native_event.dart';
 import 'package:mockingbird_platform_interface/src/mockingbird_native_packet.dart';
 import 'package:mockingbird_platform_interface/src/mockingbird_native_stats.dart';
@@ -25,3 +26,9 @@ typedef MockingbirdPacketResult = ({
 
 /// A status code with the stats snapshot, if read.
 typedef MockingbirdStatsResult = ({int status, MockingbirdNativeStats? stats});
+
+/// A status code with the input devices listed.
+typedef MockingbirdDevicesResult = ({
+  int status,
+  List<MockingbirdNativeDevice> devices,
+});

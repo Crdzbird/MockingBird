@@ -7,6 +7,7 @@ MockingbirdNativeConfig testConfig({int backend = 4, bool denoise = false}) =>
       sampleRateHz: 16000,
       frameMs: 20,
       enableRnnoise: denoise,
+      voiceProcessing: 0,
       detectors: const MockingbirdNativeDetectorConfig(
         enableVad: true,
         vadTier: 0,

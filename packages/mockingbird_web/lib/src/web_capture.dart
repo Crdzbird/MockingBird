@@ -2,22 +2,35 @@ import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 import 'dart:typed_data';
 
+import 'package:mockingbird_web/src/web_capture_constraints.dart';
 import 'package:mockingbird_web/src/web_capture_worklet.dart';
 import 'package:web/web.dart' as web;
 
 /// Microphone capture through an AudioWorklet that delivers int16 chunks at
 /// the engine's sample rate.
 final class WebCapture {
-  /// Creates capture at [sampleRateHz] delivering to [onPcm].
+  /// Creates capture at [sampleRateHz] delivering to [onPcm], asking the
+  /// browser for the [voice] bits and, when set, the microphone [deviceId].
   factory WebCapture(
     int sampleRateHz,
-    void Function(Int16List pcm, int captureTsUs) onPcm,
-  ) = WebCapture._;
+    void Function(Int16List pcm, int captureTsUs) onPcm, {
+    int voice,
+    String? deviceId,
+  }) = WebCapture._;
 
-  WebCapture._(this.sampleRateHz, this.onPcm);
+  WebCapture._(this.sampleRateHz, this.onPcm, {this.voice = 0, this.deviceId});
 
   /// The rate the engine expects.
   final int sampleRateHz;
+
+  /// The voice-processing bits asked for.
+  final int voice;
+
+  /// The microphone asked for, or null for the default.
+  final String? deviceId;
+
+  /// The voice-processing bits the browser applied once capture started.
+  int voiceActive = 0;
 
   /// Receives each chunk with the capture timestamp of its first sample.
   final void Function(Int16List pcm, int captureTsUs) onPcm;
@@ -28,17 +41,10 @@ final class WebCapture {
 
   /// Requests the microphone and starts delivering chunks.
   Future<void> start() async {
-    final constraints = web.MediaStreamConstraints(
-      audio: web.MediaTrackConstraints(
-        echoCancellation: false.toJS,
-        noiseSuppression: false.toJS,
-        autoGainControl: false.toJS,
-        channelCount: 1.toJS,
-      ),
-    );
     final stream = await web.window.navigator.mediaDevices
-        .getUserMedia(constraints)
+        .getUserMedia(WebCaptureConstraints.audio(voice, deviceId))
         .toDart;
+    voiceActive = WebCaptureConstraints.applied(stream);
     final context = web.AudioContext(
       web.AudioContextOptions(sampleRate: sampleRateHz),
     );

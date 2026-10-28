@@ -27,6 +27,8 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_get_stats(mockingbird_engine_t*
         out->sound_class_inferences_skipped = e->sound_class_inferences_skipped.load(relaxed);
         out->preproc_frames_skipped         = e->preproc_frames_skipped.load(relaxed);
         out->degradation_level              = e->degradation_level.load(relaxed);
+        out->voice_processing_active        = e->voice_processing_active.load(relaxed);
+        out->capture_restarts               = e->capture_restarts.load(relaxed);
         std::memset(out->_reserved, 0, sizeof(out->_reserved));
         return MOCKINGBIRD_OK;
     } catch (...) {

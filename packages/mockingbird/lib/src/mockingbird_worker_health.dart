@@ -24,11 +24,11 @@ final class MockingbirdWorkerHealth {
   });
 
   /// Reads the worker fields of a native `mockingbird_stats_t`.
-  factory MockingbirdWorkerHealth.fromNative(MockingbirdNativeStats s) =>
+  factory MockingbirdWorkerHealth.fromNative(MockingbirdNativeWorkerStats s) =>
       MockingbirdWorkerHealth(
-        busyPpm: s.workerBusyPpm,
-        maxFrameUs: s.workerMaxFrameUs,
-        wakeups: s.workerWakeups,
+        busyPpm: s.busyPpm,
+        maxFrameUs: s.maxFrameUs,
+        wakeups: s.wakeups,
         soundClassInferences: s.soundClassInferences,
         soundClassInferencesSkipped: s.soundClassInferencesSkipped,
         preprocFramesSkipped: s.preprocFramesSkipped,

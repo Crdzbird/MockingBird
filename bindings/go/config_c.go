@@ -23,6 +23,7 @@ func (cfg Config) toC() (C.mockingbird_config_t, func()) {
 	c.channels = 1
 	c.frame_ms = C.uint32_t(cfg.FrameMs)
 	c.enable_rnnoise = boolToC(cfg.Denoise)
+	c.voice_processing = C.uint32_t(cfg.VoiceProcessing)
 	c.enable_vad = boolToC(cfg.VAD.Enabled)
 	c.vad_tier = C.mockingbird_vad_tier_t(cfg.VAD.Tier)
 	c.vad_aggressiveness = C.int(cfg.VAD.Aggressiveness)

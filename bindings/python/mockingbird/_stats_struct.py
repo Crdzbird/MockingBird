@@ -25,5 +25,7 @@ class StatsStruct(ctypes.Structure):
         ("sound_class_inferences_skipped", ctypes.c_uint64),
         ("preproc_frames_skipped", ctypes.c_uint64),
         ("degradation_level", ctypes.c_uint32),
-        ("_reserved", ctypes.c_uint32 * 7),
+        ("voice_processing_active", ctypes.c_uint32),
+        ("capture_restarts", ctypes.c_uint32),
+        ("_reserved", ctypes.c_uint32 * 5),
     ]

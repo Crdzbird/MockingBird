@@ -35,6 +35,10 @@ enum MockingbirdSymbolAnchor {
     _ = mockingbird_set_event_callback(engine, nil, nil)
     _ = mockingbird_set_wake_callback(engine, nil, nil)
     _ = mockingbird_ack_wake(engine)
+    var device = mockingbird_device_t()
+    var count: UInt32 = 0
+    _ = mockingbird_list_input_devices(MOCKINGBIRD_BACKEND_AUTO, &device, 1, &count)
+    _ = mockingbird_set_input_device(engine, nil)
     _ = mockingbird_push_pcm(engine, &sample, 0, 0)
     _ = mockingbird_poll_event(engine, &event)
     _ = mockingbird_drain(engine, &packet)

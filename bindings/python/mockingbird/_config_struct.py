@@ -43,5 +43,6 @@ class ConfigStruct(ctypes.Structure):
         ("enable_adaptive_degradation", ctypes.c_int),
         ("degrade_busy_ppm", ctypes.c_uint32),
         ("worker_batch_frames", ctypes.c_uint32),
-        ("_reserved", ctypes.c_uint32 * 4),
+        ("voice_processing", ctypes.c_uint32),
+        ("_reserved", ctypes.c_uint32 * 3),
     ]

@@ -5,6 +5,7 @@ import 'package:mockingbird_platform_interface/src/bindings.dart';
 import 'package:mockingbird_platform_interface/src/mockingbird_native_event.dart';
 import 'package:mockingbird_platform_interface/src/mockingbird_native_packet.dart';
 import 'package:mockingbird_platform_interface/src/mockingbird_native_stats.dart';
+import 'package:mockingbird_platform_interface/src/mockingbird_native_worker_stats.dart';
 
 /// Copies native records into their plain Dart mirrors.
 abstract final class FfiDecoders {
@@ -45,12 +46,16 @@ abstract final class FfiDecoders {
         inputRmsDbfs: s.input_rms_dbfs,
         inputPeakDbfs: s.input_peak_dbfs,
         tapSamplesDropped: s.tap_samples_dropped,
-        workerBusyPpm: s.worker_busy_ppm,
-        workerMaxFrameUs: s.worker_max_frame_us,
-        workerWakeups: s.worker_wakeups,
-        soundClassInferences: s.sound_class_inferences,
-        soundClassInferencesSkipped: s.sound_class_inferences_skipped,
-        preprocFramesSkipped: s.preproc_frames_skipped,
-        degradationLevel: s.degradation_level,
+        worker: MockingbirdNativeWorkerStats(
+          busyPpm: s.worker_busy_ppm,
+          maxFrameUs: s.worker_max_frame_us,
+          wakeups: s.worker_wakeups,
+          soundClassInferences: s.sound_class_inferences,
+          soundClassInferencesSkipped: s.sound_class_inferences_skipped,
+          preprocFramesSkipped: s.preproc_frames_skipped,
+          degradationLevel: s.degradation_level,
+        ),
+        voiceProcessingActive: s.voice_processing_active,
+        captureRestarts: s.capture_restarts,
       );
 }

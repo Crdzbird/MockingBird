@@ -60,3 +60,31 @@ func TestDefaultsMatchTheNativeEngine(t *testing.T) {
 		t.Error("String() names")
 	}
 }
+
+func TestInputDevicesAndVoiceProcessing(t *testing.T) {
+	if VoiceAll != 7 || EventRouteChanged.String() != "ROUTE_CHANGED" {
+		t.Fatal("voice processing or event names wrong")
+	}
+	if _, err := InputDevices(BackendHostPCM); err == nil {
+		t.Fatal("host PCM must not list devices")
+	}
+	devices, err := InputDevices(BackendMiniaudio)
+	if err != nil {
+		t.Fatalf("listing: %v", err)
+	}
+	for _, d := range devices {
+		if d.ID == "" {
+			t.Fatal("empty device id")
+		}
+	}
+	cfg := DefaultConfig()
+	cfg.Backend = BackendHostPCM
+	e, err := New(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer e.Close()
+	if err := e.SelectInputDevice("x"); err == nil {
+		t.Fatal("host PCM must refuse a device")
+	}
+}

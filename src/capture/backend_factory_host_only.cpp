@@ -17,6 +17,12 @@ std::unique_ptr<CaptureBackend> make_backend(mockingbird_backend_t which) {
     return nullptr;
 }
 
+mockingbird_status_t list_input_devices(mockingbird_backend_t which, std::vector<InputDevice>& out) {
+    (void)which;
+    out.clear();
+    return MOCKINGBIRD_ERR_UNSUPPORTED;
+}
+
 }
 
 #endif

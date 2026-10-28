@@ -69,6 +69,10 @@ Other things the engine provides:
 - A wake signal instead of polling. The engine calls the host once when it
   queues an event or packet and waits for an acknowledgement, so the Flutter
   package reacts within a frame without a timer.
+- Microphone handling. Platform echo cancellation, gain control and noise
+  suppression on request, input device listing and selection, and capture that
+  survives interruptions and headset or default-device changes, with an event
+  for each.
 - Nothing leaves the device. The engine writes nothing to disk, logs no audio,
   and switches off ONNX Runtime's telemetry.
 

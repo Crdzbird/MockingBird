@@ -135,6 +135,39 @@ class MockingbirdBindings {
         )
       >();
 
+  mockingbird_status mockingbird_list_input_devices(
+    mockingbird_backend backend,
+    ffi.Pointer<mockingbird_device_t> out,
+    int capacity,
+    ffi.Pointer<ffi.Uint32> out_count,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_list_input_devices(backend.value, out, capacity, out_count),
+    );
+  }
+
+  late final _mockingbird_list_input_devicesPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.UnsignedInt,
+            ffi.Pointer<mockingbird_device_t>,
+            ffi.Uint32,
+            ffi.Pointer<ffi.Uint32>,
+          )
+        >
+      >('mockingbird_list_input_devices');
+  late final _mockingbird_list_input_devices =
+      _mockingbird_list_input_devicesPtr
+          .asFunction<
+            int Function(
+              int,
+              ffi.Pointer<mockingbird_device_t>,
+              int,
+              ffi.Pointer<ffi.Uint32>,
+            )
+          >();
+
   mockingbird_status mockingbird_poll_event(
     ffi.Pointer<mockingbird_engine_t> engine,
     ffi.Pointer<mockingbird_event_t> out_evt,
@@ -278,6 +311,29 @@ class MockingbirdBindings {
               ffi.Pointer<ffi.Void>,
             )
           >();
+
+  mockingbird_status mockingbird_set_input_device(
+    ffi.Pointer<mockingbird_engine_t> engine,
+    ffi.Pointer<ffi.Char> device_id,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_set_input_device(engine, device_id),
+    );
+  }
+
+  late final _mockingbird_set_input_devicePtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<mockingbird_engine_t>,
+            ffi.Pointer<ffi.Char>,
+          )
+        >
+      >('mockingbird_set_input_device');
+  late final _mockingbird_set_input_device = _mockingbird_set_input_devicePtr
+      .asFunction<
+        int Function(ffi.Pointer<mockingbird_engine_t>, ffi.Pointer<ffi.Char>)
+      >();
 
   mockingbird_status mockingbird_set_wake_callback(
     ffi.Pointer<mockingbird_engine_t> engine,
@@ -425,6 +481,12 @@ const int MOCKINGBIRD_VERSION_MAJOR = 0;
 const int MOCKINGBIRD_VERSION_MINOR = 1;
 
 const int MOCKINGBIRD_VERSION_PATCH = 0;
+
+const int MOCKINGBIRD_VOICE_ECHO_CANCEL = 1;
+
+const int MOCKINGBIRD_VOICE_GAIN_CONTROL = 2;
+
+const int MOCKINGBIRD_VOICE_NOISE_SUPPRESS = 4;
 
 enum mockingbird_backend {
   MOCKINGBIRD_BACKEND_AUTO(0),
@@ -587,11 +649,30 @@ final class mockingbird_config extends ffi.Struct {
   @ffi.Uint32()
   external int worker_batch_frames;
 
-  @ffi.Array.multi([4])
+  @ffi.Uint32()
+  external int voice_processing;
+
+  @ffi.Array.multi([3])
   external ffi.Array<ffi.Uint32> _reserved;
 }
 
 typedef mockingbird_config_t = mockingbird_config;
+
+final class mockingbird_device extends ffi.Struct {
+  @ffi.Array.multi([256])
+  external ffi.Array<ffi.Char> id;
+
+  @ffi.Array.multi([256])
+  external ffi.Array<ffi.Char> name;
+
+  @ffi.Int()
+  external int is_default;
+
+  @ffi.Array.multi([3])
+  external ffi.Array<ffi.Uint32> _reserved;
+}
+
+typedef mockingbird_device_t = mockingbird_device;
 
 final class mockingbird_engine extends ffi.Opaque {}
 
@@ -660,7 +741,10 @@ enum mockingbird_event_type {
   MOCKINGBIRD_EVT_OVERRUN(6),
   MOCKINGBIRD_EVT_BACKEND_ERROR(7),
   MOCKINGBIRD_EVT_SOUND_CLASS(8),
-  MOCKINGBIRD_EVT_DEGRADATION(9);
+  MOCKINGBIRD_EVT_DEGRADATION(9),
+  MOCKINGBIRD_EVT_CAPTURE_INTERRUPTED(10),
+  MOCKINGBIRD_EVT_CAPTURE_RESUMED(11),
+  MOCKINGBIRD_EVT_ROUTE_CHANGED(12);
 
   final int value;
   const mockingbird_event_type(this.value);
@@ -675,6 +759,9 @@ enum mockingbird_event_type {
     7 => MOCKINGBIRD_EVT_BACKEND_ERROR,
     8 => MOCKINGBIRD_EVT_SOUND_CLASS,
     9 => MOCKINGBIRD_EVT_DEGRADATION,
+    10 => MOCKINGBIRD_EVT_CAPTURE_INTERRUPTED,
+    11 => MOCKINGBIRD_EVT_CAPTURE_RESUMED,
+    12 => MOCKINGBIRD_EVT_ROUTE_CHANGED,
     _ => throw ArgumentError(
       'Unknown value for mockingbird_event_type: $value',
     ),
@@ -800,7 +887,13 @@ final class mockingbird_stats extends ffi.Struct {
   @ffi.Uint32()
   external int degradation_level;
 
-  @ffi.Array.multi([7])
+  @ffi.Uint32()
+  external int voice_processing_active;
+
+  @ffi.Uint32()
+  external int capture_restarts;
+
+  @ffi.Array.multi([5])
   external ffi.Array<ffi.Uint32> _reserved;
 }
 

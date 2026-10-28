@@ -111,6 +111,15 @@ payloads in order: with `CodecOggOpus` they form an `.opus` file, and with
 `Stop` ends with an `IsLast()` packet only under Ogg Opus; `EventSegmentEnd`
 arrives either way.
 
+## Microphone
+
+`Config.VoiceProcessing` (`VoiceAll`, or `VoiceEchoCancel`, `VoiceGainControl`
+and `VoiceNoiseSuppress`) asks the platform for its voice processing;
+`Stats.Capture` reports what applied and how often capture restarted.
+`InputDevices(backend)` lists microphones and `Engine.SelectInputDevice`
+chooses one before `Start`. Interruptions and route changes arrive as
+`EventCaptureInterrupted`, `EventCaptureResumed` and `EventRouteChanged`.
+
 ## Ownership and threading
 
 Every method is safe from any goroutine; concurrent `PushPCM` calls are

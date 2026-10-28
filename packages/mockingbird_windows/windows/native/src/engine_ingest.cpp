@@ -2,6 +2,7 @@
 #include "engine_ingest.hpp"
 
 #include "engine.hpp"
+#include "engine_events.hpp"
 
 namespace mockingbird {
 void ingest_pcm(mockingbird_engine* e, const int16_t* samples, uint32_t frame_count,
@@ -30,6 +31,19 @@ void ingest_pcm(mockingbird_engine* e, const int16_t* samples, uint32_t frame_co
 void backend_pcm_callback(void* user, const int16_t* samples,
                           uint32_t frame_count, uint64_t capture_ts_us) noexcept {
     ingest_pcm(static_cast<mockingbird_engine*>(user), samples, frame_count, capture_ts_us);
+}
+
+void backend_notice_callback(void* user, mockingbird_event_type_t type,
+                             uint32_t reason) noexcept {
+    auto* e = static_cast<mockingbird_engine*>(user);
+    if (type == MOCKINGBIRD_EVT_CAPTURE_RESUMED || type == MOCKINGBIRD_EVT_ROUTE_CHANGED) {
+        e->capture_restarts.fetch_add(1, std::memory_order_relaxed);
+    }
+    try {
+        emit_event(e, make_event(type, 0, e->last_capture_ts_us.load(std::memory_order_relaxed),
+                                 reason));
+    } catch (...) {
+    }
 }
 
 }

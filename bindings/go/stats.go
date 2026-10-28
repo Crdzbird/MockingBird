@@ -23,6 +23,8 @@ type Stats struct {
 	TapSamplesDropped uint64
 	// Worker is the worker thread's health and work shedding.
 	Worker WorkerHealth
+	// Capture is the voice processing in effect and the capture restarts.
+	Capture CaptureHealth
 }
 
 func statsFromC(s C.mockingbird_stats_t) Stats {
@@ -39,5 +41,6 @@ func statsFromC(s C.mockingbird_stats_t) Stats {
 		InputPeakdBFS:        float32(s.input_peak_dbfs),
 		TapSamplesDropped:    uint64(s.tap_samples_dropped),
 		Worker:               workerHealthFromC(s),
+		Capture:              captureHealthFromC(s),
 	}
 }

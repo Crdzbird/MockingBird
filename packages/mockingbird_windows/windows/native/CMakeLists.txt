@@ -84,6 +84,7 @@ set(MOCKINGBIRD_PUBLIC_HEADERS
 
 set(MOCKINGBIRD_SOURCES
         src/api/api_create.cpp
+        src/api/api_devices.cpp
         src/api/api_defaults.cpp
         src/api/api_push.cpp
         src/api/api_queues.cpp
@@ -108,6 +109,8 @@ set(MOCKINGBIRD_SOURCES
         src/worker/worker_thread.cpp
         src/capture/backend_factory.cpp
         src/capture/miniaudio_backend.cpp
+        src/capture/miniaudio_devices.cpp
+        src/capture/miniaudio_ids.cpp
         src/capture/miniaudio_impl.c
         src/detect/vad_detector.cpp
         src/detect/neural_vad_detector.cpp
@@ -128,7 +131,9 @@ if(APPLE)
     list(APPEND MOCKINGBIRD_SOURCES
             src/capture/coreaudio_backend.mm
             src/capture/coreaudio_backend_init.mm
+            src/capture/coreaudio_devices.mm
             src/capture/coreaudio_render.mm
+            src/capture/coreaudio_routes.mm
             src/capture/coreaudio_unit.mm)
 endif()
 
@@ -137,6 +142,8 @@ if(EMSCRIPTEN)
             src/worker/worker_thread.cpp
             src/capture/backend_factory.cpp
             src/capture/miniaudio_backend.cpp
+            src/capture/miniaudio_devices.cpp
+            src/capture/miniaudio_ids.cpp
             src/capture/miniaudio_impl.c)
     list(APPEND MOCKINGBIRD_SOURCES
             src/worker/worker_inline.cpp
@@ -496,6 +503,7 @@ if(MOCKINGBIRD_ENABLE_TESTS AND TARGET mockingbird_static)
             tests/test_opus_encoder.cpp
             tests/test_ogg_opus.cpp
             tests/test_wake.cpp
+            tests/test_capture_notices.cpp
             tests/test_detectors_golden.cpp
             tests/test_anomaly_reason.cpp
             tests/test_real_voice.cpp

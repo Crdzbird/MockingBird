@@ -16,8 +16,6 @@ final class WebEngine {
 
   const WebEngine._(this._m);
 
-  static const _hostPcm = 4;
-
   final MockingbirdModule _m;
 
   /// The linked engine version.
@@ -34,13 +32,7 @@ final class WebEngine {
       final engine = MockingbirdRecordApi(_m).createEngine(cfg, statusPtr);
       final status = _m.heap32.toDart[statusPtr >> 2];
       if (engine == 0) return (status: status, handle: null);
-      final handle = WebEngineHandle(
-        _m,
-        engine,
-        captures: config.backend != _hostPcm,
-        sampleRateHz: config.sampleRateHz,
-      );
-      return (status: status, handle: handle);
+      return (status: status, handle: WebEngineHandle(_m, engine, config));
     } finally {
       _m.free(statusPtr);
       MockingbirdRecordApi(_m).configFree(cfg);
@@ -85,7 +77,8 @@ final class WebEngine {
   MockingbirdStatsResult stats(WebEngineHandle h) {
     final s = _m.getStats(h.pointer, h.stats);
     if (s != MockingbirdStatusCode.ok) return (status: s, stats: null);
-    return (status: s, stats: WebDecoders(_m).stats(h.stats));
+    final voice = h.capture?.voiceActive ?? 0;
+    return (status: s, stats: WebDecoders(_m).stats(h.stats, voice));
   }
 
   /// Retunes the running engine.

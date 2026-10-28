@@ -181,9 +181,24 @@ typedef enum mockingbird_event_type {
      * confidence is the model's top-1 probability in [0, 1]. Opens a
      * segment when the class is a known anomaly / animal / alarm. */
     MOCKINGBIRD_EVT_SOUND_CLASS     = 8,
-    MOCKINGBIRD_EVT_DEGRADATION     = 9   /* reason_mask = new degradation level (0..3),
+    MOCKINGBIRD_EVT_DEGRADATION     = 9,  /* reason_mask = new degradation level (0..3),
                                        confidence  = worker busy fraction 0..1 */
+    /* The operating system took the microphone away, for a phone call or
+     * another app's recording; no frames arrive until CAPTURE_RESUMED. */
+    MOCKINGBIRD_EVT_CAPTURE_INTERRUPTED = 10,
+    /* Capture is running again after an interruption or a route change. */
+    MOCKINGBIRD_EVT_CAPTURE_RESUMED     = 11,
+    /* The input device changed (a headset plugged or unplugged, the default
+     * device switched); the engine reopened capture on the new route. */
+    MOCKINGBIRD_EVT_ROUTE_CHANGED       = 12
 } mockingbird_event_type_t;
+
+/* Bits of mockingbird_config_t.voice_processing. */
+enum {
+    MOCKINGBIRD_VOICE_ECHO_CANCEL    = 1u << 0,  /* remove the device's own playback */
+    MOCKINGBIRD_VOICE_GAIN_CONTROL   = 1u << 1,  /* automatic input gain */
+    MOCKINGBIRD_VOICE_NOISE_SUPPRESS = 1u << 2   /* the platform's noise suppressor */
+};
 
 /* Packet flags. Bitmask. */
 enum {
@@ -353,10 +368,19 @@ typedef struct mockingbird_config {
      * always hold a batch; live-tunable. */
     uint32_t worker_batch_frames;
 
+    /* Platform voice processing for live capture, a MOCKINGBIRD_VOICE_* mask;
+     * 0 (the default) captures the raw microphone. iOS and macOS switch to
+     * the VoiceProcessingIO unit, Android to the VOICE_COMMUNICATION input
+     * preset, and the web passes the bits as getUserMedia constraints. Linux
+     * and Windows have no platform processing and ignore it. Each platform
+     * applies what it can; mockingbird_stats_t.voice_processing_active says
+     * which bits are in effect. Ignored for HOST_PCM. Not live-tunable. */
+    uint32_t  voice_processing;
+
     /* Reserved for future expansion. MUST be zeroed by mockingbird_config_defaults
      * and treated as zero by the engine. Allows additive growth without ABI
      * break. */
-    uint32_t  _reserved[4];
+    uint32_t  _reserved[3];
 } mockingbird_config_t;
 
 /* ============================================================================
@@ -445,7 +469,14 @@ typedef struct mockingbird_stats {
      * suspended). Always 0 unless enable_adaptive_degradation is set. */
     uint32_t  degradation_level;
 
-    uint32_t  _reserved[7];                   /* additive growth; always 0 */
+    /* The MOCKINGBIRD_VOICE_* bits the capture backend applied, which can be
+     * fewer than requested. 0 for HOST_PCM and before the first start. */
+    uint32_t  voice_processing_active;
+
+    /* Times capture was reopened after an interruption or route change. */
+    uint32_t  capture_restarts;
+
+    uint32_t  _reserved[5];                   /* additive growth; always 0 */
 } mockingbird_stats_t;
 
 /* ============================================================================
@@ -615,6 +646,37 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_get_stats(mockingbird_engine_t*
  * validates its arguments and returns MOCKINGBIRD_ERR_UNSUPPORTED. */
 MOCKINGBIRD_API mockingbird_status_t mockingbird_wait_handle(mockingbird_engine_t*  engine,
                                            intptr_t*        out_handle);
+
+/* ============================================================================
+ * INPUT DEVICES
+ *
+ * mockingbird_list_input_devices fills up to `capacity` entries for a capture
+ * backend and sets *out_count to the number of devices, which can be larger.
+ * Pass capacity 0 to count. Ids are opaque, UTF-8 and stable while the device
+ * is connected. MINIAUDIO and COREAUDIO on macOS list devices; iOS lists the
+ * session's available inputs. Android returns MOCKINGBIRD_ERR_UNSUPPORTED:
+ * there, list devices with AudioManager and pass AudioDeviceInfo.getId() as
+ * the id.
+ *
+ * mockingbird_set_input_device selects the device the next start opens;
+ * NULL or "" follows the system default, which is also the default. It
+ * fails with MOCKINGBIRD_ERR_INVALID_STATE while the engine runs and with
+ * MOCKINGBIRD_ERR_UNSUPPORTED for HOST_PCM. The id is copied.
+ * ========================================================================== */
+typedef struct mockingbird_device {
+    char      id[256];
+    char      name[256];
+    int       is_default;
+    uint32_t  _reserved[3];
+} mockingbird_device_t;
+
+MOCKINGBIRD_API mockingbird_status_t mockingbird_list_input_devices(mockingbird_backend_t backend,
+                                                  mockingbird_device_t* out,
+                                                  uint32_t              capacity,
+                                                  uint32_t*             out_count);
+
+MOCKINGBIRD_API mockingbird_status_t mockingbird_set_input_device(mockingbird_engine_t* engine,
+                                                const char*           device_id);
 
 /* ============================================================================
  * HOST PCM PUSH  (only when backend == MOCKINGBIRD_BACKEND_HOST_PCM)

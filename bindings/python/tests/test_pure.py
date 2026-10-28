@@ -78,3 +78,18 @@ class WavTest(unittest.TestCase):
     def test_ogg_opus_codec(self) -> None:
         self.assertEqual(int(mockingbird.Codec.OGG_OPUS), 3)
         self.assertIs(mockingbird.EncoderConfig.ogg_opus().codec, mockingbird.Codec.OGG_OPUS)
+
+
+class CaptureTest(unittest.TestCase):
+    def test_voice_processing_and_devices(self) -> None:
+        self.assertEqual(int(mockingbird.VoiceProcessing.ALL), 7)
+        self.assertEqual(int(mockingbird.EventType.ROUTE_CHANGED), 12)
+        with self.assertRaises(mockingbird.MockingbirdError):
+            mockingbird.input_devices(mockingbird.Backend.HOST_PCM)
+        for d in mockingbird.input_devices(mockingbird.Backend.MINIAUDIO):
+            self.assertTrue(d.id)
+        cfg = mockingbird.Config(backend=mockingbird.Backend.HOST_PCM, voice_processing=mockingbird.VoiceProcessing.ECHO_CANCEL)
+        with mockingbird.Engine(cfg) as e:
+            with self.assertRaises(mockingbird.MockingbirdError):
+                e.select_input_device("x")
+            self.assertEqual(e.stats().capture.restarts, 0)

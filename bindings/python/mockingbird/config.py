@@ -14,6 +14,7 @@ from mockingbird.sensitivity import Sensitivity
 from mockingbird.sound_class_config import SoundClassConfig
 from mockingbird.vad_config import VadConfig
 from mockingbird.vad_tier import VadTier
+from mockingbird.voice_processing import VoiceProcessing
 
 
 @dataclass(slots=True)
@@ -26,6 +27,8 @@ class Config:
     frame_ms: int = 20
     denoise: bool = False
     """RNNoise ahead of every detector; needs 8, 16 or 48 kHz."""
+    voice_processing: VoiceProcessing = VoiceProcessing.NONE
+    """The platform's echo cancellation, gain control and noise suppression."""
     vad: VadConfig = field(default_factory=VadConfig)
     anomaly: AnomalyConfig = field(default_factory=AnomalyConfig)
     sound_class: SoundClassConfig = field(default_factory=SoundClassConfig)

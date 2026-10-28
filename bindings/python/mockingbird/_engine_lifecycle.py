@@ -31,6 +31,11 @@ class EngineLifecycle(EngineHandle):
         self._call("mockingbird_start")
         self._running = True
 
+    def select_input_device(self, device_id: str | None) -> None:
+        """Open ``device_id``, from :func:`input_devices`, on the next
+        :meth:`start`; ``None`` follows the system default. Only while stopped."""
+        self._call("mockingbird_set_input_device", device_id.encode("utf-8") if device_id else None)
+
     def stop(self) -> None:
         """Halt capture; queued packets stay drainable and the engine can restart."""
         self._call("mockingbird_stop")

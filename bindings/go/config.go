@@ -8,14 +8,17 @@ type Config struct {
 	FrameMs      uint32
 	// Denoise runs RNNoise ahead of every detector and the encoder; the
 	// sample rate must then be 8, 16 or 48 kHz.
-	Denoise     bool
-	VAD         VadConfig
-	Anomaly     AnomalyConfig
-	SoundClass  SoundClassConfig
-	Segments    SegmentConfig
-	Encoder     EncoderConfig
-	Queues      QueueConfig
-	Performance PerformanceConfig
+	Denoise bool
+	// VoiceProcessing asks the platform for echo cancellation, gain control
+	// and noise suppression on live capture.
+	VoiceProcessing VoiceProcessing
+	VAD             VadConfig
+	Anomaly         AnomalyConfig
+	SoundClass      SoundClassConfig
+	Segments        SegmentConfig
+	Encoder         EncoderConfig
+	Queues          QueueConfig
+	Performance     PerformanceConfig
 }
 
 // DefaultConfig mirrors the native defaults: 16 kHz mono, 20 ms frames.

@@ -24,6 +24,9 @@ void main() {
     expect(decode(7), isA<MockingbirdBackendErrorEvent>());
     expect(decode(8, reason: 70), isA<MockingbirdSoundClassEvent>());
     expect(decode(9, reason: 2), isA<MockingbirdDegradationEvent>());
+    expect(decode(10), isA<MockingbirdCaptureInterruptedEvent>());
+    expect(decode(11), isA<MockingbirdCaptureResumedEvent>());
+    expect(decode(12), isA<MockingbirdRouteChangedEvent>());
     expect(decode(42), isA<MockingbirdUnknownEvent>());
   });
 

@@ -2,12 +2,13 @@ import 'dart:typed_data';
 
 import 'package:mockingbird_platform_interface/src/mockingbird_engine_handle.dart';
 import 'package:mockingbird_platform_interface/src/mockingbird_native_config.dart';
+import 'package:mockingbird_platform_interface/src/mockingbird_platform_extras.dart';
 import 'package:mockingbird_platform_interface/src/mockingbird_results.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 /// The operations a platform implementation provides over the engine. Each
 /// returns the C ABI status code; `mockingbird` turns non-zero into errors.
-abstract class MockingbirdPlatform extends PlatformInterface {
+abstract class MockingbirdPlatform extends MockingbirdPlatformExtras {
   /// Constructs a platform with the verification token.
   MockingbirdPlatform() : super(token: _token);
 
@@ -72,17 +73,6 @@ abstract class MockingbirdPlatform extends PlatformInterface {
 
   /// Reads a stats snapshot.
   MockingbirdStatsResult stats(MockingbirdEngineHandle handle);
-
-  /// Calls [onWake] on this isolate soon after the engine queues an event or
-  /// packet, or stops when [onWake] is null. False when this platform cannot
-  /// push, in which case the caller polls on a timer.
-  bool setWakeListener(
-    MockingbirdEngineHandle handle,
-    void Function()? onWake,
-  ) => false;
-
-  /// Re-arms the wake listener; call it before draining.
-  void ackWake(MockingbirdEngineHandle handle) {}
 
   /// Retunes a running engine; the structure must match.
   int updateConfig(

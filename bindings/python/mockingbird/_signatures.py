@@ -3,6 +3,7 @@
 import ctypes
 
 from mockingbird._config_struct import ConfigStruct
+from mockingbird._device_struct import DeviceStruct
 from mockingbird._event_struct import EventStruct
 from mockingbird._packet_struct import PacketStruct
 from mockingbird._stats_struct import StatsStruct
@@ -22,6 +23,8 @@ SIGNATURES = [
     ("mockingbird_push_pcm", [EnginePtr, _INT16_PTR, ctypes.c_uint32, ctypes.c_uint64], ctypes.c_int),
     ("mockingbird_read_pcm", [EnginePtr, _INT16_PTR, ctypes.c_uint32, ctypes.POINTER(ctypes.c_uint32)], ctypes.c_int),
     ("mockingbird_update_config", [EnginePtr, ctypes.POINTER(ConfigStruct)], ctypes.c_int),
+    ("mockingbird_list_input_devices", [ctypes.c_int, ctypes.POINTER(DeviceStruct), ctypes.c_uint32, ctypes.POINTER(ctypes.c_uint32)], ctypes.c_int),
+    ("mockingbird_set_input_device", [EnginePtr, ctypes.c_char_p], ctypes.c_int),
     ("mockingbird_status_str", [ctypes.c_int], ctypes.c_char_p),
     ("mockingbird_version_string", [], ctypes.c_char_p),
 ]
