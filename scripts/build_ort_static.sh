@@ -30,6 +30,7 @@ case "$TARGET" in
   android-*)
     args+=(--android --android_abi "${TARGET#android-}" --android_api 21
       --android_sdk_path "$ANDROID_HOME" --android_ndk_path "$ANDROID_NDK_HOME") ;;
+  windows-arm64) args+=(--cmake_generator Ninja --no_kleidiai) ;;
   windows-*) args+=(--cmake_generator Ninja) ;;
 esac
 case "$TARGET" in
