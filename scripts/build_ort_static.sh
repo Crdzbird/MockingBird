@@ -34,7 +34,7 @@ case "$TARGET" in
   windows-*) args+=(--cmake_generator Ninja) ;;
 esac
 case "$TARGET" in
-  windows-*) ;;
+  windows-*) defines+=("CMAKE_MSVC_DEBUG_INFORMATION_FORMAT=") ;;
   *)
     map="-ffile-prefix-map=$SRC=onnxruntime -ffile-prefix-map=$BUILD=build"
     defines+=("CMAKE_C_FLAGS=$map" "CMAKE_CXX_FLAGS=$map") ;;
