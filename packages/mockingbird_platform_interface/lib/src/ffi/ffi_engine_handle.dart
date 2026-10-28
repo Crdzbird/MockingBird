@@ -27,6 +27,9 @@ final class FfiEngineHandle extends MockingbirdEngineHandle {
   /// Scratch stats record.
   final ffi.Pointer<mockingbird_stats_t> stats;
 
+  /// The registered wake listener, if any.
+  ffi.NativeCallable<mockingbird_wake_cbFunction>? wake;
+
   /// Frees the scratch records; the engine itself is destroyed separately.
   void free() {
     calloc

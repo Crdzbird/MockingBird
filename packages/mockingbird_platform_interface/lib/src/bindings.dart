@@ -24,6 +24,19 @@ class MockingbirdBindings {
     ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName) lookup,
   ) : _lookup = lookup;
 
+  mockingbird_status mockingbird_ack_wake(
+    ffi.Pointer<mockingbird_engine_t> engine,
+  ) {
+    return mockingbird_status.fromValue(_mockingbird_ack_wake(engine));
+  }
+
+  late final _mockingbird_ack_wakePtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Int Function(ffi.Pointer<mockingbird_engine_t>)>
+      >('mockingbird_ack_wake');
+  late final _mockingbird_ack_wake = _mockingbird_ack_wakePtr
+      .asFunction<int Function(ffi.Pointer<mockingbird_engine_t>)>();
+
   mockingbird_status mockingbird_config_defaults(
     ffi.Pointer<mockingbird_config_t> out_cfg,
   ) {
@@ -265,6 +278,35 @@ class MockingbirdBindings {
               ffi.Pointer<ffi.Void>,
             )
           >();
+
+  mockingbird_status mockingbird_set_wake_callback(
+    ffi.Pointer<mockingbird_engine_t> engine,
+    mockingbird_wake_cb cb,
+    ffi.Pointer<ffi.Void> user,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_set_wake_callback(engine, cb, user),
+    );
+  }
+
+  late final _mockingbird_set_wake_callbackPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<mockingbird_engine_t>,
+            mockingbird_wake_cb,
+            ffi.Pointer<ffi.Void>,
+          )
+        >
+      >('mockingbird_set_wake_callback');
+  late final _mockingbird_set_wake_callback = _mockingbird_set_wake_callbackPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<mockingbird_engine_t>,
+          mockingbird_wake_cb,
+          ffi.Pointer<ffi.Void>,
+        )
+      >();
 
   mockingbird_status mockingbird_start(
     ffi.Pointer<mockingbird_engine_t> engine,
@@ -809,3 +851,10 @@ enum mockingbird_vad_tier {
     _ => throw ArgumentError('Unknown value for mockingbird_vad_tier: $value'),
   };
 }
+
+typedef mockingbird_wake_cb =
+    ffi.Pointer<ffi.NativeFunction<mockingbird_wake_cbFunction>>;
+typedef mockingbird_wake_cbFunction =
+    ffi.Void Function(ffi.Pointer<ffi.Void> user);
+typedef Dartmockingbird_wake_cbFunction =
+    void Function(ffi.Pointer<ffi.Void> user);

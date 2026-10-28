@@ -114,6 +114,11 @@ mockingbird_stop(e);
 mockingbird_destroy(e);
 ```
 
+Instead of draining on a timer, a host can register a wake callback with
+`mockingbird_set_wake_callback`. It fires on an engine thread when an event or
+packet is queued and stays quiet until the host calls `mockingbird_ack_wake`,
+so the host acks, drains both queues, and waits for the next wake.
+
 Rules the ABI enforces: one `mockingbird_destroy` per `mockingbird_create`;
 packet data is borrowed until the matching `mockingbird_release`; no C++
 exception crosses the boundary; invalid input returns a status code and never

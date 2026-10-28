@@ -29,9 +29,15 @@ abstract class MockingbirdPlatform extends PlatformInterface {
   MockingbirdEventResult pollEvent(MockingbirdEngineHandle handle);
   MockingbirdPacketResult drainPacket(MockingbirdEngineHandle handle);
   MockingbirdStatsResult stats(MockingbirdEngineHandle handle);
+  bool setWakeListener(MockingbirdEngineHandle handle, void Function()? onWake);
+  void ackWake(MockingbirdEngineHandle handle);
   int updateConfig(MockingbirdEngineHandle handle, MockingbirdNativeConfig config);
 }
 ```
+
+`setWakeListener` returns false by default, which tells the caller to poll on a
+timer; the FFI implementation registers a `NativeCallable.listener` with
+`mockingbird_set_wake_callback` and returns true.
 
 `MockingbirdNativeConfig`, `MockingbirdNativeEvent`, `MockingbirdNativePacket`
 and `MockingbirdNativeStats` mirror the C structs field for field, with no

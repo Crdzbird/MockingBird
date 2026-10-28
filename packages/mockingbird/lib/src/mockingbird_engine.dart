@@ -49,7 +49,7 @@ final class MockingbirdEngine {
   /// Encoded audio, segment by segment.
   Stream<MockingbirdPacket> get packets => _packets.stream;
 
-  /// A counters snapshot per poll.
+  /// A counters snapshot per timer tick.
   Stream<MockingbirdStats> get stats => _stats.stream;
 
   /// The configuration in effect, including live retunes.
@@ -69,9 +69,17 @@ final class MockingbirdEngine {
     await _stats.close();
   }
 
-  void _poll() {
+  void _poll() => _guard(_poller.poll);
+
+  void _wake() {
+    if (_disposed || !isRunning) return;
+    _platform.ackWake(_handle);
+    _guard(_poller.drain);
+  }
+
+  void _guard(void Function() body) {
     try {
-      _poller.poll();
+      body();
     } on MockingbirdException catch (e, st) {
       _events.addError(e, st);
     }

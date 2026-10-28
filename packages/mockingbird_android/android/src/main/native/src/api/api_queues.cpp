@@ -1,4 +1,4 @@
-// The host-facing queues: events, packets, the PCM tap, and the callback.
+// The host-facing queues: events, packets, the PCM tap, the event callback and the wake.
 #include "mockingbird/mockingbird.h"
 #include "engine.hpp"
 
@@ -14,6 +14,26 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_set_event_callback(mockingbird_
     } catch (...) {
         return MOCKINGBIRD_ERR_INTERNAL;
     }
+}
+
+MOCKINGBIRD_API mockingbird_status_t mockingbird_set_wake_callback(mockingbird_engine_t* e,
+                                                 mockingbird_wake_cb cb, void* user) {
+    if (e == nullptr) return MOCKINGBIRD_ERR_INVALID_ARG;
+    try {
+        std::lock_guard lk(e->wake_mu);
+        e->wake_cb   = cb;
+        e->wake_user = user;
+        e->wake_pending.store(false, std::memory_order_release);
+        return MOCKINGBIRD_OK;
+    } catch (...) {
+        return MOCKINGBIRD_ERR_INTERNAL;
+    }
+}
+
+MOCKINGBIRD_API mockingbird_status_t mockingbird_ack_wake(mockingbird_engine_t* e) {
+    if (e == nullptr) return MOCKINGBIRD_ERR_INVALID_ARG;
+    e->wake_pending.store(false, std::memory_order_release);
+    return MOCKINGBIRD_OK;
 }
 
 MOCKINGBIRD_API mockingbird_status_t mockingbird_poll_event(mockingbird_engine_t* e, mockingbird_event_t* out) {

@@ -33,6 +33,8 @@ enum MockingbirdSymbolAnchor {
     _ = mockingbird_create(&cfg, &engine)
     _ = mockingbird_start(engine)
     _ = mockingbird_set_event_callback(engine, nil, nil)
+    _ = mockingbird_set_wake_callback(engine, nil, nil)
+    _ = mockingbird_ack_wake(engine)
     _ = mockingbird_push_pcm(engine, &sample, 0, 0)
     _ = mockingbird_poll_event(engine, &event)
     _ = mockingbird_drain(engine, &packet)

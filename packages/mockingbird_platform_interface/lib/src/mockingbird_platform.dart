@@ -73,6 +73,17 @@ abstract class MockingbirdPlatform extends PlatformInterface {
   /// Reads a stats snapshot.
   MockingbirdStatsResult stats(MockingbirdEngineHandle handle);
 
+  /// Calls [onWake] on this isolate soon after the engine queues an event or
+  /// packet, or stops when [onWake] is null. False when this platform cannot
+  /// push, in which case the caller polls on a timer.
+  bool setWakeListener(
+    MockingbirdEngineHandle handle,
+    void Function()? onWake,
+  ) => false;
+
+  /// Re-arms the wake listener; call it before draining.
+  void ackWake(MockingbirdEngineHandle handle) {}
+
   /// Retunes a running engine; the structure must match.
   int updateConfig(
     MockingbirdEngineHandle handle,

@@ -67,6 +67,7 @@ void PacketEmitter::commit(PacketPool::Slot* slot, int n, uint64_t now_ts, uint3
     const bool overran = e_->packets.commit(slot);
     e_->packets_emitted.fetch_add(1, std::memory_order_relaxed);
     ++segment_pkt_index;
+    notify_host(e_);
     if (overran) overrun(now_ts);
 }
 

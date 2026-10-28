@@ -1,5 +1,6 @@
 ## Unreleased
 
+- On native platforms the engine wakes Dart as soon as it queues an event or packet, so events no longer wait for a 50 ms timer; `start(pollInterval:)` now paces only `stats`, every 250 ms by default. The web keeps its 50 ms timer.
 - Linux and Windows support through `mockingbird_linux` and `mockingbird_windows`; the bundled models now ship to both.
 - `MockingbirdCodec.oggOpus` and `MockingbirdEncoderConfig.oggOpus()`: a segment's packets, concatenated, form a playable `.opus` file.
 - `MockingbirdWav.fromPcm16` wraps a PCM segment in a WAV header.

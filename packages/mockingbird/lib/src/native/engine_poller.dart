@@ -37,9 +37,14 @@ final class EnginePoller {
 
   /// Empties both queues, then reads the stats.
   void poll() {
+    drain();
+    _readStats();
+  }
+
+  /// Empties both queues.
+  void drain() {
     _drainEvents();
     _drainPackets();
-    _readStats();
   }
 
   void _drainEvents() {

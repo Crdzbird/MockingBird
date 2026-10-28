@@ -49,6 +49,11 @@ struct mockingbird_engine {
     mockingbird_event_cb event_cb   = nullptr;
     void*          event_user = nullptr;
 
+    std::mutex          wake_mu;
+    mockingbird_wake_cb wake_cb   = nullptr;
+    void*               wake_user = nullptr;
+    std::atomic<bool>   wake_pending{false};
+
     std::mutex                evt_mu;
     std::deque<mockingbird_event_t> evt_queue;
 

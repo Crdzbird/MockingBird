@@ -490,6 +490,7 @@ if(MOCKINGBIRD_ENABLE_TESTS AND TARGET mockingbird_static)
             tests/test_host_pcm.cpp
             tests/test_opus_encoder.cpp
             tests/test_ogg_opus.cpp
+            tests/test_wake.cpp
             tests/test_detectors_golden.cpp
             tests/test_anomaly_reason.cpp
             tests/test_real_voice.cpp

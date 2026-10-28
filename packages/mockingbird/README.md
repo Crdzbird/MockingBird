@@ -129,10 +129,15 @@ you want to change.
 subtype carries a typed payload: `MockingbirdSoundClassEvent.category`,
 `MockingbirdAnomalyEvent.reasons`, `MockingbirdDegradationEvent.level`.
 
-Events are polled off the engine's own queues on a timer (50 ms by default)
-rather than delivered through a native callback, which keeps every object on the
-Dart side engine-owned and copy-safe. A native error inside a poll surfaces as a
-`MockingbirdException` on `engine.events`.
+On Android, iOS, macOS, Linux and Windows the engine wakes Dart through a
+`NativeCallable.listener` as soon as it queues an event or packet, and Dart
+drains both queues right away, so a detection reaches `engine.events` within a
+frame. The wake carries no data and repeats only after Dart has drained, so a
+burst of frames costs one wake. `pollInterval` on `start` then only paces
+`engine.stats`, every 250 ms by default. On the web, where the engine runs on
+the main thread, a timer drains the queues every 50 ms. Either way every object
+on the Dart side is a copy the engine no longer owns. A native error while
+draining surfaces as a `MockingbirdException` on `engine.events`.
 
 ```dart
 engine.packets.listen((p) => socket.add(p.data));

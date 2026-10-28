@@ -7,6 +7,7 @@ import 'package:mockingbird_platform_interface/src/ffi/ffi_engine_handle.dart';
 import 'package:mockingbird_platform_interface/src/ffi/ffi_engines.dart';
 import 'package:mockingbird_platform_interface/src/ffi/ffi_pcm.dart';
 import 'package:mockingbird_platform_interface/src/ffi/ffi_queues.dart';
+import 'package:mockingbird_platform_interface/src/ffi/ffi_wake.dart';
 
 /// The `dart:ffi` implementation; a platform package supplies the library.
 abstract class MockingbirdFfiPlatform extends MockingbirdPlatform {
@@ -21,6 +22,7 @@ abstract class MockingbirdFfiPlatform extends MockingbirdPlatform {
   late final FfiEngines _engines = FfiEngines(bindings);
   late final FfiQueues _queues = FfiQueues(bindings);
   late final FfiPcm _pcm = FfiPcm(bindings);
+  late final FfiWake _wake = FfiWake(bindings);
 
   @override
   String version() => _engines.version();
@@ -33,8 +35,21 @@ abstract class MockingbirdFfiPlatform extends MockingbirdPlatform {
       _engines.create(config);
 
   @override
-  void destroy(MockingbirdEngineHandle handle) =>
-      _engines.destroy(handle as FfiEngineHandle);
+  void destroy(MockingbirdEngineHandle handle) {
+    final h = handle as FfiEngineHandle;
+    if (h.wake != null) _wake.set(h, null);
+    _engines.destroy(h);
+  }
+
+  @override
+  bool setWakeListener(
+    MockingbirdEngineHandle handle,
+    void Function()? onWake,
+  ) => _wake.set(handle as FfiEngineHandle, onWake);
+
+  @override
+  void ackWake(MockingbirdEngineHandle handle) =>
+      _wake.ack(handle as FfiEngineHandle);
 
   @override
   int start(MockingbirdEngineHandle handle) =>

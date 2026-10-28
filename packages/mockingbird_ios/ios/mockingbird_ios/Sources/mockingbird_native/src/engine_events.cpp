@@ -29,6 +29,7 @@ void emit_event(mockingbird_engine* e, const mockingbird_event_t& evt) {
         }
         e->evt_queue.push_back(evt);
     }
+    notify_host(e);
     mockingbird_event_cb cb;
     void*          user;
     {
@@ -39,6 +40,16 @@ void emit_event(mockingbird_engine* e, const mockingbird_event_t& evt) {
     if (cb == nullptr) return;
     try {
         cb(&evt, user);
+    } catch (...) {
+    }
+}
+
+void notify_host(mockingbird_engine* e) {
+    if (e->wake_pending.exchange(true, std::memory_order_acq_rel)) return;
+    std::lock_guard lk(e->wake_mu);
+    if (e->wake_cb == nullptr) return;
+    try {
+        e->wake_cb(e->wake_user);
     } catch (...) {
     }
 }

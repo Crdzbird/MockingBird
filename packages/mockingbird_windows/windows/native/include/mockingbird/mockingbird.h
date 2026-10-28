@@ -455,6 +455,9 @@ typedef struct mockingbird_stats {
 
 typedef void (*mockingbird_event_cb)(const mockingbird_event_t* evt, void* user);
 
+/* A wake carries no data: it says the event or packet queue gained an entry. */
+typedef void (*mockingbird_wake_cb)(void* user);
+
 /* ============================================================================
  * LIFECYCLE
  * ========================================================================== */
@@ -503,6 +506,25 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_set_event_callback(mockingbird_
  * Returns MOCKINGBIRD_ERR_QUEUE_EMPTY when nothing is pending (non-blocking). */
 MOCKINGBIRD_API mockingbird_status_t mockingbird_poll_event(mockingbird_engine_t*  engine,
                                           mockingbird_event_t*   out_evt);
+
+/* Wake model: lets a host that pulls skip its polling timer. cb fires when
+ * an event or packet is queued, then stays quiet until the host calls
+ * mockingbird_ack_wake, so a burst of frames costs one call. The host acks
+ * first and drains both queues after, which loses no wake: anything queued
+ * after the ack fires cb again.
+ *
+ * cb runs on whichever engine thread queued the entry, under a lock, so it
+ * must only signal (post a message, set a flag) and never call into the
+ * engine. Once mockingbird_set_wake_callback(engine, NULL, NULL) returns, cb is
+ * not running and will not run again, so its resources can be freed.
+ * Registering resets the pending state; drain once after registering to pick
+ * up anything already queued. */
+MOCKINGBIRD_API mockingbird_status_t mockingbird_set_wake_callback(mockingbird_engine_t* engine,
+                                                 mockingbird_wake_cb   cb,
+                                                 void*                 user);
+
+/* Re-arms the wake callback. Call it before draining. */
+MOCKINGBIRD_API mockingbird_status_t mockingbird_ack_wake(mockingbird_engine_t* engine);
 
 /* ============================================================================
  * SEPARATED SEND PATH

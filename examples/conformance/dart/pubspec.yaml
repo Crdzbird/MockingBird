@@ -3,7 +3,7 @@ description: Dart peer of the Mockingbird cross-binding conformance harness.
 publish_to: none
 
 environment:
-  sdk: ^3.0.0
+  sdk: ^3.11.0
 
 dependencies:
   mockingbird_platform_interface:
