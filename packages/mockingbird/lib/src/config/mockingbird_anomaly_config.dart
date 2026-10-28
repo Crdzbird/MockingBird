@@ -3,14 +3,21 @@ import 'package:mockingbird/src/config/sensitivity.dart';
 /// The anomaly gate: sudden or unusual sounds against a rolling background.
 final class MockingbirdAnomalyConfig {
   /// Creates an anomaly configuration.
-  const MockingbirdAnomalyConfig({
+  const factory MockingbirdAnomalyConfig({
+    bool enabled,
+    double rmsZ,
+    double fluxZ,
+    int backgroundMs,
+  }) = MockingbirdAnomalyConfig._;
+
+  const MockingbirdAnomalyConfig._({
     this.enabled = true,
     this.rmsZ = 3.0,
     this.fluxZ = 3.0,
     this.backgroundMs = 2000,
   });
 
-  /// Derives both z-score triggers from a [Sensitivity] dial: 5.0 → 1.5.
+  /// Derives both z-score triggers from a [Sensitivity] dial: 5.0 to 1.5.
   factory MockingbirdAnomalyConfig.sensitive(
     Sensitivity s, {
     bool enabled = true,

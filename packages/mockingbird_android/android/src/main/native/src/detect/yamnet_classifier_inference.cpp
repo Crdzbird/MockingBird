@@ -9,7 +9,6 @@
 #include <limits>
 
 namespace mockingbird {
-
 ClassificationResult YamnetClassifier::pick_top(const float* scores, size_t total) {
     const size_t classes = total >= kClassCount ? kClassCount : total;
     max_per_class_.assign(classes, std::numeric_limits<float>::lowest());
@@ -58,6 +57,6 @@ ClassificationResult YamnetClassifier::run_inference(const float* samples) {
     }
 }
 
-} // namespace mockingbird
+}
 
 #endif

@@ -1,7 +1,15 @@
 /// A flat mirror of `mockingbird_event_t`.
 final class MockingbirdNativeEvent {
   /// Creates an event record.
-  const MockingbirdNativeEvent({
+  const factory MockingbirdNativeEvent({
+    required int type,
+    required int segmentId,
+    required int timestampUs,
+    required int reasonMask,
+    required double confidence,
+  }) = MockingbirdNativeEvent._;
+
+  const MockingbirdNativeEvent._({
     required this.type,
     required this.segmentId,
     required this.timestampUs,

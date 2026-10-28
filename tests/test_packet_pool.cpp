@@ -10,7 +10,6 @@
 using mockingbird::PacketPool;
 
 namespace {
-
 void fill_slot(PacketPool::Slot* s,
                uint8_t           pattern,
                uint64_t          segment_id,
@@ -26,7 +25,7 @@ void fill_slot(PacketPool::Slot* s,
     std::memset(s->buf.get(), pattern, size);
 }
 
-} // namespace
+}
 
 TEST_CASE("PacketPool initial state has all slots free") {
     PacketPool p(/*capacity=*/4, /*max_payload_bytes=*/64);
@@ -41,7 +40,7 @@ TEST_CASE("PacketPool acquire / commit / drain / release round trip") {
     auto* s = p.acquire();
     REQUIRE(s != nullptr);
     fill_slot(s, 0xAB, /*seg*/ 7, MOCKINGBIRD_PKT_FLAG_KEYFRAME, 32);
-    CHECK_FALSE(p.commit(s));   // commit clean, no overrun
+    CHECK_FALSE(p.commit(s));
     CHECK(p.ready_size() == 1);
 
     mockingbird_packet_t pkt{};
@@ -57,59 +56,45 @@ TEST_CASE("PacketPool acquire / commit / drain / release round trip") {
     CHECK(p.release(&pkt) == MOCKINGBIRD_OK);
     CHECK(p.ready_size() == 0);
 
-    // Slot should be acquirable again.
     auto* s2 = p.acquire();
     CHECK(s2 != nullptr);
 }
 
 TEST_CASE("PacketPool rejects stale-copy release after slot reuse (ABA guard)") {
-    // Single slot forces reuse: the second checkout lands on the same index and
-    // buffer as the first, so only the generation distinguishes them.
     PacketPool p(/*pool_capacity=*/1, /*queue_capacity=*/1, /*max_payload_bytes=*/32);
 
-    // Checkout #1, then keep a STALE copy of the packet and release the original.
     auto* s1 = p.acquire();
     fill_slot(s1, 0xAA, /*seg*/ 1, 0, 16);
     CHECK_FALSE(p.commit(s1));
     mockingbird_packet_t pkt1{};
     REQUIRE(p.drain(&pkt1));
-    const mockingbird_packet_t stale = pkt1;      // host stashes a copy
+    const mockingbird_packet_t stale = pkt1;
     CHECK(p.release(&pkt1) == MOCKINGBIRD_OK);
 
-    // Checkout #2 reuses the slot (same buffer pointer, bumped generation).
     auto* s2 = p.acquire();
     fill_slot(s2, 0xBB, /*seg*/ 2, 0, 16);
     CHECK_FALSE(p.commit(s2));
     mockingbird_packet_t pkt2{};
     REQUIRE(p.drain(&pkt2));
 
-    // Aliasing precondition: the stale copy still points at the current buffer.
     CHECK(stale.data == pkt2.data);
-    // Releasing the stale copy would free a slot the current holder still
-    // borrows — the generation mismatch must reject it.
     CHECK(p.release(&stale) == MOCKINGBIRD_ERR_INVALID_ARG);
-    // The genuine current packet still releases cleanly.
     CHECK(p.release(&pkt2) == MOCKINGBIRD_OK);
 }
 
 TEST_CASE("PacketPool commit drops OLDEST when ready queue is at capacity") {
-    // pool_capacity > queue_capacity so the worker can still acquire a slot
-    // after the ready queue is full. The extra slot is the "borrow budget"
-    // for the host; in this test we exercise the worker path instead.
     PacketPool p(/*pool_capacity=*/3, /*queue_capacity=*/2, /*max_payload_bytes=*/16);
 
     auto* a = p.acquire();  fill_slot(a, 0x11, 1, 0, 16);  CHECK_FALSE(p.commit(a));
     auto* b = p.acquire();  fill_slot(b, 0x22, 2, 0, 16);  CHECK_FALSE(p.commit(b));
-    CHECK(p.ready_size() == 2);   // queue at cap
-
-    // Third commit must drop the oldest (segment 1) before pushing segment 3.
-    auto* c = p.acquire();
-    REQUIRE(c != nullptr);        // pool still has a free slot
-    fill_slot(c, 0x33, 3, 0, 16);
-    CHECK(p.commit(c));            // returns true: overran
     CHECK(p.ready_size() == 2);
 
-    // FIFO order should now be {2, 3} (segment 1 was dropped on the third commit).
+    auto* c = p.acquire();
+    REQUIRE(c != nullptr);
+    fill_slot(c, 0x33, 3, 0, 16);
+    CHECK(p.commit(c));
+    CHECK(p.ready_size() == 2);
+
     mockingbird_packet_t pkt2{};
     REQUIRE(p.drain(&pkt2));
     CHECK(pkt2.segment_id == 2);
@@ -128,8 +113,6 @@ TEST_CASE("PacketPool exhausts when pool_capacity equals queue_capacity and queu
 
     auto* a = p.acquire();  fill_slot(a, 0x11, 1, 0, 16);  CHECK_FALSE(p.commit(a));
     auto* b = p.acquire();  fill_slot(b, 0x22, 2, 0, 16);  CHECK_FALSE(p.commit(b));
-    // Ready queue is full and pool has no free slots: worker would have to
-    // wait for the host to release. This is the engine's default shape.
     CHECK(p.acquire() == nullptr);
     CHECK(p.ready_size() == 2);
 }
@@ -137,11 +120,10 @@ TEST_CASE("PacketPool exhausts when pool_capacity equals queue_capacity and queu
 TEST_CASE("PacketPool::release rejects foreign packets") {
     PacketPool p(2, 16);
     mockingbird_packet_t fake{};
-    fake._reserved = 999;          // out-of-range slot index
+    fake._reserved = 999;
     fake.data      = reinterpret_cast<const uint8_t*>(0x1);
     CHECK(p.release(&fake) == MOCKINGBIRD_ERR_INVALID_ARG);
 
-    // Valid index but wrong data pointer.
     auto* s = p.acquire();
     fill_slot(s, 0xCD, 5, 0, 4);
     p.commit(s);

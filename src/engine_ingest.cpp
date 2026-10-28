@@ -4,7 +4,6 @@
 #include "engine.hpp"
 
 namespace mockingbird {
-
 void ingest_pcm(mockingbird_engine* e, const int16_t* samples, uint32_t frame_count,
                 uint64_t capture_ts_us) noexcept {
     e->last_capture_ts_us.store(capture_ts_us, std::memory_order_release);
@@ -33,4 +32,4 @@ void backend_pcm_callback(void* user, const int16_t* samples,
     ingest_pcm(static_cast<mockingbird_engine*>(user), samples, frame_count, capture_ts_us);
 }
 
-} // namespace mockingbird
+}

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
 /// The last error, in the error colours.
-class ErrorBanner extends StatelessWidget {
-  const ErrorBanner({required this.message, super.key});
+final class ErrorBanner extends StatelessWidget {
+  const factory ErrorBanner({required String message, Key? key}) =
+      ErrorBanner._;
+
+  const ErrorBanner._({required this.message, super.key});
 
   final String message;
 

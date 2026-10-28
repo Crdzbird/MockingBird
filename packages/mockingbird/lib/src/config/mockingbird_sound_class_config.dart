@@ -3,14 +3,21 @@ import 'package:mockingbird/src/config/sensitivity.dart';
 /// YAMNet sound classification over all 521 AudioSet classes.
 final class MockingbirdSoundClassConfig {
   /// Creates a sound-classification configuration.
-  const MockingbirdSoundClassConfig({
+  const factory MockingbirdSoundClassConfig({
+    bool enabled,
+    String? modelPath,
+    double threshold,
+    int intervalMs,
+  }) = MockingbirdSoundClassConfig._;
+
+  const MockingbirdSoundClassConfig._({
     this.enabled = false,
     this.modelPath,
     this.threshold = 0.4,
     this.intervalMs = 1000,
   });
 
-  /// Derives the top-1 threshold from a [Sensitivity] dial: 0.70 → 0.12.
+  /// Derives the top-1 threshold from a [Sensitivity] dial: 0.70 to 0.12.
   factory MockingbirdSoundClassConfig.sensitive(
     Sensitivity s, {
     bool enabled = true,

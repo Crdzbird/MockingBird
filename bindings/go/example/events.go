@@ -10,9 +10,9 @@ import (
 func printEvent(ev mockingbird.Event, labels []string) {
 	switch ev.Type {
 	case mockingbird.EventSpeechBegin:
-		fmt.Println("voice   ▶ speech begin")
+		fmt.Println("voice   + speech begin")
 	case mockingbird.EventSpeechEnd:
-		fmt.Println("voice   ■ speech end")
+		fmt.Println("voice   - speech end")
 	case mockingbird.EventAnomaly:
 		fmt.Printf("anomaly   %v conf=%.2f\n", ev.AnomalyReasons(), ev.Confidence)
 	case mockingbird.EventSoundClass:

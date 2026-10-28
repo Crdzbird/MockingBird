@@ -3,7 +3,14 @@ import 'package:mockingbird/src/mockingbird_codec.dart';
 /// How segment audio is encoded before it reaches the host.
 final class MockingbirdEncoderConfig {
   /// Creates an encoder configuration.
-  const MockingbirdEncoderConfig({
+  const factory MockingbirdEncoderConfig({
+    MockingbirdCodec codec,
+    int opusBitrateBps,
+    bool opusVbr,
+    int opusComplexity,
+  }) = MockingbirdEncoderConfig._;
+
+  const MockingbirdEncoderConfig._({
     this.codec = .pcm16,
     this.opusBitrateBps = 32000,
     this.opusVbr = true,
@@ -11,7 +18,10 @@ final class MockingbirdEncoderConfig {
   });
 
   /// Opus at 32 kbps VBR, the usual choice for live voice.
-  const MockingbirdEncoderConfig.opus() : this(codec: .opus);
+  const factory MockingbirdEncoderConfig.opus() =
+      MockingbirdEncoderConfig._opus;
+
+  const MockingbirdEncoderConfig._opus() : this._(codec: .opus);
 
   /// The packet encoding.
   final MockingbirdCodec codec;

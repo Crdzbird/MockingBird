@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 
 /// Start and Stop, one of which is always enabled.
-class StartStopBar extends StatelessWidget {
-  const StartStopBar({
+final class StartStopBar extends StatelessWidget {
+  const factory StartStopBar({
+    required bool running,
+    required VoidCallback onStart,
+    required VoidCallback onStop,
+    Key? key,
+  }) = StartStopBar._;
+
+  const StartStopBar._({
     required this.running,
     required this.onStart,
     required this.onStop,

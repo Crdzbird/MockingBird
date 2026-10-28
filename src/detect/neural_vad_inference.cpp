@@ -9,7 +9,6 @@
 #include <cstring>
 
 namespace mockingbird {
-
 bool NeuralVadDetector::decide(float p_speech) {
     if (!cached_active_) {
         if (p_speech >= threshold_) {
@@ -65,6 +64,6 @@ bool NeuralVadDetector::run_inference(const float* window) {
     }
 }
 
-} // namespace mockingbird
+}
 
 #endif

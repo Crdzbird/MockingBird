@@ -7,11 +7,6 @@
 
 import Flutter
 
-// Under Swift Package Manager the C engine is its own module (target
-// `mockingbird_native`), so its declarations must be imported explicitly. Under
-// CocoaPods every source lands in one target and the pod's umbrella header
-// already exposes them, hence the canImport guard — the same file has to build
-// both ways while Flutter supports both integrations.
 #if canImport(mockingbird_native)
 import mockingbird_native
 #endif
@@ -23,12 +18,6 @@ public class MockingbirdPlugin: NSObject, FlutterPlugin {
   }
 }
 
-// The C ABI is referenced only at runtime from Dart, so without a link-time
-// reference the static linker would drop its objects and dart:ffi would fail
-// with "symbol not found". register() is always called by the plugin
-// registrant and reaches every entry point below; the guard is a condition the
-// optimizer cannot fold away, so the calls are kept but never run. Each entry
-// point lives in its own object file, so every one of them must be named here.
 enum MockingbirdSymbolAnchor {
   static func keep() {
     guard getenv("MOCKINGBIRD_FORCE_KEEP_SYMBOLS") != nil else { return }

@@ -1,7 +1,7 @@
 // tests/test_abi_fuzz.cpp
 //
 // ABI robustness / fuzz. The C surface must NEVER crash on hostile or
-// malformed input — every call returns a status code, and on failure the
+// malformed input: every call returns a status code, and on failure the
 // out-params are left in a defined state. We throw thousands of random and
 // structurally-invalid configs at mockingbird_create and assert the contract holds:
 //   - no crash (implicit: a crash fails the run under ASan/UBSan)
@@ -21,8 +21,6 @@
 #include <vector>
 
 namespace {
-
-// Deterministic xorshift64 — reproducible, no Date/rand dependency.
 struct Rng {
     uint64_t s;
     explicit Rng(uint64_t seed) : s(seed ? seed : 0x9E3779B97F4A7C15ull) {}
@@ -35,9 +33,6 @@ struct Rng {
     float    f()   { return static_cast<float>(static_cast<int32_t>(u32())) / 1024.0f; }
 };
 
-// Randomize every scalar field but keep the borrowed string pointers null —
-// a host passing a garbage char* is undefined by contract (unvalidatable), so
-// the fuzz models the realistic surface: null or valid paths only.
 void random_config(mockingbird_config_t& c, Rng& r) {
     std::memset(&c, 0, sizeof(c));
     c.backend             = static_cast<mockingbird_backend_t>(r.u32() % 7);
@@ -62,8 +57,6 @@ void random_config(mockingbird_config_t& c, Rng& r) {
     c.opus_bitrate_bps    = r.u32() % 600000;
     c.opus_vbr            = r.i32();
     c.opus_complexity     = r.i32() % 14 - 2;
-    // Bound the queue sizes: an unbounded random uint32 would attempt multi-GB
-    // allocations (handled as NO_MEMORY, but slow to repeat thousands of times).
     c.pcm_ring_frames     = r.u32() % 65536;
     c.packet_queue_capacity = r.u32() % 4096;
     c.enable_wait_handle  = r.i32();
@@ -72,10 +65,9 @@ void random_config(mockingbird_config_t& c, Rng& r) {
     c.sound_class_model_path = nullptr;
     c.sound_class_threshold  = r.f();
     c.sound_class_interval_ms = r.u32() % 4000;
-    // _reserved left zeroed; the engine must ignore it regardless.
 }
 
-} // namespace
+}
 
 TEST_CASE("ABI fuzz: null-pointer arguments are rejected, never dereferenced") {
     mockingbird_config_t cfg{};
@@ -84,13 +76,12 @@ TEST_CASE("ABI fuzz: null-pointer arguments are rejected, never dereferenced") {
 
     mockingbird_engine_t* e = reinterpret_cast<mockingbird_engine_t*>(0xdeadbeef);
     CHECK(mockingbird_create(nullptr, &e) == MOCKINGBIRD_ERR_INVALID_ARG);
-    CHECK(e == nullptr);                       // out is nulled even on bad cfg
+    CHECK(e == nullptr);
     CHECK(mockingbird_create(&cfg, nullptr) == MOCKINGBIRD_ERR_INVALID_ARG);
 
-    // Lifecycle calls on null must not crash.
     CHECK(mockingbird_start(nullptr)  == MOCKINGBIRD_ERR_INVALID_ARG);
     CHECK(mockingbird_stop(nullptr)   == MOCKINGBIRD_ERR_INVALID_ARG);
-    mockingbird_destroy(nullptr);                    // no-op, no crash
+    mockingbird_destroy(nullptr);
     mockingbird_packet_t pkt{};
     CHECK(mockingbird_drain(nullptr, &pkt) == MOCKINGBIRD_ERR_INVALID_ARG);
     mockingbird_event_t evt{};
@@ -104,9 +95,8 @@ TEST_CASE("ABI fuzz: mockingbird_status_str accepts ANY int, returns a non-null 
     for (int i = 0; i < 5000; ++i) {
         const char* s = mockingbird_status_str(r.i32());
         REQUIRE(s != nullptr);
-        CHECK(std::strlen(s) > 0);             // and is a real C string
+        CHECK(std::strlen(s) > 0);
     }
-    // Known codes resolve to stable strings.
     CHECK(std::string(mockingbird_status_str(MOCKINGBIRD_OK)) != "MOCKINGBIRD_UNKNOWN");
     CHECK(std::string(mockingbird_status_str(123456))   == "MOCKINGBIRD_UNKNOWN");
 }
@@ -118,20 +108,18 @@ TEST_CASE("ABI fuzz: thousands of random configs never crash and honor the out-n
         mockingbird_config_t cfg;
         random_config(cfg, r);
 
-        mockingbird_engine_t* e = reinterpret_cast<mockingbird_engine_t*>(0x1);  // poison
+        mockingbird_engine_t* e = reinterpret_cast<mockingbird_engine_t*>(0x1);
         const mockingbird_status_t s = mockingbird_create(&cfg, &e);
 
         if (s == MOCKINGBIRD_OK) {
-            REQUIRE(e != nullptr);             // success => valid handle
+            REQUIRE(e != nullptr);
             mockingbird_destroy(e);
             ++created;
         } else {
-            REQUIRE(e == nullptr);             // failure => out nulled
+            REQUIRE(e == nullptr);
             ++rejected;
         }
     }
-    // The fuzz space is dominated by invalid configs; just confirm both
-    // branches were exercised so the test is meaningful.
     CHECK(rejected > 0);
     INFO("fuzz created=" << created << " rejected=" << rejected);
 }
@@ -141,7 +129,7 @@ TEST_CASE("ABI fuzz: mockingbird_release rejects null / foreign / double-release
     mockingbird_config_defaults(&cfg);
     cfg.backend        = MOCKINGBIRD_BACKEND_HOST_PCM;
     cfg.codec          = MOCKINGBIRD_CODEC_PCM_S16LE;
-    cfg.enable_vad     = 0;          // passthrough: every frame becomes a packet
+    cfg.enable_vad     = 0;
     cfg.enable_anomaly = 0;
     mockingbird_engine_t* e = nullptr;
     REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
@@ -149,9 +137,6 @@ TEST_CASE("ABI fuzz: mockingbird_release rejects null / foreign / double-release
 
     CHECK(mockingbird_release(e, nullptr) == MOCKINGBIRD_ERR_INVALID_ARG);
 
-    // Foreign/garbage packets: random cookie + random data pointer. release()
-    // only COMPARES the pointer (never dereferences it), so this is safe and
-    // must always be rejected.
     Rng r(0xBADF00Du);
     for (int i = 0; i < 2000; ++i) {
         mockingbird_packet_t pkt{};
@@ -162,8 +147,6 @@ TEST_CASE("ABI fuzz: mockingbird_release rejects null / foreign / double-release
         CHECK(mockingbird_release(e, &pkt) == MOCKINGBIRD_ERR_INVALID_ARG);
     }
 
-    // Real packet: first release succeeds, a second (double) release is rejected
-    // instead of corrupting the free list.
     std::vector<int16_t> frame(320, 1500);
     for (int k = 0; k < 4; ++k) {
         mockingbird_push_pcm(e, frame.data(), 320, static_cast<uint64_t>(k) * 20'000ull);
@@ -171,8 +154,8 @@ TEST_CASE("ABI fuzz: mockingbird_release rejects null / foreign / double-release
     std::this_thread::sleep_for(std::chrono::milliseconds(40));
     mockingbird_packet_t pkt{};
     if (mockingbird_drain(e, &pkt) == MOCKINGBIRD_OK) {
-        CHECK(mockingbird_release(e, &pkt) == MOCKINGBIRD_OK);                 // first
-        CHECK(mockingbird_release(e, &pkt) == MOCKINGBIRD_ERR_INVALID_ARG);    // double
+        CHECK(mockingbird_release(e, &pkt) == MOCKINGBIRD_OK);
+        CHECK(mockingbird_release(e, &pkt) == MOCKINGBIRD_ERR_INVALID_ARG);
     }
 
     mockingbird_stop(e);
@@ -184,10 +167,10 @@ TEST_CASE("ABI fuzz: pathological queue sizes degrade to NO_MEMORY, never crash"
     mockingbird_config_defaults(&cfg);
     cfg.backend = MOCKINGBIRD_BACKEND_HOST_PCM;
     cfg.codec   = MOCKINGBIRD_CODEC_PCM_S16LE;
-    cfg.pcm_ring_frames = 0xFFFFFFFFu;         // ~4 G samples => alloc fails
+    cfg.pcm_ring_frames = 0xFFFFFFFFu;
     mockingbird_engine_t* e = nullptr;
     const mockingbird_status_t s = mockingbird_create(&cfg, &e);
     CHECK((s == MOCKINGBIRD_ERR_NO_MEMORY || s == MOCKINGBIRD_ERR_INVALID_ARG));
     CHECK(e == nullptr);
-    if (s == MOCKINGBIRD_OK && e) mockingbird_destroy(e);  // defensive
+    if (s == MOCKINGBIRD_OK && e) mockingbird_destroy(e);
 }

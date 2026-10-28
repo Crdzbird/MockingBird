@@ -5,14 +5,12 @@
 #include <cmath>
 
 namespace mockingbird {
-
 namespace {
-
 bool unit_interval(float v) { return std::isfinite(v) && v >= 0.0f && v <= 1.0f; }
 
 bool non_negative(float v) { return std::isfinite(v) && v >= 0.0f; }
 
-} // namespace
+}
 
 mockingbird_status_t check_detector_ranges(const mockingbird_config_t& c, int vad_tier, int codec) {
     if (c.enable_vad && vad_tier == MOCKINGBIRD_VAD_NEURAL && !unit_interval(c.vad_neural_threshold)) {
@@ -58,4 +56,4 @@ mockingbird_status_t check_build_support(const mockingbird_config_t& c, int vad_
     return MOCKINGBIRD_OK;
 }
 
-} // namespace mockingbird
+}

@@ -4,7 +4,9 @@ import 'package:mockingbird_platform_interface/mockingbird_platform_interface.da
 /// Flattens the segment, encoder, queue and performance groups.
 final class NativeOutputMapper {
   /// Creates the mapper.
-  const NativeOutputMapper();
+  const factory NativeOutputMapper() = NativeOutputMapper._;
+
+  const NativeOutputMapper._();
 
   /// The output mirror of [c].
   MockingbirdNativeOutputConfig map(MockingbirdConfig c) =>

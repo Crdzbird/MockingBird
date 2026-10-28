@@ -1,7 +1,7 @@
 // tests/test_anomaly_reason.cpp
 //
 // Invariant: every MOCKINGBIRD_EVT_ANOMALY event MUST carry a non-zero reason_mask.
-// An anomaly with no trigger bits is meaningless to the host — the whole point
+// An anomaly with no trigger bits is meaningless to the host; the whole point
 // of the field is to say WHY the gate tripped (RMS / spectral flux / centroid).
 //
 // This is a regression test for a `reason=0` anomaly observed on-device. It
@@ -20,7 +20,6 @@
 #include <vector>
 
 namespace {
-
 struct EngineGuard {
     mockingbird_engine_t* e = nullptr;
     ~EngineGuard() {
@@ -51,7 +50,7 @@ void push_n(mockingbird_engine_t* e, const std::vector<int16_t>& f,
     std::this_thread::sleep_for(std::chrono::milliseconds(30));
 }
 
-} // namespace
+}
 
 TEST_CASE("Anomaly: every ANOMALY event carries a non-zero reason_mask") {
     mockingbird_config_t cfg{};
@@ -60,10 +59,8 @@ TEST_CASE("Anomaly: every ANOMALY event carries a non-zero reason_mask") {
     cfg.codec             = MOCKINGBIRD_CODEC_PCM_S16LE;
     cfg.sample_rate_hz    = 16000;
     cfg.frame_ms          = 20;
-    cfg.enable_vad        = 0;     // anomaly only — deterministic
+    cfg.enable_vad        = 0;
     cfg.enable_anomaly    = 1;
-    // High sensitivity (low z thresholds) so small steps trip readily, the
-    // same regime the on-device 60% dial put the gate in.
     cfg.anomaly_rms_z         = 2.0f;
     cfg.anomaly_flux_z        = 2.0f;
     cfg.anomaly_background_ms = 2000;
@@ -91,25 +88,20 @@ TEST_CASE("Anomaly: every ANOMALY event carries a non-zero reason_mask") {
         }
     };
 
-    // Establish a quiet background.
     push_n(g.e, sil, 100, ts);
     drain_events();
 
-    // Torture pattern: bursts separated by gaps of varying length, including
-    // gaps SHORTER than the de-flicker hold (so the gate coasts active and the
-    // internal reason mask is momentarily empty) and gaps LONGER than the hold
-    // (so the gate fully re-arms and a fresh rising edge fires).
     for (int round = 0; round < 12; ++round) {
-        push_n(g.e, loud, 4, ts);                 // burst (trip)
-        push_n(g.e, sil, (round % 3) + 2, ts);    // short gap: 2..4 frames
-        push_n(g.e, loud, 3, ts);                 // re-trip during/after hold
-        push_n(g.e, sil, 10, ts);                 // long gap: hold expires
+        push_n(g.e, loud, 4, ts);
+        push_n(g.e, sil, (round % 3) + 2, ts);
+        push_n(g.e, loud, 3, ts);
+        push_n(g.e, sil, 10, ts);
         drain_events();
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(80));
     drain_events();
 
     INFO("anomaly_total=" << anomaly_total << " anomaly_zero=" << anomaly_zero);
-    CHECK(anomaly_total >= 1);          // the pattern must actually trip
-    CHECK(anomaly_zero == 0);           // and never with an empty reason mask
+    CHECK(anomaly_total >= 1);
+    CHECK(anomaly_zero == 0);
 }

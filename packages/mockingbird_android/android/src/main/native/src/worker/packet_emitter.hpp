@@ -6,7 +6,6 @@
 struct mockingbird_engine;
 
 namespace mockingbird {
-
 class PacketEmitter {
 public:
     void init(mockingbird_engine* e, uint32_t frame_samples);
@@ -21,4 +20,4 @@ private:
     uint32_t      frame_samples_ = 0;
 };
 
-} // namespace mockingbird
+}

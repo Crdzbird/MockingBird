@@ -11,7 +11,6 @@
 using namespace mockingbird::web;
 
 extern "C" {
-
 EMSCRIPTEN_KEEPALIVE mockingbird_event_t* mockingbird_web_event_new(void) {
     return static_cast<mockingbird_event_t*>(std::calloc(1, sizeof(mockingbird_event_t)));
 }
@@ -32,6 +31,6 @@ EMSCRIPTEN_KEEPALIVE double mockingbird_web_event_get(const mockingbird_event_t*
     }
 }
 
-} // extern "C"
+}
 
 #endif

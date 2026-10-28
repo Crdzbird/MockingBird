@@ -6,7 +6,6 @@
 #include "engine_events.hpp"
 
 namespace mockingbird {
-
 void PacketEmitter::init(mockingbird_engine* e, uint32_t frame_samples) {
     e_             = e;
     frame_samples_ = frame_samples;
@@ -46,4 +45,4 @@ void PacketEmitter::emit(const int16_t* samples, uint64_t now_ts, uint32_t flags
     if (overran) overrun(now_ts);
 }
 
-} // namespace mockingbird
+}

@@ -7,9 +7,11 @@ import 'package:mockingbird_platform_interface/ffi.dart';
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
 
 /// Registers the FFI platform over the library this platform links.
-class MockingbirdAndroid extends MockingbirdFfiPlatform {
+final class MockingbirdAndroid extends MockingbirdFfiPlatform {
   /// Creates the platform; [registerWith] installs it.
-  MockingbirdAndroid();
+  factory MockingbirdAndroid() = MockingbirdAndroid._;
+
+  MockingbirdAndroid._();
 
   /// Called by the Flutter plugin registrant.
   static void registerWith() {

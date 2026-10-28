@@ -10,7 +10,9 @@ import 'package:mockingbird_platform_interface/src/mockingbird_status_code.dart'
 /// The PCM push and tap paths over the FFI bindings.
 final class FfiPcm {
   /// Wraps [_bindings].
-  const FfiPcm(this._bindings);
+  const factory FfiPcm(MockingbirdBindings bindings) = FfiPcm._;
+
+  const FfiPcm._(this._bindings);
 
   final MockingbirdBindings _bindings;
 

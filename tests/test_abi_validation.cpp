@@ -11,8 +11,6 @@
 #include <cstring>
 #include <vector>
 
-// --- Tier-1 hardening regressions (config bounds + push bounds) -------------
-
 TEST_CASE("mockingbird_create rejects absurd duration fields (would OOM the worker)") {
     mockingbird_config_t base{};
     mockingbird_config_defaults(&base);
@@ -32,7 +30,7 @@ TEST_CASE("mockingbird_create rejects absurd duration fields (would OOM the work
 TEST_CASE("mockingbird_create rejects non-finite / out-of-range float config") {
     mockingbird_config_t base{};
     mockingbird_config_defaults(&base);
-    base.backend = MOCKINGBIRD_BACKEND_HOST_PCM; // anomaly on by default
+    base.backend = MOCKINGBIRD_BACKEND_HOST_PCM;
     mockingbird_engine_t* e = nullptr;
 
     SUBCASE("NaN z-score")      { base.anomaly_rms_z  = std::nanf(""); }
@@ -49,7 +47,7 @@ TEST_CASE("mockingbird_push_pcm rejects frame_count beyond ring capacity (no OOB
     cfg.backend         = MOCKINGBIRD_BACKEND_HOST_PCM;
     cfg.enable_vad      = 0;
     cfg.enable_anomaly  = 0;
-    cfg.pcm_ring_frames = 1u << 14; // 16384 samples
+    cfg.pcm_ring_frames = 1u << 14;
     mockingbird_engine_t* e = nullptr;
     REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
     REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
@@ -92,7 +90,7 @@ TEST_CASE("mockingbird_create rejects out-of-set sample rate") {
     mockingbird_config_t cfg{};
     mockingbird_config_defaults(&cfg);
     cfg.backend        = MOCKINGBIRD_BACKEND_HOST_PCM;
-    cfg.sample_rate_hz = 12345;             // not in {8/16/32/48 kHz}
+    cfg.sample_rate_hz = 12345;
     mockingbird_engine_t* e = nullptr;
     CHECK(mockingbird_create(&cfg, &e) == MOCKINGBIRD_ERR_INVALID_ARG);
     CHECK(e == nullptr);
@@ -102,7 +100,7 @@ TEST_CASE("mockingbird_create rejects out-of-set frame_ms") {
     mockingbird_config_t cfg{};
     mockingbird_config_defaults(&cfg);
     cfg.backend  = MOCKINGBIRD_BACKEND_HOST_PCM;
-    cfg.frame_ms = 25;                      // not in {10, 20, 30}
+    cfg.frame_ms = 25;
     mockingbird_engine_t* e = nullptr;
     CHECK(mockingbird_create(&cfg, &e) == MOCKINGBIRD_ERR_INVALID_ARG);
 }
@@ -130,13 +128,13 @@ TEST_CASE("mockingbird_create rejects libopus bitrate out of nominal range") {
     mockingbird_config_defaults(&cfg);
     cfg.backend          = MOCKINGBIRD_BACKEND_HOST_PCM;
     cfg.codec            = MOCKINGBIRD_CODEC_OPUS;
-    cfg.opus_bitrate_bps = 100;             // below 6000
+    cfg.opus_bitrate_bps = 100;
     mockingbird_engine_t* e = nullptr;
     CHECK(mockingbird_create(&cfg, &e) == MOCKINGBIRD_ERR_INVALID_ARG);
 }
 
 TEST_CASE("mockingbird_destroy(NULL) is a no-op (no crash)") {
-    mockingbird_destroy(nullptr);            // must not crash
+    mockingbird_destroy(nullptr);
     CHECK(true);
 }
 
@@ -169,8 +167,6 @@ TEST_CASE("mockingbird_status_str returns a non-empty string for every defined c
 }
 
 TEST_CASE("mockingbird_status_str returns MOCKINGBIRD_UNKNOWN for out-of-range ints") {
-    // int parameter makes this safe: no enum-domain UB even for far-out
-    // values.
     const char* unk = mockingbird_status_str(-9999);
     REQUIRE(unk != nullptr);
     CHECK(std::strcmp(unk, "MOCKINGBIRD_UNKNOWN") == 0);
@@ -182,5 +178,5 @@ TEST_CASE("mockingbird_version_string is non-empty and stable across calls") {
     const char* v2 = mockingbird_version_string();
     REQUIRE(v1 != nullptr);
     CHECK(std::strlen(v1) > 0);
-    CHECK(v1 == v2);                     // owned by lib, same pointer
+    CHECK(v1 == v2);
 }

@@ -16,9 +16,7 @@ extern "C" {
 #include <vector>
 
 namespace mockingbird {
-
 namespace {
-
 constexpr int    kRnnoiseRate  = 48000;
 constexpr size_t kRnnoiseFrame = 480;
 
@@ -73,18 +71,18 @@ private:
     std::vector<float> down_buf_;
 };
 
-} // namespace
+}
 
 std::unique_ptr<Preprocessor> make_rnnoise_preprocessor() {
     return std::make_unique<RnnoisePreprocessor>();
 }
 
-} // namespace mockingbird
+}
 
 #else
 
 namespace mockingbird {
 std::unique_ptr<Preprocessor> make_rnnoise_preprocessor() { return nullptr; }
-} // namespace mockingbird
+}
 
 #endif

@@ -1,7 +1,6 @@
 /// The web implementation of the mockingbird plugin.
 library;
 
-import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
@@ -14,9 +13,11 @@ import 'package:mockingbird_web/src/web_engine_handle.dart';
 import 'package:mockingbird_web/src/web_lifecycle.dart';
 
 /// Runs the engine as WebAssembly in the page and captures through Web Audio.
-class MockingbirdWeb extends MockingbirdPlatform {
+final class MockingbirdWeb extends MockingbirdPlatform {
   /// Creates the platform; [registerWith] installs it.
-  MockingbirdWeb();
+  factory MockingbirdWeb() = MockingbirdWeb._;
+
+  MockingbirdWeb._();
 
   late final WebLifecycle _lifecycle = WebLifecycle(() => _ready, pushPcm);
 
@@ -49,11 +50,8 @@ class MockingbirdWeb extends MockingbirdPlatform {
       _engine.create(config);
 
   @override
-  void destroy(MockingbirdEngineHandle handle) {
-    final h = handle as WebEngineHandle;
-    h.capture?.stop();
-    _engine.destroy(h);
-  }
+  void destroy(MockingbirdEngineHandle handle) =>
+      _engine.destroy(handle as WebEngineHandle);
 
   @override
   int start(MockingbirdEngineHandle handle) =>

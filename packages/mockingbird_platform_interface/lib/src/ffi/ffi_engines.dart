@@ -9,7 +9,9 @@ import 'package:mockingbird_platform_interface/src/ffi/ffi_engine_handle.dart';
 /// Engine creation, destruction, retuning and the two string queries.
 final class FfiEngines {
   /// Wraps [_bindings].
-  const FfiEngines(this._bindings);
+  const factory FfiEngines(MockingbirdBindings bindings) = FfiEngines._;
+
+  const FfiEngines._(this._bindings);
 
   final MockingbirdBindings _bindings;
 

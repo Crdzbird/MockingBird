@@ -5,7 +5,6 @@
 #include <cstring>
 
 extern "C" {
-
 MOCKINGBIRD_API mockingbird_status_t mockingbird_get_stats(mockingbird_engine_t* e, mockingbird_stats_t* out) {
     if (e == nullptr || out == nullptr) return MOCKINGBIRD_ERR_INVALID_ARG;
     try {
@@ -35,4 +34,4 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_get_stats(mockingbird_engine_t*
     }
 }
 
-} // extern "C"
+}

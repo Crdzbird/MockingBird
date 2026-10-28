@@ -4,9 +4,7 @@
 #include <cstring>
 
 namespace mockingbird {
-
 namespace {
-
 class PassthroughEncoder final : public Encoder {
 public:
     mockingbird_status_t init(const mockingbird_config_t& cfg) override {
@@ -32,10 +30,10 @@ private:
     size_t   max_bytes_     = 0;
 };
 
-} // namespace
+}
 
 std::unique_ptr<Encoder> make_passthrough_encoder() {
     return std::make_unique<PassthroughEncoder>();
 }
 
-} // namespace mockingbird
+}

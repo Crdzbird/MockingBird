@@ -51,7 +51,7 @@
  *    and especially mockingbird_destroy must not overlap in time on the same engine.
  *    mockingbird_destroy FREES the engine: calling it while any other call is still in
  *    flight (a push in progress, a drain on another thread) is a use-after-free
- *    the library cannot defend against — the guard protecting it lives inside the
+ *    the library cannot defend against: the guard protecting it lives inside the
  *    object being freed. start/stop are internally serialized against each other
  *    (no double-join), but the host still owns the destroy ordering.
  *
@@ -290,8 +290,8 @@ typedef struct mockingbird_config {
 
     /* Continuous PCM tap. Packets are segment-gated (they flow only while a
      * detector holds a segment open), so a host that also wants an UNGATED
-     * stream — to draw a waveform, or to archive everything while still
-     * receiving detections — enables the tap and drains it with
+     * stream (to draw a waveform, or to archive everything while still
+     * receiving detections) enables the tap and drains it with
      * mockingbird_read_pcm.
      *
      * The tap carries the same frames the detectors and encoder consume, i.e.
@@ -310,7 +310,7 @@ typedef struct mockingbird_config {
      * the sound classifier skips an inference whose entire 3 s window was
      * quiet (YAMNet would only ever answer "Silence"). VAD and the anomaly
      * detector are NOT gated: they are cheap and their behaviour must not
-     * depend on level. Audio itself is never gated — every frame still flows
+     * depend on level. Audio itself is never gated: every frame still flows
      * to the tap and the encoder.
      *   0        => default, -60 dBFS (conservative: digital silence / muted
      *               mic; raise to ~-50 to also skip quiet-room tone)
@@ -318,9 +318,9 @@ typedef struct mockingbird_config {
      * Live-tunable via mockingbird_update_config. */
     float    silence_gate_dbfs;
 
-    /* Adaptive degradation. When the worker cannot keep up — it spends more
+    /* Adaptive degradation. When the worker cannot keep up (it spends more
      * than degrade_busy_ppm of wall time processing over a ~1 s window, or the
-     * capture ring dropped frames — the engine sheds the most expensive
+     * capture ring dropped frames), the engine sheds the most expensive
      * optional work in steps, and restores it after ~3 calm windows:
      *   level 1: sound-class inference cadence x2
      *   level 2: sound-class inference cadence x4
@@ -409,7 +409,7 @@ typedef struct mockingbird_stats {
     /* Input signal level of the most recently processed frame, in dBFS
      * (0.0 == full scale, negative below; floored at -120.0 for digital
      * silence). Measured on the captured frame BEFORE noise suppression, so it
-     * reflects what the microphone actually received — the right value to drive
+     * reflects what the microphone actually received, which is the right value to drive
      * a level meter. Both are 0.0 until the first frame is processed. */
     float     input_rms_dbfs;
     float     input_peak_dbfs;
@@ -421,7 +421,7 @@ typedef struct mockingbird_stats {
     /* Worker health. busy_ppm is the share of wall time the worker spent
      * processing frames over the most recent ~1 s window (parts per million;
      * 1000000 == saturated). max_frame_us is the longest single frame since
-     * start. wakeups counts worker thread parks/unparks — on mobile, wakeup
+     * start. wakeups counts worker thread parks/unparks; on mobile, wakeup
      * rate is a better battery proxy than CPU share. */
     uint32_t  worker_busy_ppm;
     uint32_t  worker_max_frame_us;
@@ -552,7 +552,7 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_read_pcm(mockingbird_engine_t* 
  *
  *   structural everything else (backend, rate, channels, frame_ms, codec,
  *              vad_tier, model paths, rnnoise, roll/segment/background/interval
- *              durations, queue sizes, wait handle) — these size buffers, pick
+ *              durations, queue sizes, wait handle): these size buffers, pick
  *              backends, and load models, so they are fixed for the engine's
  *              lifetime.
  *

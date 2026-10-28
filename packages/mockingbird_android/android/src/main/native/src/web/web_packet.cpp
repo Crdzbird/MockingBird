@@ -13,7 +13,6 @@
 using namespace mockingbird::web;
 
 extern "C" {
-
 EMSCRIPTEN_KEEPALIVE mockingbird_packet_t* mockingbird_web_packet_new(void) {
     return static_cast<mockingbird_packet_t*>(std::calloc(1, sizeof(mockingbird_packet_t)));
 }
@@ -36,6 +35,6 @@ EMSCRIPTEN_KEEPALIVE double mockingbird_web_packet_get(const mockingbird_packet_
     }
 }
 
-} // extern "C"
+}
 
 #endif

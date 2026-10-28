@@ -32,7 +32,7 @@ def main() -> None:
     args = ap.parse_args()
 
     cfg = build_config(args)
-    print(f"Mockingbird {mockingbird.version()} — {describe(cfg, args.preset)}")
+    print(f"Mockingbird {mockingbird.version()}, {describe(cfg, args.preset)}")
     with mockingbird.Engine(cfg) as engine:
         engine.start()
         if args.file:

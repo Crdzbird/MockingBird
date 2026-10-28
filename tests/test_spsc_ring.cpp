@@ -48,7 +48,7 @@ TEST_CASE("SpscRing drops NEWEST on full, never partial-overwrites") {
     CHECK(r.push(first.data(), 8) == 8);
 
     std::array<int16_t, 4> extra{9, 9, 9, 9};
-    CHECK(r.push(extra.data(), 4) == 0);          // ring full, nothing accepted
+    CHECK(r.push(extra.data(), 4) == 0);
 
     std::array<int16_t, 8> out{};
     CHECK(r.pop(out.data(), 8) == 8);
@@ -62,8 +62,8 @@ TEST_CASE("SpscRing wraparound preserves byte order") {
 
     CHECK(r.push(a.data(), a.size()) == 5);
     std::array<int16_t, 3> drain{};
-    CHECK(r.pop(drain.data(), 3) == 3);           // tail advances past mask boundary
-    CHECK(r.push(b.data(), b.size()) == 5);       // writes wrap past end of buffer
+    CHECK(r.pop(drain.data(), 3) == 3);
+    CHECK(r.push(b.data(), b.size()) == 5);
 
     std::array<int16_t, 7> out{};
     CHECK(r.pop(out.data(), out.size()) == 7);
@@ -78,9 +78,6 @@ TEST_CASE("SpscRing pop on empty returns zero, never blocks") {
 }
 
 TEST_CASE("SpscRing concurrent producer/consumer preserves every byte") {
-    // Stress test: a producer pushes a known sequence; a consumer pops it
-    // back. Both run on dedicated threads. Verifies the memory ordering
-    // pairing (release on store, acquire on load) actually carries data.
     constexpr size_t kCapacity = 1024;
     constexpr size_t kTotal    = 200000;
     SpscRing<uint32_t> r(kCapacity);
@@ -107,7 +104,6 @@ TEST_CASE("SpscRing concurrent producer/consumer preserves every byte") {
             for (size_t i = 0; i < batch; ++i) tmp[i] = static_cast<uint32_t>(pushed + i);
             const size_t n = r.push(tmp.data(), batch);
             pushed += n;
-            // If full, spin briefly; consumer will drain.
         }
     });
 

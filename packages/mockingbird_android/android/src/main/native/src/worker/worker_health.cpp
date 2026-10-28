@@ -8,9 +8,7 @@
 #include "worker/tunables.hpp"
 
 namespace mockingbird {
-
 namespace {
-
 constexpr uint64_t kHealthWindowNs = 1000000000ull;
 
 uint64_t ns_between(std::chrono::steady_clock::time_point a,
@@ -18,7 +16,7 @@ uint64_t ns_between(std::chrono::steady_clock::time_point a,
     return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(b - a).count());
 }
 
-} // namespace
+}
 
 void WorkerHealth::start(const mockingbird_engine* e) {
     win_start_  = clock::now();
@@ -61,4 +59,4 @@ void WorkerHealth::close_window(mockingbird_engine* e, uint64_t now_ts, Tunables
                static_cast<unsigned long long>(ppm), dropped ? ", drops" : "");
 }
 
-} // namespace mockingbird
+}

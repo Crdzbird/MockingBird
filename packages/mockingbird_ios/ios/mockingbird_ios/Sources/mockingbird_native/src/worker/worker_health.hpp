@@ -8,7 +8,6 @@
 struct mockingbird_engine;
 
 namespace mockingbird {
-
 class Tunables;
 
 class WorkerHealth {
@@ -29,4 +28,4 @@ private:
     uint32_t          max_frame_us_ = 0;
 };
 
-} // namespace mockingbird
+}

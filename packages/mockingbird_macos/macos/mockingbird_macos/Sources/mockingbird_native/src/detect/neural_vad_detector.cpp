@@ -11,7 +11,6 @@
 #include <algorithm>
 
 namespace mockingbird {
-
 mockingbird_status_t NeuralVadDetector::load_session(const mockingbird_config_t& cfg) {
     try {
         const std::string path =
@@ -79,12 +78,12 @@ void NeuralVadDetector::apply_thresholds(const mockingbird_config_t& cfg) {
 
 std::unique_ptr<Detector> make_neural_vad() { return std::make_unique<NeuralVadDetector>(); }
 
-} // namespace mockingbird
+}
 
 #else
 
 namespace mockingbird {
 std::unique_ptr<Detector> make_neural_vad() { return nullptr; }
-} // namespace mockingbird
+}
 
 #endif

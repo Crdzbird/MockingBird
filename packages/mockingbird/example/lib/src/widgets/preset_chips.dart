@@ -3,8 +3,14 @@ import 'package:mockingbird_example/src/demo/demo_presets.dart';
 
 /// One chip per preset; tapping recreates the engine with that recipe. A
 /// preset the platform cannot run is shown disabled.
-class PresetChips extends StatelessWidget {
-  const PresetChips({
+final class PresetChips extends StatelessWidget {
+  const factory PresetChips({
+    required int selected,
+    required ValueChanged<int> onSelected,
+    Key? key,
+  }) = PresetChips._;
+
+  const PresetChips._({
     required this.selected,
     required this.onSelected,
     super.key,

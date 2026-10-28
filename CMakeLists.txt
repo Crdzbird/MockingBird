@@ -513,5 +513,3 @@ if(MOCKINGBIRD_ENABLE_TESTS AND TARGET mockingbird_static)
     endif()
 endif()
 
-# Note: main.cpp (CLion boilerplate) is intentionally not referenced.
-# It will be replaced by examples/smoke.cpp in step 1.

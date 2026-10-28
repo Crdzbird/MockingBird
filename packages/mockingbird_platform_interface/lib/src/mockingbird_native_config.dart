@@ -4,7 +4,16 @@ import 'package:mockingbird_platform_interface/src/mockingbird_native_output_con
 /// A mirror of `mockingbird_config_t`, grouped so each part stays small.
 final class MockingbirdNativeConfig {
   /// Creates a config; every field is set explicitly by the caller.
-  const MockingbirdNativeConfig({
+  const factory MockingbirdNativeConfig({
+    required int backend,
+    required int sampleRateHz,
+    required int frameMs,
+    required bool enableRnnoise,
+    required MockingbirdNativeDetectorConfig detectors,
+    required MockingbirdNativeOutputConfig output,
+  }) = MockingbirdNativeConfig._;
+
+  const MockingbirdNativeConfig._({
     required this.backend,
     required this.sampleRateHz,
     required this.frameMs,

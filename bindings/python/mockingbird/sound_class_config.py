@@ -28,7 +28,7 @@ class SoundClassConfig:
         model_path: str | None = None,
         interval_ms: int = 1000,
     ) -> SoundClassConfig:
-        """The threshold runs 0.70 → 0.12."""
+        """The threshold runs 0.70 to 0.12."""
         return cls(
             enabled=enabled,
             model_path=model_path,

@@ -8,7 +8,6 @@
 #include "capture/mach_timebase.hpp"
 
 namespace mockingbird {
-
 OSStatus coreaudio_input_render(void* refCon, AudioUnitRenderActionFlags* ioActionFlags,
                                 const AudioTimeStamp* inTimeStamp, UInt32 inBusNumber,
                                 UInt32 inNumberFrames, AudioBufferList*) {
@@ -36,6 +35,6 @@ OSStatus coreaudio_input_render(void* refCon, AudioUnitRenderActionFlags* ioActi
     return noErr;
 }
 
-} // namespace mockingbird
+}
 
 #endif

@@ -3,7 +3,6 @@
 #include "engine.hpp"
 
 extern "C" {
-
 MOCKINGBIRD_API mockingbird_status_t mockingbird_set_event_callback(mockingbird_engine_t* e, mockingbird_event_cb cb,
                                                   void* user) {
     if (e == nullptr) return MOCKINGBIRD_ERR_INVALID_ARG;
@@ -68,4 +67,4 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_wait_handle(mockingbird_engine_
     return MOCKINGBIRD_ERR_UNSUPPORTED;
 }
 
-} // extern "C"
+}

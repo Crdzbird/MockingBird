@@ -5,7 +5,16 @@ import 'package:mockingbird/src/mockingbird_vad_tier.dart';
 /// `SpeechEnd` events.
 final class MockingbirdVadConfig {
   /// Creates a VAD configuration.
-  const MockingbirdVadConfig({
+  const factory MockingbirdVadConfig({
+    bool enabled,
+    MockingbirdVadTier tier,
+    int aggressiveness,
+    double neuralThreshold,
+    int hangoverMs,
+    String? modelPath,
+  }) = MockingbirdVadConfig._;
+
+  const MockingbirdVadConfig._({
     this.enabled = true,
     this.tier = .fast,
     this.aggressiveness = 2,
@@ -15,7 +24,7 @@ final class MockingbirdVadConfig {
   });
 
   /// Derives the thresholds from a [Sensitivity] dial: Silero's threshold
-  /// runs 0.80 → 0.20 and libfvad's aggressiveness 3 → 0.
+  /// runs 0.80 to 0.20 and libfvad's aggressiveness 3 to 0.
   factory MockingbirdVadConfig.sensitive(
     Sensitivity s, {
     bool enabled = true,

@@ -8,7 +8,6 @@
 #include <vector>
 
 namespace mockingbird {
-
 class RollingStats {
 public:
     void init(size_t window) {
@@ -53,4 +52,4 @@ private:
     double             sumsq_  = 0.0;
 };
 
-} // namespace mockingbird
+}

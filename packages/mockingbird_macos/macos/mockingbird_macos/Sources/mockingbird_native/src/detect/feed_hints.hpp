@@ -5,11 +5,10 @@
 #include <cstdint>
 
 namespace mockingbird {
-
 struct FeedHints {
     bool     quiet              = false;
     uint32_t cadence_multiplier = 1;
     bool     inhibit            = false;
 };
 
-} // namespace mockingbird
+}

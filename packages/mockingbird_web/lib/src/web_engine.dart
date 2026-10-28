@@ -12,7 +12,9 @@ import 'package:mockingbird_web/src/web_pcm.dart';
 /// Engine operations over the WebAssembly module.
 final class WebEngine {
   /// Wraps the loaded module.
-  const WebEngine(this._m);
+  const factory WebEngine(MockingbirdModule m) = WebEngine._;
+
+  const WebEngine._(this._m);
 
   static const _hostPcm = 4;
 
@@ -47,6 +49,7 @@ final class WebEngine {
 
   /// Destroys the engine and its scratch records.
   void destroy(WebEngineHandle h) {
+    h.capture?.stop();
     _m.destroy(h.pointer);
     h.free(_m);
   }

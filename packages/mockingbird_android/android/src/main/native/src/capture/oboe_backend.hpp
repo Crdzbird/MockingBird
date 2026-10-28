@@ -7,7 +7,6 @@
 #include <memory>
 
 namespace mockingbird {
-
 #ifdef MOCKINGBIRD_HAVE_OBOE
 
 class OboeBackend final : public CaptureBackend {
@@ -27,4 +26,4 @@ private:
 
 #endif
 
-} // namespace mockingbird
+}

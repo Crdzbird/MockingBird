@@ -9,9 +9,7 @@ extern "C" {
 #include <cstdint>
 
 namespace mockingbird {
-
 namespace {
-
 class VadDetector final : public Detector {
 public:
     VadDetector() = default;
@@ -52,7 +50,7 @@ private:
     uint32_t frame_samples_ = 0;
 };
 
-} // namespace
+}
 
 std::unique_ptr<Detector> make_vad(mockingbird_vad_tier_t tier) {
     switch (tier) {
@@ -62,4 +60,4 @@ std::unique_ptr<Detector> make_vad(mockingbird_vad_tier_t tier) {
     return nullptr;
 }
 
-} // namespace mockingbird
+}

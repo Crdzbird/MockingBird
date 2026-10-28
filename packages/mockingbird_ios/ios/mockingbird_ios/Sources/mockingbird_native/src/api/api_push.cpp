@@ -5,7 +5,6 @@
 #include "worker/worker_driver.hpp"
 
 extern "C" {
-
 MOCKINGBIRD_API mockingbird_status_t mockingbird_push_pcm(mockingbird_engine_t* e, const int16_t* samples,
                                         uint32_t frame_count, uint64_t capture_ts_us) {
     if (e == nullptr || samples == nullptr) return MOCKINGBIRD_ERR_INVALID_ARG;
@@ -19,4 +18,4 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_push_pcm(mockingbird_engine_t* 
     return MOCKINGBIRD_OK;
 }
 
-} // extern "C"
+}

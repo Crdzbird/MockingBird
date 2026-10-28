@@ -6,7 +6,9 @@ import 'package:mockingbird_platform_interface/mockingbird_platform_interface.da
 /// Flattens a [MockingbirdConfig] into the platform interface's mirror.
 final class NativeConfigMapper {
   /// Creates the mapper.
-  const NativeConfigMapper();
+  const factory NativeConfigMapper() = NativeConfigMapper._;
+
+  const NativeConfigMapper._();
 
   /// The mirror of [config].
   MockingbirdNativeConfig map(MockingbirdConfig config) =>

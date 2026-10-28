@@ -22,7 +22,6 @@
 #include <vector>
 
 namespace {
-
 double rms_i16(const int16_t* p, size_t n) {
     double s = 0.0;
     for (size_t i = 0; i < n; ++i) s += double(p[i]) * double(p[i]);
@@ -35,16 +34,15 @@ double rms_f(const std::vector<float>& v, size_t from, size_t to) {
     return std::sqrt(s / double(to - from));
 }
 
-// Deterministic noise so the test never flakes.
 struct Lcg {
     uint32_t st = 0x12345678u;
-    float next() {                       // ~[-1, 1)
+    float next() {
         st = st * 1664525u + 1013904223u;
         return (float(st >> 8) / float(1u << 24)) * 2.0f - 1.0f;
     }
 };
 
-} // namespace
+}
 
 TEST_CASE("Resampler: x3 up/down round-trip preserves a 1 kHz tone's energy") {
     mockingbird::Interpolator up;
@@ -52,7 +50,6 @@ TEST_CASE("Resampler: x3 up/down round-trip preserves a 1 kHz tone's energy") {
     up.configure(3);
     down.configure(3);
 
-    // 1 kHz tone at 16 kHz, int16-range float.
     std::vector<float> in(4000);
     for (size_t i = 0; i < in.size(); ++i) {
         in[i] = static_cast<float>(8000.0 * std::sin(2.0 * 3.14159265358979 *
@@ -65,15 +62,13 @@ TEST_CASE("Resampler: x3 up/down round-trip preserves a 1 kHz tone's energy") {
     REQUIRE(up_buf.size() == in.size() * 3);
     REQUIRE(back.size()  == in.size());
 
-    // Compare steady-state energy (skip filter warm-up at both ends).
     const double e_in   = rms_f(in,   500, in.size()   - 500);
     const double e_back = rms_f(back, 500, back.size() - 500);
-    CHECK(e_back > 0.7 * e_in);          // passband not attenuated away
-    CHECK(e_back < 1.3 * e_in);          // and not amplified / blown up
+    CHECK(e_back > 0.7 * e_in);
+    CHECK(e_back < 1.3 * e_in);
 }
 
 TEST_CASE("Resampler: an out-of-band 7 kHz tone survives the 8 kHz passband") {
-    // 7 kHz is still below the 8 kHz working Nyquist, so it must pass.
     mockingbird::Interpolator up; mockingbird::Decimator down;
     up.configure(3); down.configure(3);
     std::vector<float> in(4000);
@@ -85,7 +80,7 @@ TEST_CASE("Resampler: an out-of-band 7 kHz tone survives the 8 kHz passband") {
     down.process(up_buf.data(), up_buf.size(), back);
     const double e_in   = rms_f(in,   600, in.size()   - 600);
     const double e_back = rms_f(back, 600, back.size() - 600);
-    CHECK(e_back > 0.4 * e_in);          // band-edge rolloff tolerated
+    CHECK(e_back > 0.4 * e_in);
 }
 
 #ifdef MOCKINGBIRD_HAVE_RNNOISE
@@ -102,7 +97,7 @@ TEST_CASE("RNNoise: suppresses stationary noise") {
     REQUIRE(pp->init(cfg) == MOCKINGBIRD_OK);
 
     Lcg rng;
-    constexpr uint32_t N = 320;          // 20 ms @ 16 kHz
+    constexpr uint32_t N = 320;
     double in_rms_tail = 0.0, out_rms_tail = 0.0;
     int tail = 0;
     for (int f = 0; f < 120; ++f) {
@@ -112,7 +107,7 @@ TEST_CASE("RNNoise: suppresses stationary noise") {
         const double in_rms = rms_i16(frame, N);
         pp->process(frame, N);
         const double out_rms = rms_i16(frame, N);
-        if (f >= 90) {                   // measure once RNNoise has settled
+        if (f >= 90) {
             in_rms_tail  += in_rms;
             out_rms_tail += out_rms;
             ++tail;
@@ -121,7 +116,7 @@ TEST_CASE("RNNoise: suppresses stationary noise") {
     in_rms_tail  /= tail;
     out_rms_tail /= tail;
     INFO("noise in_rms=" << in_rms_tail << " out_rms=" << out_rms_tail);
-    CHECK(out_rms_tail < 0.8 * in_rms_tail);   // measurably suppressed
+    CHECK(out_rms_tail < 0.8 * in_rms_tail);
 }
 
 namespace {
@@ -151,7 +146,7 @@ Wav read_wav(const std::string& path) {
     }
     std::fclose(f); return out;
 }
-} // namespace
+}
 
 TEST_CASE("RNNoise: preserves speech energy (hello.wav)") {
     const auto wav = read_wav(std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/hello.wav");
@@ -175,8 +170,6 @@ TEST_CASE("RNNoise: preserves speech energy (hello.wav)") {
         out_energy += rms_i16(buf, N);
     }
     INFO("speech in=" << in_energy << " out=" << out_energy);
-    // Speech is retained: the cleaned signal keeps a substantial share of the
-    // original energy (noise floor removed, voice kept).
     CHECK(out_energy > 0.3 * in_energy);
 }
 
@@ -191,7 +184,7 @@ TEST_CASE("Config: enable_rnnoise accepts 16 kHz, rejects 32 kHz") {
     CHECK(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
     if (e) mockingbird_destroy(e);
 
-    cfg.sample_rate_hz = 32000;          // 48000 % 32000 != 0
+    cfg.sample_rate_hz = 32000;
     e = nullptr;
     CHECK(mockingbird_create(&cfg, &e) == MOCKINGBIRD_ERR_INVALID_ARG);
     CHECK(e == nullptr);
@@ -244,17 +237,12 @@ TEST_CASE("Engine: runs end-to-end with RNNoise and still detects speech") {
     INFO("rnnoise+vad speech_begin=" << speech_begin
          << " captured=" << st.frames_captured
          << " dropped=" << st.frames_dropped_capture);
-    CHECK(speech_begin >= 1);                  // denoised speech still detected
-    // NOTE: no zero-drop assertion here. RNNoise's per-frame resample+denoise
-    // is heavy enough that under a sanitizer's ~15x slowdown the worker can
-    // fall behind the push rate and the SPSC ring drops frames — a harness
-    // artifact, not a correctness property. The lighter detector paths keep
-    // the zero-drop guarantee under test elsewhere.
+    CHECK(speech_begin >= 1);
 }
 
 #else
 TEST_CASE("RNNoise tests skipped: MOCKINGBIRD_HAVE_RNNOISE not defined") {
-    MESSAGE("RNNoise not compiled in — skip");
+    MESSAGE("RNNoise not compiled in, skip");
     CHECK(true);
 }
-#endif  // MOCKINGBIRD_HAVE_RNNOISE
+#endif

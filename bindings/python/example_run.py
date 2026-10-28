@@ -23,9 +23,9 @@ def load_labels() -> list[str]:
 def print_event(ev: mockingbird.Event, labels: list[str]) -> None:
     match ev:
         case mockingbird.Event(type=mockingbird.EventType.SPEECH_BEGIN):
-            print("voice   ▶ speech begin")
+            print("voice   + speech begin")
         case mockingbird.Event(type=mockingbird.EventType.SPEECH_END):
-            print("voice   ■ speech end")
+            print("voice   - speech end")
         case mockingbird.Event(type=mockingbird.EventType.ANOMALY, anomaly_reasons=why, confidence=c):
             print(f"anomaly   {why!s} conf={c:.2f}")
         case mockingbird.Event(type=mockingbird.EventType.SOUND_CLASS, sound_class=cls, category=cat):
@@ -49,13 +49,13 @@ def drain(engine: mockingbird.Engine, labels: list[str]) -> tuple[int, int, int]
 def report(engine: mockingbird.Engine, packets: int, nbytes: int, tapped: int) -> None:
     st, w = engine.stats(), engine.stats().worker
     print(
-        f"\n── summary ──\n"
+        f"\n-- summary --\n"
         f"frames captured : {st.frames_captured}\n"
         f"segments        : {st.segments_opened} opened / {st.segments_closed} closed\n"
         f"packets to host : {packets} ({nbytes} bytes encoded)\n"
         f"tapped samples  : {tapped}\n"
         f"input level     : {st.input_rms_dbfs:.1f} dBFS rms, {st.input_peak_dbfs:.1f} peak\n"
-        f"worker          : {w.busy_fraction:.2%} busy, max frame {w.max_frame_us} µs, "
+        f"worker          : {w.busy_fraction:.2%} busy, max frame {w.max_frame_us} us, "
         f"{w.wakeups} wakeups\n"
         f"work shed       : YAMNet {w.sound_class_inferences} ran / "
         f"{w.sound_class_inferences_skipped} skipped, RNNoise skipped "
@@ -87,7 +87,7 @@ def run_file(engine: mockingbird.Engine, path: str, labels: list[str]) -> None:
 
 
 def run_mic(engine: mockingbird.Engine, seconds: int, labels: list[str]) -> None:
-    print(f"listening on the default mic for {seconds}s — Ctrl-C to stop early")
+    print(f"listening on the default mic for {seconds}s, Ctrl-C to stop early")
     totals = [0, 0, 0]
     deadline = time.monotonic() + seconds
     try:
@@ -95,6 +95,6 @@ def run_mic(engine: mockingbird.Engine, seconds: int, labels: list[str]) -> None
             totals = [a + b for a, b in zip(totals, drain(engine, labels))]
             time.sleep(0.05)
     except KeyboardInterrupt:
-        print("\nstopping…")
+        print("\nstopping...")
     engine.stop()
     report(engine, *totals)

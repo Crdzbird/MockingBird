@@ -2,7 +2,6 @@
 #include "mockingbird/mockingbird.h"
 
 extern "C" {
-
 MOCKINGBIRD_API const char* mockingbird_status_str(int s) {
     switch (s) {
         case MOCKINGBIRD_OK:                  return "MOCKINGBIRD_OK";
@@ -22,4 +21,4 @@ MOCKINGBIRD_API const char* mockingbird_status_str(int s) {
 
 MOCKINGBIRD_API const char* mockingbird_version_string(void) { return "0.1.0"; }
 
-} // extern "C"
+}

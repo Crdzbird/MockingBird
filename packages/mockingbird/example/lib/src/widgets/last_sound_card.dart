@@ -3,8 +3,14 @@ import 'package:mockingbird/mockingbird.dart';
 import 'package:mockingbird_example/src/demo/detection_summary.dart';
 
 /// The latest recognised sound, colour-coded by its broad category.
-class LastSoundCard extends StatelessWidget {
-  const LastSoundCard({
+final class LastSoundCard extends StatelessWidget {
+  const factory LastSoundCard({
+    required DetectionSummary detection,
+    required bool running,
+    Key? key,
+  }) = LastSoundCard._;
+
+  const LastSoundCard._({
     required this.detection,
     required this.running,
     super.key,
@@ -44,7 +50,7 @@ class LastSoundCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    running ? detection.lastSound : '—',
+                    running ? detection.lastSound : '-',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -52,7 +58,7 @@ class LastSoundCard extends StatelessWidget {
                   ),
                   Text(
                     running
-                        ? '${detection.lastCategory.name} · $confidence%'
+                        ? '${detection.lastCategory.name}, $confidence%'
                         : 'Latest recognized sound',
                     style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),

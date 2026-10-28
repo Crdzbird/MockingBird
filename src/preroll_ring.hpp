@@ -7,7 +7,6 @@
 #include <vector>
 
 namespace mockingbird {
-
 class PrerollRing {
 public:
     struct Frame {
@@ -61,4 +60,4 @@ private:
     size_t             filled_        = 0;
 };
 
-} // namespace mockingbird
+}

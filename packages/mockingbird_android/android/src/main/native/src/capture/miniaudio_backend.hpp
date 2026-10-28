@@ -7,7 +7,6 @@
 #include <memory>
 
 namespace mockingbird {
-
 class MiniaudioBackend final : public CaptureBackend {
 public:
     MiniaudioBackend();
@@ -23,4 +22,4 @@ private:
     std::unique_ptr<Impl> impl_;
 };
 
-} // namespace mockingbird
+}

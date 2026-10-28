@@ -5,7 +5,6 @@
 #include <cstdint>
 
 namespace mockingbird {
-
 inline uint64_t monotonic_now_us() noexcept {
     using clock = std::chrono::steady_clock;
     return static_cast<uint64_t>(
@@ -13,4 +12,4 @@ inline uint64_t monotonic_now_us() noexcept {
             clock::now().time_since_epoch()).count());
 }
 
-} // namespace mockingbird
+}

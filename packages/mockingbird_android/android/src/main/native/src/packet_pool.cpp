@@ -3,7 +3,6 @@
 #include "packet_pool.hpp"
 
 namespace mockingbird {
-
 PacketPool::PacketPool(size_t pool_capacity, size_t queue_capacity, size_t max_payload_bytes)
     : max_payload_bytes_(max_payload_bytes),
       ready_cap_(queue_capacity == 0 ? 1 : queue_capacity) {
@@ -95,4 +94,4 @@ size_t PacketPool::ready_size() const {
     return ready_.size();
 }
 
-} // namespace mockingbird
+}

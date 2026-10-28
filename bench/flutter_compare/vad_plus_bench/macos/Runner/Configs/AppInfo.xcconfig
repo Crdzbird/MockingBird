@@ -11,4 +11,4 @@ PRODUCT_NAME = vad_plus_bench
 PRODUCT_BUNDLE_IDENTIFIER = dev.mockingbird.bench.vadPlusBench
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 dev.mockingbird.bench. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright (c) 2026 dev.mockingbird.bench. All rights reserved.

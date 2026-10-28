@@ -11,9 +11,7 @@ extern "C" {
 #include <cstdint>
 
 namespace mockingbird {
-
 namespace {
-
 constexpr size_t kOpusMaxPacketBytes = 4000;
 
 bool opus_supports_rate(uint32_t hz) {
@@ -65,18 +63,18 @@ private:
     uint32_t       frame_samples_ = 0;
 };
 
-} // namespace
+}
 
 std::unique_ptr<Encoder> make_opus_encoder() {
     return std::make_unique<LibOpusEncoder>();
 }
 
-} // namespace mockingbird
+}
 
 #else
 
 namespace mockingbird {
 std::unique_ptr<Encoder> make_opus_encoder() { return nullptr; }
-} // namespace mockingbird
+}
 
 #endif

@@ -12,7 +12,6 @@
 #include <vector>
 
 namespace {
-
 mockingbird_engine_t* create_host_pcm() {
     mockingbird_config_t cfg{};
     mockingbird_config_defaults(&cfg);
@@ -26,7 +25,7 @@ mockingbird_engine_t* create_host_pcm() {
     return e;
 }
 
-} // namespace
+}
 
 TEST_CASE("mockingbird_start without mockingbird_create is undefined; mockingbird_stop returns NOT_RUNNING") {
     mockingbird_engine_t* e = create_host_pcm();
@@ -51,15 +50,11 @@ TEST_CASE("Stop on an engine that was never started returns NOT_RUNNING") {
 TEST_CASE("mockingbird_destroy auto-stops a running engine") {
     mockingbird_engine_t* e = create_host_pcm();
     REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
-    // No explicit stop: destroy must join cleanly.
     mockingbird_destroy(e);
-    CHECK(true);                    // surviving here is the assertion
+    CHECK(true);
 }
 
 TEST_CASE("Concurrent mockingbird_stop is safe: exactly one succeeds, no double-join") {
-    // Regression for the lifecycle mutex: without it, two threads could both
-    // pass the joinable() check and join the same worker thread -> UB /
-    // std::terminate. Run under TSan to also prove there's no data race.
     mockingbird_engine_t* e = create_host_pcm();
     REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
 
@@ -86,13 +81,12 @@ TEST_CASE("Concurrent mockingbird_stop is safe: exactly one succeeds, no double-
 }
 
 namespace {
-std::atomic<int> g_event_count{0};
 
 void event_counter_cb(const mockingbird_event_t* /*evt*/, void* user) {
     auto* p = static_cast<std::atomic<int>*>(user);
     p->fetch_add(1, std::memory_order_relaxed);
 }
-} // namespace
+}
 
 TEST_CASE("mockingbird_set_event_callback fires the registered callback") {
     mockingbird_engine_t* e = create_host_pcm();
@@ -101,18 +95,13 @@ TEST_CASE("mockingbird_set_event_callback fires the registered callback") {
 
     REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
 
-    // Push a frame so the worker opens / closes a segment, generating
-    // BEGIN + END events.
     std::vector<int16_t> samples(320, 0);
     REQUIRE(mockingbird_push_pcm(e, samples.data(), 320, 0) == MOCKINGBIRD_OK);
 
     REQUIRE(mockingbird_stop(e) == MOCKINGBIRD_OK);
 
-    CHECK(count.load() >= 2);       // at least SEGMENT_BEGIN + SEGMENT_END
+    CHECK(count.load() >= 2);
 
-    // Unregister + verify no further calls (no easy way to verify
-    // "definitely no more calls" without races; check that we can clear it
-    // cleanly).
     CHECK(mockingbird_set_event_callback(e, nullptr, nullptr) == MOCKINGBIRD_OK);
 
     mockingbird_destroy(e);

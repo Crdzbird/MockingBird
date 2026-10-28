@@ -14,7 +14,6 @@ extern "C" {
 #include <vector>
 
 namespace mockingbird {
-
 class AnomalyDetector final : public Detector {
 public:
     static constexpr int kFftN = 512;
@@ -59,4 +58,4 @@ private:
     uint32_t max_freeze_frames_  = 0;
 };
 
-} // namespace mockingbird
+}

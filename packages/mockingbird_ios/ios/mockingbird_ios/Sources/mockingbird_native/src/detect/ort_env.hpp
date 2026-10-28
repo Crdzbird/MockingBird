@@ -11,7 +11,6 @@
 #include <unordered_map>
 
 namespace mockingbird {
-
 inline void apply_execution_provider(Ort::SessionOptions& opts) {
     const char* ep = std::getenv("MOCKINGBIRD_ORT_EP");
     if (ep == nullptr || std::strcmp(ep, "coreml") != 0) return;
@@ -32,4 +31,4 @@ inline Ort::Env& shared_ort_env() {
     return env;
 }
 
-} // namespace mockingbird
+}

@@ -5,7 +5,18 @@ import 'package:mockingbird/mockingbird.dart';
 /// A named detector recipe. The same engine does very different jobs
 /// depending on which detectors a preset switches on.
 final class DemoPreset {
-  const DemoPreset(
+  const factory DemoPreset(
+    String label,
+    IconData icon, {
+    double sensitivity,
+    bool neural,
+    bool vad,
+    bool anomaly,
+    bool soundClass,
+    bool denoise,
+  }) = DemoPreset._;
+
+  const DemoPreset._(
     this.label,
     this.icon, {
     this.sensitivity = 0.6,

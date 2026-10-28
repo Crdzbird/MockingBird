@@ -12,7 +12,6 @@
 using namespace mockingbird::web;
 
 namespace {
-
 template <typename T>
 void assign(T& field, double v) {
     field = static_cast<T>(v);
@@ -23,10 +22,9 @@ void assign_enum(E& field, double v) {
     field = static_cast<E>(static_cast<int>(v));
 }
 
-} // namespace
+}
 
 extern "C" {
-
 EMSCRIPTEN_KEEPALIVE mockingbird_config_t* mockingbird_web_config_new(void) {
     auto* cfg = static_cast<mockingbird_config_t*>(std::calloc(1, sizeof(mockingbird_config_t)));
     if (cfg != nullptr) mockingbird_config_defaults(cfg);
@@ -83,6 +81,6 @@ EMSCRIPTEN_KEEPALIVE mockingbird_engine_t* mockingbird_web_create(const mockingb
     return s == MOCKINGBIRD_OK ? engine : nullptr;
 }
 
-} // extern "C"
+}
 
 #endif

@@ -33,13 +33,11 @@ import (
 
 const (
 	sampleRate = 16000
-	frameLen   = 320   // 20 ms @ 16 kHz
-	numSamples = 32000 // 2 s, 100 frames
+	frameLen   = 320
+	numSamples = 32000
 	goSeed     = 0xA1A1A1A1A1A1A1A1
 	dartSeed   = 0xB2B2B2B2B2B2B2B2
 )
-
-// --- deterministic signal (integer-only; identical to the Dart generator) ----
 
 type xorshift uint64
 
@@ -57,8 +55,8 @@ func genSignal(seed uint64) []int16 {
 	out := make([]int16, numSamples)
 	for i := 0; i < numSamples; i++ {
 		r := rng.next()
-		v := int32((r>>40)&0x1FFF) - 4096 // noise in [-4096, 4095]
-		if i%8000 < 1600 {                // 0.1 s loud burst every 0.5 s
+		v := int32((r>>40)&0x1FFF) - 4096
+		if i%8000 < 1600 {
 			if (i>>3)&1 == 0 {
 				v += 11000
 			} else {
@@ -75,15 +73,12 @@ func genSignal(seed uint64) []int16 {
 	return out
 }
 
-// --- processing + canonical digest -------------------------------------------
-
 type result struct {
 	digest            uint64
 	nPackets, nEvents int
 	nBytes            int
 }
 
-// fnv1a64 over a growable canonical byte stream.
 type hasher struct{ h uint64 }
 
 func newHasher() *hasher { return &hasher{h: 14695981039346656037} }
@@ -148,7 +143,7 @@ func process(pcm []int16) (result, error) {
 			collect()
 		}
 	}
-	if err := e.Stop(); err != nil { // flushes the worker's tail
+	if err := e.Stop(); err != nil {
 		return result{}, err
 	}
 	collect()
@@ -200,8 +195,6 @@ func process(pcm []int16) (result, error) {
 
 	return result{digest: h.h, nPackets: len(packets), nEvents: len(events), nBytes: nBytes}, nil
 }
-
-// --- wire protocol -----------------------------------------------------------
 
 func writeFrame(w io.Writer, payload []byte) error {
 	var hdr [4]byte
@@ -257,10 +250,6 @@ func decodeResult(b []byte) (computedDigest, expectedDigest uint64, nPkts, nEven
 		binary.BigEndian.Uint32(b[16:]), binary.BigEndian.Uint32(b[20:]), binary.BigEndian.Uint32(b[24:])
 }
 
-// --- peer logic --------------------------------------------------------------
-
-// runPeer performs the symmetric exchange and returns true on full bidirectional
-// parity.
 func runPeer(conn net.Conn, name string, ownSeed, peerSeed uint64, peerName string) bool {
 	own := genSignal(ownSeed)
 	expected, err := process(own)
@@ -273,9 +262,6 @@ func runPeer(conn net.Conn, name string, ownSeed, peerSeed uint64, peerName stri
 	must(err)
 	peerPCM := bytesToPCM(peerBytes)
 
-	// Generator parity: the bytes the peer sent must equal what OUR generator
-	// produces for the peer's seed. That isolates a signal-generation divergence
-	// from a processing divergence.
 	if !bytes.Equal(peerBytes, pcmToBytes(genSignal(peerSeed))) {
 		fmt.Printf("[%s] GENERATOR MISMATCH: %s's signal differs from our local regeneration\n", name, peerName)
 		return false
@@ -293,9 +279,7 @@ func runPeer(conn net.Conn, name string, ownSeed, peerSeed uint64, peerName stri
 	must(err)
 	peerComputedForMine, peerExpectedForTheirs, _, _, _ := decodeResult(rb)
 
-	// Direction A: did the peer process MY audio identically to me?
 	dirA := peerComputedForMine == expected.digest
-	// Direction B: did I process the PEER's audio identically to the peer?
 	dirB := computed.digest == peerExpectedForTheirs
 
 	fmt.Printf("[%s] parity %s-audio to %s: %s   |   %s-audio to %s: %s\n",

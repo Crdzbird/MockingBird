@@ -11,7 +11,12 @@ import 'package:mockingbird_web/src/web_engine_handle.dart';
 final class WebLifecycle {
   /// Creates the lifecycle over the module, pushing captured PCM through
   /// the platform's push.
-  WebLifecycle(this._module, this._pushPcm);
+  factory WebLifecycle(
+    MockingbirdModule Function() module,
+    int Function(WebEngineHandle, Int16List, int) pushPcm,
+  ) = WebLifecycle._;
+
+  WebLifecycle._(this._module, this._pushPcm);
 
   final MockingbirdModule Function() _module;
   final int Function(WebEngineHandle, Int16List, int) _pushPcm;

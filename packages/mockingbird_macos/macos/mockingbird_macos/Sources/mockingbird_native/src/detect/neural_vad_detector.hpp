@@ -15,7 +15,6 @@
 #include <vector>
 
 namespace mockingbird {
-
 class NeuralVadDetector final : public Detector {
 public:
     NeuralVadDetector() = default;
@@ -46,6 +45,6 @@ private:
     bool                          cached_active_ = false;
 };
 
-} // namespace mockingbird
+}
 
 #endif

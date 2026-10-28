@@ -14,8 +14,10 @@ import 'package:mockingbird_example/src/widgets/stats_card.dart';
 import 'package:mockingbird_example/src/widgets/voice_indicator.dart';
 
 /// The demo screen. A scrolling list, so nothing overflows on small phones.
-class DemoView extends StatelessWidget {
-  const DemoView({super.key});
+final class DemoView extends StatelessWidget {
+  const factory DemoView({Key? key}) = DemoView._;
+
+  const DemoView._({super.key});
 
   @override
   Widget build(BuildContext context) {

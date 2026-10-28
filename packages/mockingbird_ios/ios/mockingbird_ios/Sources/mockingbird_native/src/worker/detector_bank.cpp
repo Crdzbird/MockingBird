@@ -8,7 +8,6 @@
 #include "worker/tunables.hpp"
 
 namespace mockingbird {
-
 template <typename Component>
 bool DetectorBank::prepare(mockingbird_engine* e, std::unique_ptr<Component>& c,
                            [[maybe_unused]] const char* tag) {
@@ -77,4 +76,4 @@ void DetectorBank::classify(mockingbird_engine* e, const int16_t* frame, uint32_
     }
 }
 
-} // namespace mockingbird
+}

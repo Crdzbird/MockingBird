@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 
 /// RNNoise on or off ahead of every detector.
-class DenoiseSwitch extends StatelessWidget {
-  const DenoiseSwitch({
+final class DenoiseSwitch extends StatelessWidget {
+  const factory DenoiseSwitch({
+    required bool value,
+    required ValueChanged<bool> onChanged,
+    Key? key,
+  }) = DenoiseSwitch._;
+
+  const DenoiseSwitch._({
     required this.value,
     required this.onChanged,
     super.key,

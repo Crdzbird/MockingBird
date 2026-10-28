@@ -16,8 +16,8 @@ jobs:
   #
   # Runs on macOS (the verified dev platform) with the dependency-light config:
   # RNNoise + Opus are vendored and compile with no external deps; ONNX Runtime
-  # is OFF, so the Silero/YAMNet cases skip gracefully. Everything else — fuzz,
-  # stress, fault-injection, backend-fault, lifecycle, encoders — runs.
+  # is OFF, so the Silero/YAMNet cases skip gracefully. Everything else runs:
+  # fuzz, stress, fault injection, backend faults, lifecycle and encoders.
   # ---------------------------------------------------------------------------
   cpp:
     name: build + test (C++)
@@ -34,7 +34,7 @@ jobs:
         run: scripts/sync_native.sh && git diff --exit-code --stat -- packages
 
   # ---------------------------------------------------------------------------
-  # Sanitizers — lock in the hardening so it cannot regress.
+  # Sanitizers: lock in the hardening so it cannot regress.
   # ---------------------------------------------------------------------------
   sanitizers:
     name: ${{ matrix.name }}
@@ -103,7 +103,7 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # Dart package: static analysis + unit tests (pure-Dart logic; no native build
-  # needed for these — they cover the category mapping + config dial).
+  # needed for these; they cover the category mapping and the config dial).
   # ---------------------------------------------------------------------------
   dart:
     name: analyze + test (Dart)

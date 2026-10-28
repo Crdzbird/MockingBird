@@ -7,7 +7,6 @@
 struct mockingbird_engine;
 
 namespace mockingbird {
-
 void ingest_pcm(mockingbird_engine*  e,
                 const int16_t* samples,
                 uint32_t       frame_count,
@@ -18,4 +17,4 @@ void backend_pcm_callback(void*          user,
                           uint32_t       frame_count,
                           uint64_t       capture_ts_us) noexcept;
 
-} // namespace mockingbird
+}

@@ -10,11 +10,11 @@ using mockingbird::DegradationPolicy;
 
 TEST_CASE("degrade: defaults and derived calm threshold") {
     DegradationPolicy p;
-    p.configure(0);                       // 0 => 70% busy
+    p.configure(0);
     CHECK(p.level() == 0);
-    CHECK(!p.update(699999, false));      // just under: hold
+    CHECK(!p.update(699999, false));
     CHECK(p.level() == 0);
-    CHECK(p.update(700001, false));       // just over: escalate
+    CHECK(p.update(700001, false));
     CHECK(p.level() == 1);
 }
 
@@ -24,7 +24,7 @@ TEST_CASE("degrade: escalates one level per hot window, capped at 3") {
     CHECK(p.update(900000, false)); CHECK(p.level() == 1);
     CHECK(p.update(900000, false)); CHECK(p.level() == 2);
     CHECK(p.update(900000, false)); CHECK(p.level() == 3);
-    CHECK(!p.update(900000, false));      // already at max: no change
+    CHECK(!p.update(900000, false));
     CHECK(p.level() == DegradationPolicy::kMaxLevel);
     CHECK(p.inhibit());
     CHECK(p.cadence_multiplier() == 4);
@@ -33,27 +33,27 @@ TEST_CASE("degrade: escalates one level per hot window, capped at 3") {
 TEST_CASE("degrade: capture drops escalate regardless of busy share") {
     DegradationPolicy p;
     p.configure(700000);
-    CHECK(p.update(1000, true));          // idle worker, but frames were lost
+    CHECK(p.update(1000, true));
     CHECK(p.level() == 1);
 }
 
 TEST_CASE("degrade: de-escalation needs three consecutive calm windows") {
     DegradationPolicy p;
-    p.configure(500000);                  // calm below 200000
+    p.configure(500000);
     p.update(900000, false);
     p.update(900000, false);
     REQUIRE(p.level() == 2);
-    CHECK(!p.update(100000, false));      // calm 1
-    CHECK(!p.update(100000, false));      // calm 2
-    CHECK(p.update(100000, false));       // calm 3 -> level 1
+    CHECK(!p.update(100000, false));
+    CHECK(!p.update(100000, false));
+    CHECK(p.update(100000, false));
     CHECK(p.level() == 1);
     CHECK(!p.update(100000, false));
-    CHECK(!p.update(300000, false));      // in the hold band: resets the calm run
+    CHECK(!p.update(300000, false));
     CHECK(!p.update(100000, false));
     CHECK(!p.update(100000, false));
-    CHECK(p.update(100000, false));       // three calm again -> level 0
+    CHECK(p.update(100000, false));
     CHECK(p.level() == 0);
-    CHECK(!p.update(100000, false));      // nothing below 0
+    CHECK(!p.update(100000, false));
 }
 
 TEST_CASE("degrade: cadence multiplier per level") {
@@ -72,5 +72,5 @@ TEST_CASE("degrade: reconfigure keeps the current level") {
     REQUIRE(p.level() == 1);
     p.configure(900000);
     CHECK(p.level() == 1);
-    CHECK(!p.update(800000, false));      // under the new threshold: hold
+    CHECK(!p.update(800000, false));
 }

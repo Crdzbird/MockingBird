@@ -6,9 +6,9 @@
 // Strategy: for each real-audio fixture, run the engine with the classifier
 // enabled, collect MOCKINGBIRD_EVT_SOUND_CLASS events, and assert that the
 // dominant class falls inside the expected AudioSet category for that
-// fixture. Each test asserts ON THE DOMINANT class — not on every
-// inference window — because YAMNet samples 3 s windows and a short clip
-// gives the test 1–2 inferences max.
+// fixture. Each test asserts ON THE DOMINANT class, not on every
+// inference window, because YAMNet samples 3 s windows and a short clip
+// gives the test one or two inferences max.
 
 #include "doctest.h"
 #include "mockingbird/mockingbird.h"
@@ -27,7 +27,6 @@
 #ifdef MOCKINGBIRD_HAVE_SOUND_CLASS
 
 namespace {
-
 struct WavInts16 {
     std::vector<int16_t> samples;
     uint32_t             sample_rate_hz = 0;
@@ -85,8 +84,6 @@ struct ClassifierTally {
 
 ClassifierTally run_classifier_over_fixture(const WavInts16& wav,
                                             float threshold) {
-    // // VERIFY  Keep the path string alive for the entire mockingbird_create
-    // call. c_str() on a temporary is undefined behavior.
     const std::string model_path =
         std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/yamnet_3s.onnx";
 
@@ -102,9 +99,7 @@ ClassifierTally run_classifier_over_fixture(const WavInts16& wav,
     cfg.sound_class_model_path    = model_path.c_str();
     cfg.sound_class_threshold     = threshold;
     cfg.sound_class_interval_ms   = 500;
-    // YAMNet runs ~50-200 ms per inference; bump the ring so the worker
-    // does not overflow while it catches up.
-    cfg.pcm_ring_frames           = 1u << 17;   // 131072 samples = 8 s
+    cfg.pcm_ring_frames           = 1u << 17;
 
     mockingbird_engine_t* e = nullptr;
     REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
@@ -148,7 +143,6 @@ ClassifierTally run_classifier_over_fixture(const WavInts16& wav,
             drain_packets();
         }
     }
-    // Allow YAMNet's final inference window to complete.
     std::this_thread::sleep_for(std::chrono::milliseconds(800));
     drain_events();
     drain_packets();
@@ -156,7 +150,6 @@ ClassifierTally run_classifier_over_fixture(const WavInts16& wav,
     drain_events();
     mockingbird_destroy(e);
 
-    // Pick the most-fired class.
     for (auto& [cls, count] : t.class_counts) {
         if (count > t.best_class_count) {
             t.best_class_count = count;
@@ -168,20 +161,14 @@ ClassifierTally run_classifier_over_fixture(const WavInts16& wav,
 }
 
 bool is_voice_class(int c) {
-    // Speech, conversation, narration, child speech, babbling, baby cry,
-    // crying, etc.
     return (c >= 0 && c <= 26);
 }
 
 bool is_animal_class(int c) {
-    // AudioSet "Animal" branch: 67..134 covers domestic + wild animals.
-    // Includes Dog (69), Bark (70), Cat (76), Meow (78), Whimper (75),
-    // Cattle, Roaring cats, etc.
     return (c >= 67 && c <= 134);
 }
 
 bool is_music_class(int c) {
-    // Music + musical instruments + genres.
     return (c >= 132 && c <= 282);
 }
 
@@ -200,7 +187,7 @@ bool sound_class_available() {
     return true;
 }
 
-} // namespace
+}
 
 TEST_CASE("Sound classifier: model loads when path is set") {
     CHECK(sound_class_available());
@@ -256,4 +243,4 @@ TEST_CASE("Sound classifier tests skipped: MOCKINGBIRD_HAVE_SOUND_CLASS not defi
     CHECK(true);
 }
 
-#endif  // MOCKINGBIRD_HAVE_SOUND_CLASS
+#endif

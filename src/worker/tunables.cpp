@@ -7,14 +7,12 @@
 #include "engine.hpp"
 
 namespace mockingbird {
-
 namespace {
-
 float threshold_or(float v, float fallback) { return (v > 0.0f && v < 1.0f) ? v : fallback; }
 
 float gate_or(float v) { return v == 0.0f ? -60.0f : v; }
 
-} // namespace
+}
 
 void Tunables::load(const mockingbird_engine* e) {
     frame_ms_        = e->cfg.frame_ms;
@@ -51,4 +49,4 @@ void Tunables::apply(const mockingbird_config_t& c) {
     degrade.configure(c.degrade_busy_ppm);
 }
 
-} // namespace mockingbird
+}

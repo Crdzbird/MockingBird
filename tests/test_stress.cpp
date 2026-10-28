@@ -1,12 +1,12 @@
 // tests/test_stress.cpp
 //
 // Lifecycle + concurrency hardening. Two flavours:
-//   1. Repeated lifecycle churn — proves create/start/stop/destroy reclaim
+//   1. Repeated lifecycle churn: proves create/start/stop/destroy reclaim
 //      everything (especially the worker thread). If stop() ever failed to
 //      join, the next start()'s std::thread reassignment would std::terminate,
 //      so a clean loop is a strong thread-leak check. Run under ASan/UBSan to
 //      also catch use-after-free / heap corruption across the churn.
-//   2. Concurrent producer + host-consumer under load — exercises the three
+//   2. Concurrent producer + host-consumer under load: exercises the three
 //      coupling points (SPSC PCM ring, bounded packet pool, event queue) from
 //      separate threads, matching the documented model: ONE producer pushes,
 //      ONE host thread drains/releases/polls, the worker runs internally. Run
@@ -22,7 +22,6 @@
 #include <vector>
 
 namespace {
-
 mockingbird_config_t host_pcm_cfg(int vad, int anomaly) {
     mockingbird_config_t cfg{};
     mockingbird_config_defaults(&cfg);
@@ -32,13 +31,13 @@ mockingbird_config_t host_pcm_cfg(int vad, int anomaly) {
     cfg.frame_ms            = 20;
     cfg.enable_vad          = vad;
     cfg.enable_anomaly      = anomaly;
-    cfg.enable_sound_class  = 0;        // keep the churn cheap (no ONNX)
+    cfg.enable_sound_class  = 0;
     cfg.pcm_ring_frames     = 1u << 14;
     cfg.packet_queue_capacity = 256;
     return cfg;
 }
 
-} // namespace
+}
 
 TEST_CASE("Stress: 150 full create/start/push/drain/stop/destroy cycles stay clean") {
     std::vector<int16_t> frame(320, 1200);
@@ -56,7 +55,7 @@ TEST_CASE("Stress: 150 full create/start/push/drain/stop/destroy cycles stay cle
         REQUIRE(mockingbird_stop(e) == MOCKINGBIRD_OK);
         mockingbird_destroy(e);
     }
-    CHECK(true);   // 150 worker spawns/joins without aborting or exhausting
+    CHECK(true);
 }
 
 TEST_CASE("Stress: repeated start/stop on ONE engine joins the worker every time") {
@@ -66,9 +65,6 @@ TEST_CASE("Stress: repeated start/stop on ONE engine joins the worker every time
 
     std::vector<int16_t> frame(320, 800);
     for (int i = 0; i < 200; ++i) {
-        // If the previous stop() did not join the worker, this start() reassigns
-        // a still-joinable std::thread and std::terminate fires — so reaching
-        // iteration 200 proves every stop() joined.
         REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
         mockingbird_push_pcm(e, frame.data(), 320, 0);
         REQUIRE(mockingbird_stop(e) == MOCKINGBIRD_OK);
@@ -87,13 +83,12 @@ TEST_CASE("Stress: concurrent producer + host-consumer under load is race-free")
     std::atomic<uint64_t> pushed{0};
     std::atomic<uint64_t> drained{0};
 
-    // Single producer — the SPSC ring's producer side.
     std::thread producer([&] {
         std::vector<int16_t> frame(320);
         uint64_t ts = 0;
         while (!stop.load(std::memory_order_relaxed)) {
             const int16_t v = static_cast<int16_t>(ts & 0x3FFF);
-            for (auto& s : frame) s = v;           // varying, non-silent signal
+            for (auto& s : frame) s = v;
             if (mockingbird_push_pcm(e, frame.data(), 320, ts) == MOCKINGBIRD_OK) {
                 pushed.fetch_add(1, std::memory_order_relaxed);
             }
@@ -101,8 +96,6 @@ TEST_CASE("Stress: concurrent producer + host-consumer under load is race-free")
         }
     });
 
-    // Single host consumer — drains packets + polls events (the one host thread
-    // the ABI permits for these calls).
     std::thread consumer([&] {
         while (!stop.load(std::memory_order_relaxed)) {
             mockingbird_packet_t pkt{};
@@ -120,7 +113,6 @@ TEST_CASE("Stress: concurrent producer + host-consumer under load is race-free")
     producer.join();
     consumer.join();
 
-    // Final drain of whatever the worker committed after the consumer stopped.
     mockingbird_packet_t pkt{};
     while (mockingbird_drain(e, &pkt) == MOCKINGBIRD_OK) {
         mockingbird_release(e, &pkt);
@@ -138,7 +130,6 @@ TEST_CASE("Stress: concurrent producer + host-consumer under load is race-free")
          << " dropped_cap=" << st.frames_dropped_capture);
     CHECK(pushed.load() > 0);
     CHECK(st.frames_captured > 0);
-    // Packets drained can't exceed what the engine emitted.
     CHECK(drained.load() <= st.packets_emitted);
 }
 
@@ -170,15 +161,13 @@ TEST_CASE("Soak: sustained pipeline keeps making forward progress, no stall") {
         }
     });
 
-    // Sample stats across the run; each window must show NEW frames captured
-    // (the pipeline never stalls) and counters never go backwards.
     uint64_t last_captured = 0, last_emitted = 0;
     int progressing_windows = 0;
     for (int w = 0; w < 6; ++w) {
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
         mockingbird_stats_t st{};
         REQUIRE(mockingbird_get_stats(e, &st) == MOCKINGBIRD_OK);
-        CHECK(st.frames_captured >= last_captured);   // monotonic
+        CHECK(st.frames_captured >= last_captured);
         CHECK(st.packets_emitted >= last_emitted);
         if (st.frames_captured > last_captured) ++progressing_windows;
         last_captured = st.frames_captured;
@@ -194,6 +183,6 @@ TEST_CASE("Soak: sustained pipeline keeps making forward progress, no stall") {
     mockingbird_destroy(e);
 
     INFO("progressing_windows=" << progressing_windows << "/6 captured=" << last_captured);
-    CHECK(progressing_windows >= 5);                  // forward progress throughout
-    CHECK(last_captured > 10000);                     // ~seconds of audio moved
+    CHECK(progressing_windows >= 5);
+    CHECK(last_captured > 10000);
 }

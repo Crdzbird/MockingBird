@@ -9,7 +9,9 @@ import 'package:mockingbird_web/src/web_config_field.dart';
 /// drives the microphone itself when the caller asked for a capture backend.
 final class WebConfigWriter {
   /// Wraps the loaded module.
-  const WebConfigWriter(this._m);
+  const factory WebConfigWriter(MockingbirdModule m) = WebConfigWriter._;
+
+  const WebConfigWriter._(this._m);
 
   static const _hostPcm = 4;
 

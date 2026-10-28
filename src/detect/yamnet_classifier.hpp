@@ -15,7 +15,6 @@
 #include <vector>
 
 namespace mockingbird {
-
 class YamnetClassifier final : public SoundClassifier {
 public:
     static constexpr size_t kSampleCount = 48000;
@@ -52,6 +51,6 @@ private:
     uint32_t                      quiet_run_frames_       = 0;
 };
 
-} // namespace mockingbird
+}
 
 #endif

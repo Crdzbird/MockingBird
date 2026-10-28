@@ -5,8 +5,8 @@
 // flag, anomaly trigger on stepped energy); this one feeds genuine human
 // speech and asserts that the VAD actually fires.
 //
-// Fixture: tests/fixtures/hello.wav — 16 kHz mono PCM_S16LE, generated on
-// macOS with `say` + `afconvert`. Single utterance with leading + trailing
+// Fixture: tests/fixtures/hello.wav (16 kHz mono PCM_S16LE, generated on
+// macOS with `say` + `afconvert`). Single utterance with leading + trailing
 // silence so we expect: silent prefix, one or more SPEECH_BEGIN/END pairs
 // over the speech, silent tail.
 
@@ -22,16 +22,12 @@
 #include <vector>
 
 namespace {
-
 struct WavInts16 {
     std::vector<int16_t> samples;
     uint32_t             sample_rate_hz = 0;
     uint16_t             channels       = 0;
 };
 
-// Minimal WAV reader. Skips unknown chunks (FLLR / LIST / fact / ...) and
-// returns the int16 PCM body. Throws nothing; returns empty samples on
-// any inconsistency.
 WavInts16 read_wav_int16(const std::string& path) {
     WavInts16 out;
     std::FILE* f = std::fopen(path.c_str(), "rb");
@@ -76,7 +72,6 @@ WavInts16 read_wav_int16(const std::string& path) {
             }
             break;
         } else {
-            // Skip unknown chunks — pad byte to even alignment.
             if (chunk_size & 1u) ++chunk_size;
             if (std::fseek(f, static_cast<long>(chunk_size), SEEK_CUR) != 0) break;
         }
@@ -85,7 +80,7 @@ WavInts16 read_wav_int16(const std::string& path) {
     return out;
 }
 
-} // namespace
+}
 
 TEST_CASE("Differential: real speech triggers at least one SPEECH_BEGIN") {
     const std::string fixture =
@@ -103,16 +98,14 @@ TEST_CASE("Differential: real speech triggers at least one SPEECH_BEGIN") {
     cfg.frame_ms           = 20;
     cfg.enable_vad         = 1;
     cfg.enable_anomaly     = 0;
-    cfg.vad_aggressiveness = 1;        // less aggressive = more accepting
+    cfg.vad_aggressiveness = 1;
     mockingbird_engine_t* e = nullptr;
     REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
     REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
 
-    constexpr uint32_t kFrameSamples = 320;     // 20 ms @ 16 kHz
+    constexpr uint32_t kFrameSamples = 320;
     const size_t total_frames = wav.samples.size() / kFrameSamples;
 
-    // Push 20 ms frames in batches paced to the SPSC ring size, draining
-    // events as we go so the pull queue does not fill.
     uint32_t speech_begin_count = 0;
     uint32_t speech_end_count   = 0;
     uint32_t segment_begin_cnt  = 0;
@@ -169,12 +162,10 @@ TEST_CASE("Differential: real speech triggers at least one SPEECH_BEGIN") {
                            << " packets=" << packets_drained
                            << " captured=" << stats.frames_captured);
 
-    // Real-voice assertions: VAD MUST fire on a 5+ second speech utterance.
     CHECK(speech_begin_count       >= 1);
     CHECK(speech_end_count         >= 1);
     CHECK(speech_begin_count       == speech_end_count);
     CHECK(segment_begin_cnt        == segment_end_cnt);
     CHECK(packets_drained          > 0);
-    // The library captured what we pushed (no ring overflow due to pacing).
     CHECK(stats.frames_dropped_capture == 0);
 }

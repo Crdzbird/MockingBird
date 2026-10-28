@@ -9,7 +9,9 @@ import 'package:mockingbird_example/src/demo/mic_permission.dart';
 
 /// Drives one engine session from the screen's controls.
 final class DemoCubit extends Cubit<DemoState> {
-  DemoCubit() : super(const DemoState());
+  factory DemoCubit() = DemoCubit._;
+
+  DemoCubit._() : super(const DemoState());
 
   EngineSession? _session;
   EventFormatter _formatter = const EventFormatter([]);

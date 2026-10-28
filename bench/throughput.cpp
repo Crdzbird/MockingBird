@@ -27,27 +27,23 @@
 #include <sys/resource.h>
 
 namespace {
-
 constexpr uint32_t kRate  = 16000;
-constexpr uint32_t kFrame = 320;   // 20 ms
+constexpr uint32_t kFrame = 320;
 
-// Integer-only xorshift so every run (and every platform) sees identical audio.
 struct Rng {
     uint64_t s = 0x9E3779B97F4A7C15ull;
     uint32_t next() { s ^= s << 13; s ^= s >> 7; s ^= s << 17; return static_cast<uint32_t>(s >> 32); }
 };
 
-// Realistic-enough content: pink-ish noise floor with 300 ms "voice-like"
-// bursts every 1.5 s so VAD / anomaly / YAMNet all have transitions to chase.
 std::vector<int16_t> make_audio(uint32_t seconds) {
     std::vector<int16_t> out(static_cast<size_t>(seconds) * kRate);
     Rng rng; float lp = 0.f;
     for (size_t i = 0; i < out.size(); ++i) {
         const float white = (static_cast<float>(rng.next() & 0xFFFF) / 32768.f) - 1.f;
-        lp = 0.97f * lp + 0.03f * white;                      // pink-ish floor
+        lp = 0.97f * lp + 0.03f * white;
         float v = lp * 1200.f;
         const size_t t = i % (kRate * 3 / 2);
-        if (t < kRate * 3 / 10) {                              // 300 ms burst
+        if (t < kRate * 3 / 10) {
             const float ph = static_cast<float>(i) * (2.f * 3.14159265f * 220.f / kRate);
             v += 9000.f * std::sin(ph) * (0.6f + 0.4f * std::sin(ph * 0.013f));
         }
@@ -74,7 +70,6 @@ mockingbird_config_t base() {
 }
 
 void run(const Case& k, const std::vector<int16_t>& audio) {
-    // MOCKINGBIRD_BENCH_ONLY=<substring> runs just the matching cases.
     if (const char* only = std::getenv("MOCKINGBIRD_BENCH_ONLY"); only && !std::strstr(k.name, only)) return;
     mockingbird_engine_t* e = nullptr;
     mockingbird_status_t st = mockingbird_create(&k.cfg, &e);
@@ -85,9 +80,6 @@ void run(const Case& k, const std::vector<int16_t>& audio) {
     const double cpu0 = cpu_seconds();
     const size_t frames = audio.size() / kFrame;
     mockingbird_packet_t pkt{}; mockingbird_event_t evt{};
-    // A full ring DROPS (push returns OK and bumps frames_dropped_capture), so
-    // pace on the ring fill instead: keep it at least one frame short of full.
-    // That keeps the worker saturated without ever losing audio.
     const uint32_t ring_cap = k.cfg.pcm_ring_frames;
     for (size_t f = 0; f < frames; ++f) {
         for (;;) {
@@ -123,7 +115,7 @@ void run(const Case& k, const std::vector<int16_t>& audio) {
                 static_cast<unsigned long long>(s.packets_emitted));
 }
 
-} // namespace
+}
 
 int main(int argc, char** argv) {
     setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -131,11 +123,9 @@ int main(int argc, char** argv) {
     const std::string fx = MOCKINGBIRD_BENCH_FIXTURE_DIR;
     const std::string silero = fx + "/silero_vad.onnx", yamnet = fx + "/yamnet_3s.onnx";
     const auto audio = make_audio(seconds);
-    // Same length, but a -75 dBFS room floor: everything sits under the silence
-    // gate, so RNNoise and YAMNet should shed almost all of their work.
     std::vector<int16_t> quiet(audio.size());
     { Rng rng; for (auto& v : quiet) v = static_cast<int16_t>(static_cast<int>(rng.next() % 13) - 6); }
-    std::printf("Mockingbird %s — %u s of synthetic 16 kHz audio per config\n\n", mockingbird_version_string(), seconds);
+    std::printf("Mockingbird %s, %u s of synthetic 16 kHz audio per config\n\n", mockingbird_version_string(), seconds);
 
     std::vector<Case> cases;
     { auto c = base(); cases.push_back({"passthrough (PCM)", c}); }

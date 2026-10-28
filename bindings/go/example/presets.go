@@ -61,7 +61,7 @@ func describe(c mockingbird.Config, preset string) string {
 	}
 	tag := ""
 	if preset != "" {
-		tag = "preset=" + preset + " · "
+		tag = "preset=" + preset + ", "
 	}
-	return fmt.Sprintf("%s%v · %d Hz · %v · [%s]", tag, c.Backend, c.SampleRateHz, c.Encoder.Codec, strings.Join(on, " "))
+	return fmt.Sprintf("%s%v, %d Hz, %v, [%s]", tag, c.Backend, c.SampleRateHz, c.Encoder.Codec, strings.Join(on, " "))
 }

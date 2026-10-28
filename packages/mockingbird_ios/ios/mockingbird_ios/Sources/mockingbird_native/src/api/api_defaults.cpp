@@ -4,7 +4,6 @@
 #include "config_validation.hpp"
 
 extern "C" {
-
 MOCKINGBIRD_API mockingbird_status_t mockingbird_config_defaults(mockingbird_config_t* out_cfg) {
     if (out_cfg == nullptr) return MOCKINGBIRD_ERR_INVALID_ARG;
     *out_cfg = mockingbird_config_t{};
@@ -47,4 +46,4 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_config_defaults(mockingbird_con
     return MOCKINGBIRD_OK;
 }
 
-} // extern "C"
+}

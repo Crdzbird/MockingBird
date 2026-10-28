@@ -36,7 +36,6 @@ TEST_CASE("PrerollRing fills, then overwrites the oldest") {
     push(3, 300); CHECK(r.size() == 3);
     CHECK(r.oldest_ts_us() == 100);
 
-    // Overflow: oldest (1) is overwritten.
     push(4, 400);
     CHECK(r.size() == 3);
     CHECK(r.oldest_ts_us() == 200);
@@ -62,7 +61,6 @@ TEST_CASE("PrerollRing iteration order survives multiple wraps") {
         std::array<int16_t, 1> v{i};
         r.push(v.data(), static_cast<uint64_t>(i) * 10);
     }
-    // Latest three values are 7, 8, 9.
     std::vector<int16_t> seen;
     r.for_each_oldest_first([&](const PrerollRing::Frame& f) {
         seen.push_back(f.samples[0]);

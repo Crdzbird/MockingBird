@@ -20,26 +20,21 @@
 #include <vector>
 
 namespace {
-
 void die(const char* what, mockingbird_status_t s) {
     std::fprintf(stderr, "%s failed: %s\n", what, mockingbird_status_str(s));
     std::exit(1);
 }
 
-} // namespace
+}
 
 int main() {
     mockingbird_config_t cfg{};
     if (auto s = mockingbird_config_defaults(&cfg); s != MOCKINGBIRD_OK) die("defaults", s);
 
     cfg.backend            = MOCKINGBIRD_BACKEND_HOST_PCM;
-    cfg.codec              = MOCKINGBIRD_CODEC_PCM_S16LE;   // passthrough
+    cfg.codec              = MOCKINGBIRD_CODEC_PCM_S16LE;
     cfg.sample_rate_hz     = 16000;
-    cfg.frame_ms           = 20;                      // 320 samples per frame
-    // Smoke pushes a synthetic sawtooth that VAD would classify as silence.
-    // Run in passthrough mode (no detection) so the queue-and-drain plumbing
-    // is verified in isolation. Live VAD behavior is exercised by the
-    // Flutter demo on iOS / Android.
+    cfg.frame_ms           = 20;
     cfg.enable_vad         = 0;
     cfg.enable_anomaly     = 0;
     cfg.vad_tier           = MOCKINGBIRD_VAD_FAST;
@@ -52,11 +47,11 @@ int main() {
     const uint32_t frame_samples = (cfg.sample_rate_hz / 1000u) * cfg.frame_ms;
     std::vector<int16_t> samples(frame_samples);
     for (uint32_t i = 0; i < frame_samples; ++i) {
-        samples[i] = static_cast<int16_t>(i);   // recognizable pattern
+        samples[i] = static_cast<int16_t>(i);
     }
 
     constexpr uint32_t kFramesToPush = 10;
-    const uint64_t ts_base = 1'000'000;          // arbitrary monotonic origin
+    const uint64_t ts_base = 1'000'000;
     for (uint32_t f = 0; f < kFramesToPush; ++f) {
         const uint64_t ts = ts_base + uint64_t{f} * (uint64_t{cfg.frame_ms} * 1000ull);
         if (auto s = mockingbird_push_pcm(engine, samples.data(), frame_samples, ts); s != MOCKINGBIRD_OK) {
@@ -64,12 +59,8 @@ int main() {
         }
     }
 
-    // Give the worker time to drain the ring into the packet queue.
-    // The worker wakes on the wake_count notify, but the smoke is single-
-    // threaded on the host side so a small sleep beats a busy-poll here.
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-    // Drain packets, verify bytes.
     uint32_t drained        = 0;
     uint32_t pattern_errors = 0;
     bool     saw_keyframe   = false;
@@ -97,7 +88,6 @@ int main() {
         if (auto s = mockingbird_release(engine, &pkt); s != MOCKINGBIRD_OK) die("release", s);
     }
 
-    // Pull events.
     uint32_t segment_begins = 0;
     uint32_t segment_ends   = 0;
     while (true) {
@@ -114,7 +104,6 @@ int main() {
 
     if (auto s = mockingbird_stop(engine); s != MOCKINGBIRD_OK) die("stop", s);
 
-    // After stop, the worker has emitted SEGMENT_END. Drain events again.
     while (true) {
         mockingbird_event_t evt{};
         const mockingbird_status_t es = mockingbird_poll_event(engine, &evt);

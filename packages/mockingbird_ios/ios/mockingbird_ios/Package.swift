@@ -13,17 +13,11 @@
 // the path that also wires up ONNX Runtime (see "Neural features" below).
 //
 // FEATURE PARITY: this package pulls in Microsoft's ONNX Runtime Swift package,
-// so the SPM build has the same capabilities as the CocoaPods one — including
-// Silero neural VAD and YAMNet sound classification. That dependency sets the
+// so the SPM build has the same capabilities as the CocoaPods one,
+// including Silero neural VAD and YAMNet sound classification. That dependency sets the
 // platform floor (iOS 15 / macOS 14), above what the podspecs require.
 import PackageDescription
 
-// Opus ships SIMD variants, a fixed-point tree, tests, and demo programs with
-// their own main(). We build the portable float path only — the same trimming
-// the podspec's prepare_command does with rm -rf.
-// Build-system files that live alongside the sources. SwiftPM treats every file
-// under a source directory as input, so anything it cannot compile must be
-// named explicitly.
 let nonSourceExcludes: [String] = [
     "third_party/libfvad/src/CMakeLists.txt",
     "third_party/libfvad/src/Makefile.am",
@@ -32,10 +26,6 @@ let nonSourceExcludes: [String] = [
     "third_party/opus/src/meson.build",
 ]
 
-// arm/ holds NEON intrinsics (which we DO build on arm64 — see opusArmSources),
-// alongside ARM32 assembly, an Ne10 backend, and the run-time CPU-detection
-// shims. Exclude everything except the six NEON files opus' own build selects
-// for this architecture.
 let opusArmExcludes: [String] = [
     "third_party/opus/celt/arm",
     "third_party/opus/silk/arm",
@@ -46,7 +36,7 @@ let opusExcludes: [String] = [
     "third_party/opus/celt/mips",
     "third_party/opus/celt/tests",
     "third_party/opus/celt/opus_custom_demo.c",
-    "third_party/opus/celt/mini_kfft.c",         // 1.6: test-only FFT, not in the library
+    "third_party/opus/celt/mini_kfft.c",
     "third_party/opus/silk/x86",
     "third_party/opus/silk/mips",
     "third_party/opus/silk/fixed",
@@ -55,7 +45,7 @@ let opusExcludes: [String] = [
     "third_party/opus/src/opus_demo.c",
     "third_party/opus/src/opus_compare.c",
     "third_party/opus/src/repacketizer_demo.c",
-    "third_party/opus/src/qext_compare.c",       // 1.6: demo program with main()
+    "third_party/opus/src/qext_compare.c",
     "third_party/opus/src/opus_multistream.c",
     "third_party/opus/src/opus_multistream_decoder.c",
     "third_party/opus/src/opus_multistream_encoder.c",
@@ -66,27 +56,16 @@ let opusExcludes: [String] = [
 let package = Package(
     name: "mockingbird_ios",
     platforms: [
-        // iOS 14 for std::jthread / std::atomic::wait, which libc++ marks as
-        // introduced there (see the podspec's note).
-        .iOS("15.0"),   // raised by the ONNX Runtime Swift package
+        .iOS("15.0"),
     ],
     products: [
         .library(name: "mockingbird-ios", targets: ["mockingbird_ios"]),
     ],
     dependencies: [
-        // Microsoft's official ONNX Runtime Swift package. Its `onnxruntime`
-        // binary target wraps pod-archive-onnxruntime-c — the SAME artifact the
-        // podspec's `onnxruntime-c` pod uses — so the C/C++ API is available.
         .package(url: "https://github.com/microsoft/onnxruntime-swift-package-manager",
                  exact: "1.24.2"),
     ],
-    // No Flutter dependency is declared here: flutter_tools generates a wrapper
-    // package (FlutterGeneratedPluginSwiftPackage) that vends the Flutter
-    // framework and depends on this one, exactly as shipping plugins do.
     targets: [
-        // The native engine: Mockingbird' C/C++ plus its vendored, permissively
-        // licensed dependencies. Compiled into the app so the Dart side can
-        // reach the C ABI through DynamicLibrary.process().
         .target(
             name: "mockingbird_native",
             dependencies: [
@@ -94,9 +73,6 @@ let package = Package(
             ],
             path: "Sources/mockingbird_native",
             exclude: [
-                // Compiled via the Objective-C shim below (miniaudio's Apple
-                // backend imports AVFoundation, so its single implementation
-                // translation unit must be ObjC).
                 "src/capture/miniaudio_impl.c",
             ] + opusExcludes + opusArmExcludes + nonSourceExcludes,
             sources: [
@@ -117,13 +93,6 @@ let package = Package(
                 .headerSearchPath("third_party/libfvad/src"),
                 .headerSearchPath("third_party/pffft"),
                 .headerSearchPath("third_party/rnnoise/include"),
-                // NOTE: third_party/rnnoise/src is deliberately NOT on the
-                // include path. RNNoise vendors its own fork of celt (arch.h,
-                // pitch.h, kiss_fft.h, celt_lpc.h, _kiss_fft_guts.h) which
-                // SHADOWS opus' headers of the same name and silently breaks
-                // opus (mismatched celt_inner_prod signatures, missing
-                // celt_sig_assert/opus_fft). RNNoise's own .c files include
-                // those headers relative to themselves, so it is not needed.
                 .headerSearchPath("third_party/opus/include"),
                 .headerSearchPath("third_party/opus/celt"),
                 .headerSearchPath("third_party/opus/silk"),
@@ -161,8 +130,6 @@ let package = Package(
                 .linkedFramework("AVFoundation"),
             ]
         ),
-        // The Flutter plugin class. Its only job is registration plus the
-        // symbol anchor that keeps the C ABI reachable from dart:ffi.
         .target(
             name: "mockingbird_ios",
             dependencies: ["mockingbird_native"],

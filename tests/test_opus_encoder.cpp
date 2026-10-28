@@ -15,9 +15,6 @@
 #ifdef MOCKINGBIRD_HAVE_OPUS
 
 namespace {
-
-// Synthesize a 440 Hz sine wave at 16 kHz — gives libopus something real to
-// encode (silence often hits the DTX path and produces 0-byte packets).
 std::vector<int16_t> tone(uint32_t samples) {
     std::vector<int16_t> v(samples);
     for (uint32_t i = 0; i < samples; ++i) {
@@ -28,7 +25,7 @@ std::vector<int16_t> tone(uint32_t samples) {
     return v;
 }
 
-} // namespace
+}
 
 TEST_CASE("Opus passthrough: packets carry CODEC_OPUS and are smaller than PCM") {
     mockingbird_config_t cfg{};
@@ -37,7 +34,7 @@ TEST_CASE("Opus passthrough: packets carry CODEC_OPUS and are smaller than PCM")
     cfg.codec            = MOCKINGBIRD_CODEC_OPUS;
     cfg.sample_rate_hz   = 16000;
     cfg.frame_ms         = 20;
-    cfg.opus_bitrate_bps = 24000;       // ~60 bytes/packet at 50 Hz
+    cfg.opus_bitrate_bps = 24000;
     cfg.enable_vad       = 0;
     cfg.enable_anomaly   = 0;
 
@@ -45,7 +42,7 @@ TEST_CASE("Opus passthrough: packets carry CODEC_OPUS and are smaller than PCM")
     REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
     REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
 
-    constexpr uint32_t kFrames = 25;     // 0.5 s of audio
+    constexpr uint32_t kFrames = 25;
     const auto pcm = tone(320);
     for (uint32_t i = 0; i < kFrames; ++i) {
         REQUIRE(mockingbird_push_pcm(e, pcm.data(), 320, uint64_t{i} * 20'000ull) == MOCKINGBIRD_OK);
@@ -62,7 +59,7 @@ TEST_CASE("Opus passthrough: packets carry CODEC_OPUS and are smaller than PCM")
         REQUIRE(s == MOCKINGBIRD_OK);
         CHECK(pkt.codec == MOCKINGBIRD_CODEC_OPUS);
         CHECK(pkt.size > 0);
-        CHECK(pkt.size <= 1275);          // Opus RFC 6716 nominal max
+        CHECK(pkt.size <= 1275);
         total_opus_bytes += pkt.size;
         ++drained;
         REQUIRE(mockingbird_release(e, &pkt) == MOCKINGBIRD_OK);
@@ -72,10 +69,7 @@ TEST_CASE("Opus passthrough: packets carry CODEC_OPUS and are smaller than PCM")
     mockingbird_destroy(e);
 
     CHECK(drained > 0);
-    // 25 frames of PCM = 25 * 640 = 16000 bytes. Opus at 24 kbps for 0.5 s
-    // is ~1500 bytes. Anything close to PCM size means encoding silently
-    // bypassed.
-    CHECK(total_opus_bytes < 8000);      // half of PCM is a safe ceiling
+    CHECK(total_opus_bytes < 8000);
 }
 
 TEST_CASE("Opus rejects 32 kHz: not a libopus sample rate") {
@@ -83,7 +77,7 @@ TEST_CASE("Opus rejects 32 kHz: not a libopus sample rate") {
     mockingbird_config_defaults(&cfg);
     cfg.backend        = MOCKINGBIRD_BACKEND_HOST_PCM;
     cfg.codec          = MOCKINGBIRD_CODEC_OPUS;
-    cfg.sample_rate_hz = 32000;          // valid for libfvad, NOT for Opus
+    cfg.sample_rate_hz = 32000;
     mockingbird_engine_t* e = nullptr;
     CHECK(mockingbird_create(&cfg, &e) == MOCKINGBIRD_ERR_UNSUPPORTED);
     CHECK(e == nullptr);
@@ -92,8 +86,8 @@ TEST_CASE("Opus rejects 32 kHz: not a libopus sample rate") {
 #else
 
 TEST_CASE("Opus tests skipped: MOCKINGBIRD_HAVE_OPUS not defined in this build") {
-    MESSAGE("libopus not linked — skip");
+    MESSAGE("libopus not linked, skip");
     CHECK(true);
 }
 
-#endif  // MOCKINGBIRD_HAVE_OPUS
+#endif

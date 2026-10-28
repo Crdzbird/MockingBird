@@ -48,7 +48,7 @@ post_install do |installer|
       # permission_handler_apple gates each permission handler behind a
       # PERMISSION_* macro. With NONE defined, the microphone handler is
       # compiled out and Permission.microphone returns `denied` unconditionally
-      # — even after the user grants the mic in Settings. Enable the microphone
+      # even after the user grants the mic in Settings. Enable the microphone
       # handler (the only permission this demo uses) so it reports real status.
       defs = config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] || ['$(inherited)']
       defs = [defs] unless defs.is_a?(Array)

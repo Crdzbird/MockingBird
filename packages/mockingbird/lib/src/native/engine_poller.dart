@@ -7,7 +7,15 @@ import 'package:mockingbird_platform_interface/mockingbird_platform_interface.da
 /// Drains the engine's queues through the platform and decodes each record.
 final class EnginePoller {
   /// Creates a poller for one engine handle on the registered platform.
-  const EnginePoller(
+  const factory EnginePoller(
+    MockingbirdPlatform platform,
+    MockingbirdEngineHandle handle, {
+    required void Function(MockingbirdEvent) onEvent,
+    required void Function(MockingbirdPacket) onPacket,
+    required void Function(MockingbirdStats) onStats,
+  }) = EnginePoller._;
+
+  const EnginePoller._(
     this._platform,
     this._handle, {
     required this.onEvent,

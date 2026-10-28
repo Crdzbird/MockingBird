@@ -4,7 +4,22 @@ import 'package:mockingbird_platform_interface/mockingbird_platform_interface.da
 /// Engine counters at one moment; never carries audio.
 final class MockingbirdStats {
   /// Creates a snapshot.
-  const MockingbirdStats({
+  const factory MockingbirdStats({
+    required int framesCaptured,
+    required int framesDroppedCapture,
+    required int packetsEmitted,
+    required int packetsDropped,
+    required int segmentsOpened,
+    required int segmentsClosed,
+    required int pcmRingFillFrames,
+    required int packetQueueFill,
+    required double inputRmsDbfs,
+    required double inputPeakDbfs,
+    required int tapSamplesDropped,
+    required MockingbirdWorkerHealth worker,
+  }) = MockingbirdStats._;
+
+  const MockingbirdStats._({
     required this.framesCaptured,
     required this.framesDroppedCapture,
     required this.packetsEmitted,

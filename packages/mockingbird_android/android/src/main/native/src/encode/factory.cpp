@@ -2,7 +2,6 @@
 #include "encode/encoder.hpp"
 
 namespace mockingbird {
-
 std::unique_ptr<Encoder> make_encoder(mockingbird_codec_t codec) {
     switch (codec) {
         case MOCKINGBIRD_CODEC_PCM_S16LE: return make_passthrough_encoder();
@@ -12,4 +11,4 @@ std::unique_ptr<Encoder> make_encoder(mockingbird_codec_t codec) {
     return nullptr;
 }
 
-} // namespace mockingbird
+}

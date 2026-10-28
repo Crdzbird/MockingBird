@@ -1,6 +1,6 @@
 // tests/test_signal_tap.cpp
 //
-// Input level metrics (RMS / peak dBFS in stats) and the continuous PCM tap —
+// Input level metrics (RMS / peak dBFS in stats) and the continuous PCM tap:
 // the ungated stream a host needs to draw a waveform or archive everything
 // while still receiving segment-gated packets.
 
@@ -14,7 +14,6 @@
 #include <vector>
 
 namespace {
-
 struct Engine {
     mockingbird_engine_t* e = nullptr;
     ~Engine() {
@@ -27,14 +26,13 @@ mockingbird_config_t tap_config(int enable_tap, uint32_t tap_frames = 0) {
     mockingbird_config_defaults(&cfg);
     cfg.backend        = MOCKINGBIRD_BACKEND_HOST_PCM;
     cfg.codec          = MOCKINGBIRD_CODEC_PCM_S16LE;
-    cfg.enable_vad     = 0;      // passthrough so packets flow too
+    cfg.enable_vad     = 0;
     cfg.enable_anomaly = 0;
     cfg.enable_pcm_tap = enable_tap;
     cfg.pcm_tap_frames = tap_frames;
     return cfg;
 }
 
-// Square wave at a known amplitude: RMS == peak == amp, so dBFS is exact.
 std::vector<int16_t> square(size_t n, int16_t amp) {
     std::vector<int16_t> v(n);
     for (size_t i = 0; i < n; ++i) v[i] = (i % 2 == 0) ? amp : static_cast<int16_t>(-amp);
@@ -52,7 +50,7 @@ void push_frames(mockingbird_engine_t* e, const std::vector<int16_t>& frame, int
     }
 }
 
-} // namespace
+}
 
 TEST_CASE("stats report input RMS / peak dBFS for a known signal") {
     mockingbird_config_t cfg = tap_config(0);
@@ -60,12 +58,11 @@ TEST_CASE("stats report input RMS / peak dBFS for a known signal") {
     REQUIRE(mockingbird_create(&cfg, &g.e) == MOCKINGBIRD_OK);
     REQUIRE(mockingbird_start(g.e) == MOCKINGBIRD_OK);
 
-    // Before any audio, levels read 0 (documented initial value).
     mockingbird_stats_t st{};
     REQUIRE(mockingbird_get_stats(g.e, &st) == MOCKINGBIRD_OK);
     CHECK(st.input_rms_dbfs == 0.0f);
 
-    const int16_t amp = 8192;                       // exactly -12.04 dBFS
+    const int16_t amp = 8192;
     push_frames(g.e, square(320, amp), 10);
     std::this_thread::sleep_for(std::chrono::milliseconds(120));
 
@@ -136,7 +133,6 @@ TEST_CASE("PCM tap delivers the processed stream sample-for-sample") {
     REQUIRE(mockingbird_create(&cfg, &g.e) == MOCKINGBIRD_OK);
     REQUIRE(mockingbird_start(g.e) == MOCKINGBIRD_OK);
 
-    // Ramp so every sample is identifiable and order is verifiable.
     constexpr uint32_t kFrame  = 320;
     constexpr int      kFrames = 20;
     std::vector<int16_t> sent;
@@ -170,8 +166,6 @@ TEST_CASE("PCM tap delivers the processed stream sample-for-sample") {
 }
 
 TEST_CASE("PCM tap is UNGATED: audio flows even when no segment is open") {
-    // VAD on with silence pushed: no segment opens, so NO packets are emitted —
-    // but the tap must still deliver every frame. This is the whole point.
     mockingbird_config_t cfg{};
     mockingbird_config_defaults(&cfg);
     cfg.backend        = MOCKINGBIRD_BACKEND_HOST_PCM;
@@ -184,7 +178,7 @@ TEST_CASE("PCM tap is UNGATED: audio flows even when no segment is open") {
     REQUIRE(mockingbird_create(&cfg, &g.e) == MOCKINGBIRD_OK);
     REQUIRE(mockingbird_start(g.e) == MOCKINGBIRD_OK);
 
-    push_frames(g.e, std::vector<int16_t>(320, 0), 15);   // silence
+    push_frames(g.e, std::vector<int16_t>(320, 0), 15);
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
     uint32_t packets = 0;
@@ -202,22 +196,22 @@ TEST_CASE("PCM tap is UNGATED: audio flows even when no segment is open") {
     }
 
     INFO("packets=" << packets << " tapped=" << tapped);
-    CHECK(packets == 0);            // segment never opened
-    CHECK(tapped  == 15u * 320u);   // ...but every sample reached the tap
+    CHECK(packets == 0);
+    CHECK(tapped  == 15u * 320u);
 }
 
 TEST_CASE("PCM tap counts drops when the host never drains") {
-    mockingbird_config_t cfg = tap_config(1, /*tap_frames*/ 512);  // tiny on purpose
+    mockingbird_config_t cfg = tap_config(1, /*tap_frames*/ 512);
     Engine g;
     REQUIRE(mockingbird_create(&cfg, &g.e) == MOCKINGBIRD_OK);
     REQUIRE(mockingbird_start(g.e) == MOCKINGBIRD_OK);
 
-    push_frames(g.e, square(320, 4000), 40);   // 12800 samples into a 512 ring
+    push_frames(g.e, square(320, 4000), 40);
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
     mockingbird_stats_t st{};
     REQUIRE(mockingbird_get_stats(g.e, &st) == MOCKINGBIRD_OK);
     INFO("tap_samples_dropped=" << st.tap_samples_dropped);
-    CHECK(st.tap_samples_dropped > 0);   // overflow is reported, not hidden
-    CHECK(st.frames_dropped_capture == 0); // and the capture path is unaffected
+    CHECK(st.tap_samples_dropped > 0);
+    CHECK(st.frames_dropped_capture == 0);
 }

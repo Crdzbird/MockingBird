@@ -11,7 +11,6 @@
 #include <algorithm>
 
 namespace mockingbird {
-
 mockingbird_status_t YamnetClassifier::load_session(const mockingbird_config_t& cfg) {
     try {
         const std::string path = resolve_model_path(cfg.sound_class_model_path,
@@ -75,12 +74,12 @@ std::unique_ptr<SoundClassifier> make_sound_classifier() {
     return std::make_unique<YamnetClassifier>();
 }
 
-} // namespace mockingbird
+}
 
 #else
 
 namespace mockingbird {
 std::unique_ptr<SoundClassifier> make_sound_classifier() { return nullptr; }
-} // namespace mockingbird
+}
 
 #endif

@@ -9,7 +9,9 @@ import 'package:mockingbird_platform_interface/src/mockingbird_status_code.dart'
 /// The host-facing queues over the FFI bindings.
 final class FfiQueues {
   /// Wraps [_bindings].
-  const FfiQueues(this._bindings);
+  const factory FfiQueues(MockingbirdBindings bindings) = FfiQueues._;
+
+  const FfiQueues._(this._bindings);
 
   final MockingbirdBindings _bindings;
 

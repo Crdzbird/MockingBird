@@ -9,7 +9,12 @@ import 'package:web/web.dart' as web;
 /// the engine's sample rate.
 final class WebCapture {
   /// Creates capture at [sampleRateHz] delivering to [onPcm].
-  WebCapture(this.sampleRateHz, this.onPcm);
+  factory WebCapture(
+    int sampleRateHz,
+    void Function(Int16List pcm, int captureTsUs) onPcm,
+  ) = WebCapture._;
+
+  WebCapture._(this.sampleRateHz, this.onPcm);
 
   /// The rate the engine expects.
   final int sampleRateHz;

@@ -20,7 +20,6 @@
 #ifdef MOCKINGBIRD_HAVE_NEURAL_VAD
 
 namespace {
-
 struct WavInts16 {
     std::vector<int16_t> samples;
     uint32_t             sample_rate_hz = 0;
@@ -90,9 +89,7 @@ VadResult run_vad_through_fixture(const WavInts16& wav, mockingbird_vad_tier_t t
     cfg.vad_tier           = tier;
     cfg.vad_aggressiveness = 1;
     cfg.vad_neural_threshold = 0.5f;
-    // Silero adds ~5-10 ms of inference per frame; bump the PCM ring so the
-    // test's batched pushes do not overflow while inference catches up.
-    cfg.pcm_ring_frames = 1u << 16;       // 65536 samples = 4 s @ 16 kHz
+    cfg.pcm_ring_frames = 1u << 16;
 
     mockingbird_engine_t* e = nullptr;
     REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
@@ -162,7 +159,7 @@ bool neural_vad_available() {
     return true;
 }
 
-} // namespace
+}
 
 TEST_CASE("Neural VAD: model loads when MOCKINGBIRD_NEURAL_VAD_MODEL points at the fixture") {
     setenv("MOCKINGBIRD_NEURAL_VAD_MODEL",
@@ -189,10 +186,6 @@ TEST_CASE("Neural VAD: detects speech in hello.wav, balanced events") {
          << " dropped="        << neural.frames_dropped);
 
     CHECK(neural.speech_begin >= 1);
-    // SPEECH_END from the final utterance can fire during mockingbird_stop's
-    // worker drain; allow at most 1 difference depending on event-poll
-    // timing. Segment shape MUST balance because the worker emits
-    // SEGMENT_END unconditionally on stop.
     CHECK(neural.speech_end >= neural.speech_begin - 1u);
     CHECK(neural.speech_end <= neural.speech_begin);
     CHECK(neural.segment_begin == neural.segment_end);
@@ -208,8 +201,6 @@ TEST_CASE("Neural VAD: 8 kHz uses the 256-sample Silero window (detects speech)"
     REQUIRE(wav16.samples.size() > 0);
     REQUIRE(wav16.sample_rate_hz == 16000);
 
-    // Downsample 16 k -> 8 k by averaging sample pairs (a mild low-pass that
-    // keeps the speech envelope). Frames are 160 samples at 8 kHz / 20 ms.
     std::vector<int16_t> s8;
     s8.reserve(wav16.samples.size() / 2);
     for (size_t i = 0; i + 1 < wav16.samples.size(); i += 2) {
@@ -222,7 +213,7 @@ TEST_CASE("Neural VAD: 8 kHz uses the 256-sample Silero window (detects speech)"
     cfg.backend              = MOCKINGBIRD_BACKEND_HOST_PCM;
     cfg.codec                = MOCKINGBIRD_CODEC_PCM_S16LE;
     cfg.sample_rate_hz       = 8000;
-    cfg.frame_ms             = 20;      // 160 samples/frame
+    cfg.frame_ms             = 20;
     cfg.enable_vad           = 1;
     cfg.enable_anomaly       = 0;
     cfg.vad_tier             = MOCKINGBIRD_VAD_NEURAL;
@@ -259,9 +250,6 @@ TEST_CASE("Neural VAD: 8 kHz uses the 256-sample Silero window (detects speech)"
     drain();
     mockingbird_destroy(e);
 
-    // With a hard-coded 512-sample window, 8 kHz fed Silero the wrong shape;
-    // every inference threw (caught -> VAD stuck inactive -> 0). The per-rate
-    // 256-sample window makes 8 kHz work again.
     INFO("8 kHz NEURAL speech_begin=" << speech_begin);
     CHECK(speech_begin >= 1);
 }
@@ -284,16 +272,13 @@ TEST_CASE("Neural VAD vs FAST VAD: differential on hello.wav, both detect speech
 
     CHECK(fast.speech_begin   >= 1);
     CHECK(neural.speech_begin >= 1);
-    // Both detectors must produce at least one speech segment; their exact
-    // counts may differ — Silero tends to merge close utterances that
-    // libfvad splits, so the two need not match.
 }
 
 #else
 
 TEST_CASE("Neural VAD tests skipped: MOCKINGBIRD_HAVE_NEURAL_VAD not defined in this build") {
-    MESSAGE("ONNX Runtime not linked — skip");
+    MESSAGE("ONNX Runtime not linked, skip");
     CHECK(true);
 }
 
-#endif  // MOCKINGBIRD_HAVE_NEURAL_VAD
+#endif

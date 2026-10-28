@@ -8,7 +8,6 @@
 #include <memory>
 
 namespace mockingbird {
-
 class Detector {
 public:
     virtual ~Detector() = default;
@@ -26,4 +25,4 @@ std::unique_ptr<Detector> make_neural_vad();
 
 std::unique_ptr<Detector> make_anomaly();
 
-} // namespace mockingbird
+}

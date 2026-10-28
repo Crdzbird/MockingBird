@@ -66,7 +66,7 @@ def describe(cfg: mockingbird.Config, preset: str) -> str:
         on.append("tap")
     if cfg.performance.adaptive_degradation:
         on.append("adaptive")
-    tag = f"preset={preset} · " if preset else ""
+    tag = f"preset={preset}, " if preset else ""
     backend = "host-pcm" if cfg.backend is mockingbird.Backend.HOST_PCM else "mic"
     codec = cfg.encoder.codec.name.lower()
-    return f"{tag}{backend} · {cfg.sample_rate_hz} Hz · {codec} · [{' '.join(on)}]"
+    return f"{tag}{backend}, {cfg.sample_rate_hz} Hz, {codec}, [{' '.join(on)}]"

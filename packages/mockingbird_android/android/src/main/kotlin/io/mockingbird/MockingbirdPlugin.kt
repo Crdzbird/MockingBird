@@ -11,10 +11,8 @@ import io.flutter.embedding.engine.plugins.FlutterPlugin
  */
 class MockingbirdPlugin : FlutterPlugin {
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        // Intentionally empty.
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        // Intentionally empty.
     }
 }

@@ -3,8 +3,16 @@ import 'package:mockingbird/mockingbird.dart';
 import 'package:mockingbird_example/src/widgets/stat_row.dart';
 
 /// Engine counters, worker health and what the host actually received.
-class StatsCard extends StatelessWidget {
-  const StatsCard({
+final class StatsCard extends StatelessWidget {
+  const factory StatsCard({
+    required MockingbirdStats? stats,
+    required bool running,
+    required int packetsReceived,
+    required int bytesReceived,
+    Key? key,
+  }) = StatsCard._;
+
+  const StatsCard._({
     required this.stats,
     required this.running,
     required this.packetsReceived,
@@ -43,9 +51,8 @@ class StatsCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            if (s == null)
-              const Text('No stats yet. Press Start.')
-            else ...[
+            if (s == null) const Text('No stats yet. Press Start.'),
+            if (s != null) ...[
               StatRow('frames_captured', s.framesCaptured),
               StatRow('frames_dropped_capture', s.framesDroppedCapture),
               StatRow('packets_emitted', s.packetsEmitted),

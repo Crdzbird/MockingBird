@@ -22,11 +22,7 @@ android {
         }
     }
 
-    // Kotlin 2.4 turns the deprecated kotlinOptions DSL into a hard error;
-    // this is the form Flutter's current app template emits.
-
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "io.mockingbird.example"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
@@ -36,8 +32,6 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
         }
     }

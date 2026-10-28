@@ -8,7 +8,6 @@
 #include "worker/worker.hpp"
 
 namespace mockingbird {
-
 void driver_start(mockingbird_engine* e) {
     e->worker_thread = std::thread(worker_loop, e);
 }
@@ -22,6 +21,6 @@ void driver_stop(mockingbird_engine* e) {
     if (e->worker_thread.joinable()) e->worker_thread.join();
 }
 
-} // namespace mockingbird
+}
 
 #endif

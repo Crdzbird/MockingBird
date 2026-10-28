@@ -4,7 +4,6 @@
 #include "capture/capture_backend.hpp"
 
 namespace mockingbird {
-
 namespace {
 BackendFactoryFn g_backend_override = nullptr;
 }
@@ -18,6 +17,6 @@ std::unique_ptr<CaptureBackend> make_backend(mockingbird_backend_t which) {
     return nullptr;
 }
 
-} // namespace mockingbird
+}
 
 #endif

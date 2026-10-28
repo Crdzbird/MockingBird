@@ -2,7 +2,6 @@
 #pragma once
 
 namespace mockingbird {
-
 struct ClassificationResult {
     bool  ready      = false;
     int   class_id   = -1;
@@ -11,4 +10,4 @@ struct ClassificationResult {
     bool  skipped    = false;
 };
 
-} // namespace mockingbird
+}

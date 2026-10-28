@@ -7,7 +7,6 @@
 #include <memory>
 
 namespace mockingbird {
-
 #if defined(__APPLE__)
 
 class CoreAudioBackend final : public CaptureBackend {
@@ -27,4 +26,4 @@ private:
 
 #endif
 
-} // namespace mockingbird
+}

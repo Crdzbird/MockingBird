@@ -13,7 +13,6 @@
 #include <vector>
 
 namespace mockingbird {
-
 class PacketPool {
 public:
     struct Slot {
@@ -60,4 +59,4 @@ private:
     std::deque<Slot*>  ready_;
 };
 
-} // namespace mockingbird
+}

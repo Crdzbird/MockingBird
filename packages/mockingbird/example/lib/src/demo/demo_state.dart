@@ -8,7 +8,20 @@ import 'package:mockingbird_example/src/demo/event_formatter.dart';
 
 /// Everything the demo screen renders.
 final class DemoState extends Equatable {
-  const DemoState({
+  const factory DemoState({
+    bool running,
+    int presetIndex,
+    double sensitivity,
+    bool denoise,
+    String? error,
+    MockingbirdStats? stats,
+    int packetCount,
+    int packetBytes,
+    DetectionSummary detection,
+    List<String> log,
+  }) = DemoState._;
+
+  const DemoState._({
     this.running = false,
     this.presetIndex = 0,
     this.sensitivity = 0.6,

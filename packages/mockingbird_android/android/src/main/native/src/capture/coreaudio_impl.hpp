@@ -11,7 +11,6 @@
 #include <vector>
 
 namespace mockingbird {
-
 constexpr AudioUnitElement kCoreAudioInputBus  = 1;
 constexpr AudioUnitElement kCoreAudioOutputBus = 0;
 
@@ -36,4 +35,4 @@ OSStatus coreaudio_input_render(void* refCon, AudioUnitRenderActionFlags* ioActi
                                 const AudioTimeStamp* inTimeStamp, UInt32 inBusNumber,
                                 UInt32 inNumberFrames, AudioBufferList* ioData);
 
-} // namespace mockingbird
+}

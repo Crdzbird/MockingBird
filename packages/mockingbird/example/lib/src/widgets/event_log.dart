@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 /// Newest-first console of formatted events.
-class EventLog extends StatelessWidget {
-  const EventLog({required this.lines, super.key});
+final class EventLog extends StatelessWidget {
+  const factory EventLog({required List<String> lines, Key? key}) = EventLog._;
+
+  const EventLog._({required this.lines, super.key});
 
   final List<String> lines;
 

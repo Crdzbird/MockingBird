@@ -2,7 +2,25 @@
 /// `mockingbird_config_t`.
 final class MockingbirdNativeOutputConfig {
   /// Creates the output fields.
-  const MockingbirdNativeOutputConfig({
+  const factory MockingbirdNativeOutputConfig({
+    required int preRollMs,
+    required int postRollMs,
+    required int segmentMaxMs,
+    required int codec,
+    required int opusBitrateBps,
+    required bool opusVbr,
+    required int opusComplexity,
+    required int pcmRingFrames,
+    required int packetQueueCapacity,
+    required bool enablePcmTap,
+    required int pcmTapFrames,
+    required double silenceGateDbfs,
+    required bool enableAdaptiveDegradation,
+    required int degradeBusyPpm,
+    required int workerBatchFrames,
+  }) = MockingbirdNativeOutputConfig._;
+
+  const MockingbirdNativeOutputConfig._({
     required this.preRollMs,
     required this.postRollMs,
     required this.segmentMaxMs,

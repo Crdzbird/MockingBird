@@ -9,7 +9,9 @@ import 'dart:ui_web' as ui_web;
 /// elsewhere.
 final class WebAssets {
   /// Creates the resolver.
-  const WebAssets();
+  const factory WebAssets() = WebAssets._;
+
+  const WebAssets._();
 
   /// A directory URL that holds the three files, or null for the bundle.
   static String? baseUrl;

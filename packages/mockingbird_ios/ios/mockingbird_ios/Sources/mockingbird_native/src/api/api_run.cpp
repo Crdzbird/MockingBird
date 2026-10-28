@@ -7,7 +7,6 @@
 #include "worker/worker_driver.hpp"
 
 extern "C" {
-
 MOCKINGBIRD_API mockingbird_status_t mockingbird_start(mockingbird_engine_t* e) {
     if (e == nullptr) return MOCKINGBIRD_ERR_INVALID_ARG;
     std::lock_guard lk(e->lifecycle_mu);
@@ -50,4 +49,4 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_stop(mockingbird_engine_t* e) {
     }
 }
 
-} // extern "C"
+}

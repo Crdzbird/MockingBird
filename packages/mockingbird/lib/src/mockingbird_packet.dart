@@ -6,7 +6,16 @@ import 'package:mockingbird_platform_interface/mockingbird_platform_interface.da
 /// One encoded audio packet. [data] is a Dart-owned copy, safe to keep.
 final class MockingbirdPacket {
   /// Creates a packet.
-  const MockingbirdPacket({
+  const factory MockingbirdPacket({
+    required int segmentId,
+    required int ptsUs,
+    required int captureTsUs,
+    required int flags,
+    required MockingbirdCodec codec,
+    required Uint8List data,
+  }) = MockingbirdPacket._;
+
+  const MockingbirdPacket._({
     required this.segmentId,
     required this.ptsUs,
     required this.captureTsUs,

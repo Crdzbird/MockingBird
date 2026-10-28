@@ -6,7 +6,6 @@
 #include <string>
 
 namespace mockingbird {
-
 inline std::string resolve_model_path(const char* configured, const char* env_var,
                                       const char* fallback) {
     if (configured != nullptr && configured[0] != '\0') return std::string(configured);
@@ -14,4 +13,4 @@ inline std::string resolve_model_path(const char* configured, const char* env_va
     return fallback;
 }
 
-} // namespace mockingbird
+}

@@ -8,7 +8,6 @@
 #include <memory>
 
 namespace mockingbird {
-
 class Preprocessor {
 public:
     virtual ~Preprocessor() = default;
@@ -19,4 +18,4 @@ public:
 
 std::unique_ptr<Preprocessor> make_rnnoise_preprocessor();
 
-} // namespace mockingbird
+}

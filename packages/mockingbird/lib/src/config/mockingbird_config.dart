@@ -9,11 +9,27 @@ import 'package:mockingbird/src/config/sensitivity.dart';
 import 'package:mockingbird/src/mockingbird_backend.dart';
 import 'package:mockingbird/src/mockingbird_vad_tier.dart';
 
+part 'mockingbird_config_sensitive.dart';
+
 /// Everything a `MockingbirdEngine` needs, grouped by concern; the defaults
 /// run fast VAD and the anomaly gate on the microphone.
 final class MockingbirdConfig {
   /// Creates a configuration.
-  const MockingbirdConfig({
+  const factory MockingbirdConfig({
+    MockingbirdBackend backend,
+    int sampleRateHz,
+    int frameMs,
+    bool denoise,
+    MockingbirdVadConfig vad,
+    MockingbirdAnomalyConfig anomaly,
+    MockingbirdSoundClassConfig soundClass,
+    MockingbirdSegmentConfig segments,
+    MockingbirdEncoderConfig encoder,
+    MockingbirdQueueConfig queues,
+    MockingbirdPerformanceConfig performance,
+  }) = MockingbirdConfig._;
+
+  const MockingbirdConfig._({
     this.backend = .auto,
     this.sampleRateHz = 16000,
     this.frameMs = 20,
@@ -31,38 +47,17 @@ final class MockingbirdConfig {
   /// neural VAD so voice detection is multilingual.
   factory MockingbirdConfig.sensitive(
     double sensitivity, {
-    MockingbirdBackend backend = .auto,
-    bool denoise = false,
-    bool vad = true,
-    MockingbirdVadTier vadTier = .neural,
+    MockingbirdBackend backend,
+    bool denoise,
+    bool vad,
+    MockingbirdVadTier vadTier,
     String? neuralVadModelPath,
-    bool anomaly = true,
-    bool soundClass = true,
+    bool anomaly,
+    bool soundClass,
     String? soundClassModelPath,
-    MockingbirdEncoderConfig encoder = const MockingbirdEncoderConfig(),
-    MockingbirdPerformanceConfig performance =
-        const MockingbirdPerformanceConfig(),
-  }) {
-    final s = Sensitivity(sensitivity);
-    return MockingbirdConfig(
-      backend: backend,
-      denoise: denoise,
-      vad: MockingbirdVadConfig.sensitive(
-        s,
-        enabled: vad,
-        tier: vadTier,
-        modelPath: neuralVadModelPath,
-      ),
-      anomaly: MockingbirdAnomalyConfig.sensitive(s, enabled: anomaly),
-      soundClass: MockingbirdSoundClassConfig.sensitive(
-        s,
-        enabled: soundClass,
-        modelPath: soundClassModelPath,
-      ),
-      encoder: encoder,
-      performance: performance,
-    );
-  }
+    MockingbirdEncoderConfig encoder,
+    MockingbirdPerformanceConfig performance,
+  }) = _SensitiveConfig;
 
   /// Audio source.
   final MockingbirdBackend backend;

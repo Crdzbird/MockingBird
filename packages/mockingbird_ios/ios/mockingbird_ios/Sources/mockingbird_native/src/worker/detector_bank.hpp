@@ -13,7 +13,6 @@
 struct mockingbird_engine;
 
 namespace mockingbird {
-
 class Tunables;
 
 class DetectorBank {
@@ -40,4 +39,4 @@ private:
     std::unique_ptr<SoundClassifier> classifier_;
 };
 
-} // namespace mockingbird
+}

@@ -33,7 +33,7 @@ func main() {
 	flag.Parse()
 
 	cfg := f.config()
-	fmt.Printf("Mockingbird %s — %s\n", mockingbird.Version(), describe(cfg, f.preset))
+	fmt.Printf("Mockingbird %s, %s\n", mockingbird.Version(), describe(cfg, f.preset))
 	e, err := mockingbird.New(cfg)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "create:", err)

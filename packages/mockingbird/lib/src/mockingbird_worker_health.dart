@@ -3,7 +3,17 @@ import 'package:mockingbird_platform_interface/mockingbird_platform_interface.da
 /// How hard the native worker thread is working and what it is shedding.
 final class MockingbirdWorkerHealth {
   /// Creates a snapshot.
-  const MockingbirdWorkerHealth({
+  const factory MockingbirdWorkerHealth({
+    required int busyPpm,
+    required int maxFrameUs,
+    required int wakeups,
+    required int soundClassInferences,
+    required int soundClassInferencesSkipped,
+    required int preprocFramesSkipped,
+    required int degradationLevel,
+  }) = MockingbirdWorkerHealth._;
+
+  const MockingbirdWorkerHealth._({
     required this.busyPpm,
     required this.maxFrameUs,
     required this.wakeups,

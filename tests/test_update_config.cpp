@@ -2,7 +2,7 @@
 //
 // mockingbird_update_config: retune a live engine without destroying it. Verifies the
 // tunable subset applies, structural changes are rejected, and detector state
-// survives a retune (the whole point — no model reload, no restart).
+// survives a retune (the whole point: no model reload, no restart).
 
 #include "doctest.h"
 #include "mockingbird/mockingbird.h"
@@ -14,7 +14,6 @@
 #include <vector>
 
 namespace {
-
 mockingbird_config_t base_config() {
     mockingbird_config_t cfg{};
     mockingbird_config_defaults(&cfg);
@@ -32,7 +31,6 @@ struct Engine {
     }
 };
 
-// Loud/quiet alternating frames so the anomaly gate has something to chew on.
 std::vector<int16_t> tone(size_t n, int16_t amp) {
     std::vector<int16_t> v(n);
     for (size_t i = 0; i < n; ++i) {
@@ -41,7 +39,7 @@ std::vector<int16_t> tone(size_t n, int16_t amp) {
     return v;
 }
 
-} // namespace
+}
 
 TEST_CASE("mockingbird_update_config rejects null args") {
     mockingbird_config_t cfg = base_config();
@@ -57,7 +55,6 @@ TEST_CASE("mockingbird_update_config applies tunable fields on a running engine"
     REQUIRE(mockingbird_create(&cfg, &g.e) == MOCKINGBIRD_OK);
     REQUIRE(mockingbird_start(g.e) == MOCKINGBIRD_OK);
 
-    // Every tunable knob, changed at once.
     mockingbird_config_t up = cfg;
     up.vad_aggressiveness    = 0;
     up.vad_neural_threshold  = 0.25f;
@@ -67,7 +64,6 @@ TEST_CASE("mockingbird_update_config applies tunable fields on a running engine"
     up.sound_class_threshold = 0.2f;
     CHECK(mockingbird_update_config(g.e, &up) == MOCKINGBIRD_OK);
 
-    // Engine keeps running and still accepts audio after the retune.
     const auto frame = tone(320, 6000);
     for (int i = 0; i < 10; ++i) {
         REQUIRE(mockingbird_push_pcm(g.e, frame.data(), 320,
@@ -121,14 +117,14 @@ TEST_CASE("mockingbird_update_config can toggle a detector off and back on") {
     off.enable_anomaly = 0;
     CHECK(mockingbird_update_config(g.e, &off) == MOCKINGBIRD_OK);
 
-    mockingbird_config_t on = cfg;   // anomaly back on — it was constructed at create
+    mockingbird_config_t on = cfg;
     on.enable_anomaly = 1;
     CHECK(mockingbird_update_config(g.e, &on) == MOCKINGBIRD_OK);
 }
 
 TEST_CASE("mockingbird_update_config cannot enable a detector that was off at create") {
     mockingbird_config_t cfg = base_config();
-    cfg.enable_anomaly = 0;          // never constructed
+    cfg.enable_anomaly = 0;
     Engine g;
     REQUIRE(mockingbird_create(&cfg, &g.e) == MOCKINGBIRD_OK);
     REQUIRE(mockingbird_start(g.e) == MOCKINGBIRD_OK);
@@ -139,10 +135,8 @@ TEST_CASE("mockingbird_update_config cannot enable a detector that was off at cr
 }
 
 TEST_CASE("mockingbird_update_config preserves detector state (no restart)") {
-    // The point of retuning in place: a segment already open must stay open and
-    // keep the same id across the update — a destroy/recreate would reset it.
     mockingbird_config_t cfg = base_config();
-    cfg.enable_vad     = 0;          // passthrough: one always-on segment
+    cfg.enable_vad     = 0;
     cfg.enable_anomaly = 0;
     Engine g;
     REQUIRE(mockingbird_create(&cfg, &g.e) == MOCKINGBIRD_OK);
@@ -179,7 +173,7 @@ TEST_CASE("mockingbird_update_config preserves detector state (no restart)") {
         mockingbird_release(g.e, &pkt);
     }
     REQUIRE(seg_after != 0);
-    CHECK(seg_after == seg_before);   // same segment: the engine never restarted
+    CHECK(seg_after == seg_before);
 
     mockingbird_stats_t st{};
     REQUIRE(mockingbird_get_stats(g.e, &st) == MOCKINGBIRD_OK);
@@ -187,8 +181,6 @@ TEST_CASE("mockingbird_update_config preserves detector state (no restart)") {
 }
 
 TEST_CASE("mockingbird_update_config is safe under concurrent retune + push") {
-    // Run with TSan: the worker snapshots tunables between frames while the
-    // host hammers update_config from another thread.
     mockingbird_config_t cfg = base_config();
     Engine g;
     REQUIRE(mockingbird_create(&cfg, &g.e) == MOCKINGBIRD_OK);

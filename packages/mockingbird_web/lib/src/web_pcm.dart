@@ -9,7 +9,9 @@ import 'package:mockingbird_web/src/web_engine_handle.dart';
 /// The PCM push and tap paths over the WebAssembly module.
 final class WebPcm {
   /// Wraps the loaded module.
-  const WebPcm(this._m);
+  const factory WebPcm(MockingbirdModule m) = WebPcm._;
+
+  const WebPcm._(this._m);
 
   final MockingbirdModule _m;
 

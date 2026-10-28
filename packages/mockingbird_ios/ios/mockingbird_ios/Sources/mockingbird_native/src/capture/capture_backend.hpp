@@ -8,7 +8,6 @@
 #include <memory>
 
 namespace mockingbird {
-
 using PcmCallback = void (*)(void*          user,
                              const int16_t* samples,
                              uint32_t       frame_count,
@@ -28,4 +27,4 @@ std::unique_ptr<CaptureBackend> make_backend(mockingbird_backend_t which);
 using BackendFactoryFn = std::unique_ptr<CaptureBackend> (*)(mockingbird_backend_t);
 void set_backend_factory_override(BackendFactoryFn fn);
 
-} // namespace mockingbird
+}

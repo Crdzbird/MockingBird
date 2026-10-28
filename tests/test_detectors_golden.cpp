@@ -4,7 +4,7 @@
 // input. Cheap and deterministic: synthesize a known signal, run the
 // engine, assert on the resulting event / packet shape.
 //
-// These exist to lock current behavior in place — any future change that
+// These exist to lock current behavior in place: any future change that
 // alters VAD aggressiveness, anomaly z-score thresholds, or hangover
 // arithmetic surfaces as a failed test rather than a silent regression.
 
@@ -18,7 +18,6 @@
 #include <vector>
 
 namespace {
-
 struct EngineGuard {
     mockingbird_engine_t* e = nullptr;
     ~EngineGuard() {
@@ -65,10 +64,7 @@ void push_silence_frames(mockingbird_engine_t* e, uint32_t frames) {
     for (uint32_t i = 0; i < frames; ++i) {
         REQUIRE(mockingbird_push_pcm(e, buf.data(), 320,
                                uint64_t{i} * 20'000ull) == MOCKINGBIRD_OK);
-        // The default PCM ring holds ~51 frames. Pace pushes so the worker
-        // drains between batches; otherwise excess frames are dropped at the
-        // ring and the test never sees them at the detector.
-        if ((i & 0x1Fu) == 0x1F) {   // every 32 frames
+        if ((i & 0x1Fu) == 0x1F) {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
     }
@@ -130,17 +126,13 @@ EventTally drain_events(mockingbird_engine_t* e) {
     return t;
 }
 
-} // namespace
-
-// ---------------------------------------------------------------------------
-// VAD characterization
-// ---------------------------------------------------------------------------
+}
 
 TEST_CASE("VAD on silence: zero packets, zero speech events") {
     EngineGuard g;
     g.e = make_host_pcm_with(/*vad=*/1, /*anomaly=*/0, /*aggr=*/2);
 
-    push_silence_frames(g.e, 50);                  // 1 s of silence
+    push_silence_frames(g.e, 50);
     std::this_thread::sleep_for(std::chrono::milliseconds(120));
 
     CHECK(drain_packet_count(g.e) == 0);
@@ -151,11 +143,6 @@ TEST_CASE("VAD on silence: zero packets, zero speech events") {
 }
 
 TEST_CASE("VAD: every SPEECH_BEGIN is balanced by exactly one SPEECH_END") {
-    // libfvad's GMM is voiced-speech-tuned; it does sometimes classify
-    // sustained tones as speech and sometimes not. The strong invariant we
-    // care about is shape symmetry — every BEGIN has an END (including the
-    // implicit one on stop). That property MUST hold regardless of the
-    // detector's per-frame decisions.
     EngineGuard g;
     g.e = make_host_pcm_with(/*vad=*/1, /*anomaly=*/0, /*aggr=*/2);
 
@@ -172,44 +159,28 @@ TEST_CASE("VAD: every SPEECH_BEGIN is balanced by exactly one SPEECH_END") {
     CHECK(tally.segment_begin == tally.segment_end);
 }
 
-// ---------------------------------------------------------------------------
-// Anomaly characterization
-// ---------------------------------------------------------------------------
-
 TEST_CASE("Anomaly on a sudden loud burst after silence: trips and opens a segment") {
     EngineGuard g;
     g.e = make_host_pcm_with(/*vad=*/0, /*anomaly=*/1, /*aggr=*/2);
 
-    // 2 s of silence to populate the rolling-background window with low
-    // RMS / flux / centroid values.
     push_silence_frames(g.e, 100);
 
-    // 200 ms of loud sine — sharp onset relative to the silent background.
     const auto burst = sine_tone(320, 800.0, 0.9);
     push_frames(g.e, burst, 10, 100 * 20'000ull, 20'000ull);
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
     const auto tally = drain_events(g.e);
-    // The exact ANOMALY count depends on hangover behavior; what we lock
-    // in is "at least one anomaly was seen and a segment opened".
     CHECK(tally.anomaly >= 1);
     CHECK(tally.segment_begin >= 1);
 }
 
-// ---------------------------------------------------------------------------
-// Pre-roll characterization
-// ---------------------------------------------------------------------------
-
 TEST_CASE("Pre-roll: when a segment opens after silence, PREROLL-flagged "
           "packets appear at the front") {
     EngineGuard g;
-    // Anomaly only so we can deterministically trigger from a synthetic burst.
     g.e = make_host_pcm_with(/*vad=*/0, /*anomaly=*/1, /*aggr=*/2);
 
-    // Populate background.
     push_silence_frames(g.e, 100);
 
-    // Then a clear burst that should trigger anomaly.
     const auto burst = sine_tone(320, 800.0, 0.9);
     push_frames(g.e, burst, 20, 100 * 20'000ull, 20'000ull);
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -225,10 +196,6 @@ TEST_CASE("Pre-roll: when a segment opens after silence, PREROLL-flagged "
     }
     CHECK(seen_preroll);
 }
-
-// ---------------------------------------------------------------------------
-// Stats accounting
-// ---------------------------------------------------------------------------
 
 TEST_CASE("Stats: frames_captured matches the total samples pushed exactly") {
     EngineGuard g;

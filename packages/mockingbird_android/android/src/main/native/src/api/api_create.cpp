@@ -10,7 +10,6 @@
 #include <new>
 
 namespace {
-
 void own_model_paths(mockingbird_engine* e, const mockingbird_config_t* cfg) {
     e->cfg.neural_vad_model_path  = nullptr;
     e->cfg.sound_class_model_path = nullptr;
@@ -38,11 +37,9 @@ void join_worker(mockingbird_engine* e) {
     e->running.store(false, std::memory_order_release);
 }
 
-} // namespace
-
+}
 
 extern "C" {
-
 MOCKINGBIRD_API mockingbird_status_t mockingbird_create(const mockingbird_config_t* cfg, mockingbird_engine_t** out_engine) {
     if (out_engine != nullptr) *out_engine = nullptr;
     if (cfg == nullptr || out_engine == nullptr) return MOCKINGBIRD_ERR_INVALID_ARG;
@@ -91,4 +88,4 @@ MOCKINGBIRD_API void mockingbird_destroy(mockingbird_engine_t* engine) {
     delete engine;
 }
 
-} // extern "C"
+}

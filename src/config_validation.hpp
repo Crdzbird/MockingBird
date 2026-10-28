@@ -9,7 +9,6 @@
 #include <cstring>
 
 namespace mockingbird {
-
 constexpr uint16_t kChannelsV1 = 1;
 
 template <typename E>
@@ -30,4 +29,4 @@ uint32_t samples_per_frame(const mockingbird_config_t& c);
 
 size_t batch_samples_for(const mockingbird_config_t& c, uint32_t batch_frames);
 
-} // namespace mockingbird
+}

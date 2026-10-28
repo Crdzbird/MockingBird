@@ -22,10 +22,6 @@
 #include <vector>
 
 namespace {
-
-// Plain (copyable) knobs + counters. init/start/stop run on the host thread
-// serially, so non-atomic counters are safe; only the feeder touches the
-// backend's own atomic running flag.
 struct MockState {
     mockingbird_status_t init_result  = MOCKINGBIRD_OK;
     mockingbird_status_t start_result = MOCKINGBIRD_OK;
@@ -87,8 +83,6 @@ std::unique_ptr<mockingbird::CaptureBackend> mock_factory(mockingbird_backend_t)
     return std::make_unique<MockBackend>();
 }
 
-// RAII: install the mock factory and reset state; restore the real factory on
-// scope exit so other test files are unaffected.
 struct MockGuard {
     MockGuard() {
         g_mock = MockState{};
@@ -100,17 +94,17 @@ struct MockGuard {
 mockingbird_config_t device_cfg() {
     mockingbird_config_t c{};
     mockingbird_config_defaults(&c);
-    c.backend            = MOCKINGBIRD_BACKEND_MINIAUDIO;   // non-HOST_PCM -> make_backend
+    c.backend            = MOCKINGBIRD_BACKEND_MINIAUDIO;
     c.codec              = MOCKINGBIRD_CODEC_PCM_S16LE;
     c.sample_rate_hz     = 16000;
     c.frame_ms           = 20;
-    c.enable_vad         = 0;        // passthrough
+    c.enable_vad         = 0;
     c.enable_anomaly     = 0;
     c.enable_sound_class = 0;
     return c;
 }
 
-} // namespace
+}
 
 TEST_CASE("Backend fault: init() failure surfaces from mockingbird_start, no worker spawned") {
     MockGuard g;
@@ -118,12 +112,12 @@ TEST_CASE("Backend fault: init() failure surfaces from mockingbird_start, no wor
 
     mockingbird_config_t cfg = device_cfg();
     mockingbird_engine_t* e = nullptr;
-    REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);     // create doesn't touch the device
+    REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
 
-    CHECK(mockingbird_start(e) == MOCKINGBIRD_ERR_PERMISSION);   // init failure propagates
+    CHECK(mockingbird_start(e) == MOCKINGBIRD_ERR_PERMISSION);
     CHECK(g_mock.init_calls == 1);
-    CHECK(g_mock.start_calls == 0);                  // never reached start()
-    CHECK(mockingbird_stop(e) == MOCKINGBIRD_ERR_NOT_RUNNING);   // engine never ran
+    CHECK(g_mock.start_calls == 0);
+    CHECK(mockingbird_stop(e) == MOCKINGBIRD_ERR_NOT_RUNNING);
 
     mockingbird_destroy(e);
 }
@@ -136,15 +130,11 @@ TEST_CASE("Backend fault: start() failure tears the worker back down cleanly") {
     mockingbird_engine_t* e = nullptr;
     REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
 
-    // init() succeeds, the worker is spawned, then start() fails — mockingbird_start
-    // must join the worker and report the error without leaking the thread.
     CHECK(mockingbird_start(e) == MOCKINGBIRD_ERR_BACKEND);
     CHECK(g_mock.init_calls == 1);
     CHECK(g_mock.start_calls == 1);
-    CHECK(mockingbird_stop(e) == MOCKINGBIRD_ERR_NOT_RUNNING);   // not left running
+    CHECK(mockingbird_stop(e) == MOCKINGBIRD_ERR_NOT_RUNNING);
 
-    // And it can be started again (proves no half-torn-down state) — clear the
-    // failure first.
     g_mock.start_result = MOCKINGBIRD_OK;
     g_mock.feed = false;
     CHECK(mockingbird_start(e) == MOCKINGBIRD_OK);
@@ -174,12 +164,12 @@ TEST_CASE("Backend success: T1 feed drives capture -> ring -> packets end to end
     mockingbird_stats_t st{};
     REQUIRE(mockingbird_get_stats(e, &st) == MOCKINGBIRD_OK);
     REQUIRE(mockingbird_stop(e) == MOCKINGBIRD_OK);
-    CHECK(g_mock.stop_calls >= 1);                   // engine stopped the backend
+    CHECK(g_mock.stop_calls >= 1);
     mockingbird_destroy(e);
 
     INFO("captured=" << st.frames_captured << " emitted=" << st.packets_emitted
          << " drained=" << packets);
-    CHECK(st.frames_captured > 0);                   // the T1 callback path worked
+    CHECK(st.frames_captured > 0);
     CHECK(st.packets_emitted > 0);
 }
 
@@ -193,7 +183,6 @@ TEST_CASE("Backend teardown: destroy while running stops the backend and joins")
     REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
     std::this_thread::sleep_for(std::chrono::milliseconds(30));
 
-    // No explicit stop — destroy must stop the backend and join the worker.
     mockingbird_destroy(e);
     CHECK(g_mock.stop_calls >= 1);
 }

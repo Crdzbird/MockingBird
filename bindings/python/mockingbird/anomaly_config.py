@@ -19,6 +19,6 @@ class AnomalyConfig:
 
     @classmethod
     def sensitive(cls, s: Sensitivity, *, enabled: bool = True) -> AnomalyConfig:
-        """Both triggers run 5.0 → 1.5."""
+        """Both triggers run 5.0 to 1.5."""
         z = s.lerp(5.0, 1.5)
         return cls(enabled=enabled, rms_z=z, flux_z=z)

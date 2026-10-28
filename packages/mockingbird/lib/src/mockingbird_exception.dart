@@ -4,7 +4,10 @@ import 'package:mockingbird_platform_interface/mockingbird_platform_interface.da
 /// A native call returned a status other than [MockingbirdStatus.ok].
 final class MockingbirdException implements Exception {
   /// Creates an exception for [call] that returned [status].
-  const MockingbirdException(this.call, this.status);
+  const factory MockingbirdException(String call, MockingbirdStatus status) =
+      MockingbirdException._;
+
+  const MockingbirdException._(this.call, this.status);
 
   /// The C ABI function that failed.
   final String call;

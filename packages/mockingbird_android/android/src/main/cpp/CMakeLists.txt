@@ -155,7 +155,7 @@ find_package(oboe REQUIRED CONFIG)
 target_compile_definitions(mockingbird PRIVATE MOCKINGBIRD_HAVE_OBOE=1)
 target_link_libraries(mockingbird PRIVATE oboe::oboe)
 
-# ONNX Runtime — Microsoft's onnxruntime-android AAR does NOT ship Prefab
+# ONNX Runtime: Microsoft's onnxruntime-android AAR does NOT ship Prefab
 # metadata, so find_package(onnxruntime CONFIG) cannot work. Instead we
 # locate the AAR's transformed cache directory via gradle's standard glob,
 # import the .so as a SHARED IMPORTED library, and add its bundled headers

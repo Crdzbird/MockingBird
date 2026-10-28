@@ -5,7 +5,6 @@
 #include "engine.hpp"
 
 namespace {
-
 bool same_structure(const mockingbird_config_t& a, const mockingbird_config_t& b) {
     using mockingbird::enum_as_int;
     return enum_as_int(a.backend) == enum_as_int(b.backend) &&
@@ -46,10 +45,9 @@ void copy_tunables(mockingbird_config_t& live, const mockingbird_config_t& cfg) 
     live.worker_batch_frames         = cfg.worker_batch_frames;
 }
 
-} // namespace
+}
 
 extern "C" {
-
 MOCKINGBIRD_API mockingbird_status_t mockingbird_update_config(mockingbird_engine_t* e, const mockingbird_config_t* cfg) {
     if (e == nullptr || cfg == nullptr) return MOCKINGBIRD_ERR_INVALID_ARG;
     try {
@@ -70,4 +68,4 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_update_config(mockingbird_engin
     }
 }
 
-} // extern "C"
+}

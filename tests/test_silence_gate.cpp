@@ -15,13 +15,12 @@
 #include <vector>
 
 namespace {
-
 struct Engine {
     mockingbird_engine_t* e = nullptr;
     ~Engine() { if (e) { mockingbird_stop(e); mockingbird_destroy(e); } }
 };
 
-constexpr uint32_t kFrame = 320;   // 20 ms @ 16 kHz
+constexpr uint32_t kFrame = 320;
 
 mockingbird_config_t host_config() {
     mockingbird_config_t cfg{};
@@ -41,7 +40,6 @@ std::vector<int16_t> square(int16_t amp) {
     return v;
 }
 
-// Push `n` frames and wait until the worker has consumed them all.
 void push_frames(mockingbird_engine_t* e, const std::vector<int16_t>& f, size_t n,
                  uint64_t& ts, int pace_ms = 0) {
     for (size_t i = 0; i < n; ++i) {
@@ -63,7 +61,7 @@ mockingbird_stats_t stats(mockingbird_engine_t* e) { mockingbird_stats_t s{}; mo
 std::string yamnet_path() { return std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/yamnet_3s.onnx"; }
 #endif
 
-} // namespace
+}
 
 TEST_CASE("gate: defaults, validation, and reserved stats are zero") {
     mockingbird_config_t cfg{}; mockingbird_config_defaults(&cfg);
@@ -74,7 +72,7 @@ TEST_CASE("gate: defaults, validation, and reserved stats are zero") {
 
     Engine bad;
     mockingbird_config_t c = host_config();
-    c.silence_gate_dbfs = 1.0f;                         // above full scale
+    c.silence_gate_dbfs = 1.0f;
     CHECK(mockingbird_create(&c, &bad.e) == MOCKINGBIRD_ERR_INVALID_ARG);
     c = host_config(); c.silence_gate_dbfs = NAN;
     CHECK(mockingbird_create(&c, &bad.e) == MOCKINGBIRD_ERR_INVALID_ARG);
@@ -84,7 +82,7 @@ TEST_CASE("gate: defaults, validation, and reserved stats are zero") {
     Engine ok;
     c = host_config();
     REQUIRE(mockingbird_create(&c, &ok.e) == MOCKINGBIRD_OK);
-    mockingbird_stats_t s{}; std::memset(&s, 0xFF, sizeof(s));   // poison, then read
+    mockingbird_stats_t s{}; std::memset(&s, 0xFF, sizeof(s));
     REQUIRE(mockingbird_get_stats(ok.e, &s) == MOCKINGBIRD_OK);
     for (uint32_t r : s._reserved) CHECK(r == 0u);
     CHECK(s.degradation_level == 0u);
@@ -95,14 +93,12 @@ TEST_CASE("gate: worker health counters are populated") {
     REQUIRE(mockingbird_create(&c, &eng.e) == MOCKINGBIRD_OK);
     REQUIRE(mockingbird_start(eng.e) == MOCKINGBIRD_OK);
     uint64_t ts = 0;
-    // Paced pushes park the worker between frames => wakeups; > 1 s of wall
-    // closes at least one health window => busy_ppm gets a real value.
     push_frames(eng.e, square(3000), 60, ts, /*pace_ms=*/20);
     const auto s = stats(eng.e);
     CHECK(s.worker_wakeups > 0u);
     CHECK(s.worker_busy_ppm <= 1000000u);
     CHECK(s.frames_captured == 60u * kFrame);
-    CHECK(s.degradation_level == 0u);            // adaptive is off by default
+    CHECK(s.degradation_level == 0u);
 }
 
 #if defined(MOCKINGBIRD_HAVE_RNNOISE)
@@ -112,9 +108,9 @@ TEST_CASE("gate: RNNoise is skipped on quiet frames and runs on loud ones") {
     REQUIRE(mockingbird_create(&c, &eng.e) == MOCKINGBIRD_OK);
     REQUIRE(mockingbird_start(eng.e) == MOCKINGBIRD_OK);
     uint64_t ts = 0;
-    push_frames(eng.e, square(0), 25, ts);          // digital silence: below -60
+    push_frames(eng.e, square(0), 25, ts);
     CHECK(stats(eng.e).preproc_frames_skipped == 25u);
-    push_frames(eng.e, square(3000), 25, ts);       // ~-21 dBFS: denoised
+    push_frames(eng.e, square(3000), 25, ts);
     CHECK(stats(eng.e).preproc_frames_skipped == 25u);
 
     SUBCASE("live retune: disabling the gate stops the skipping") {
@@ -135,13 +131,13 @@ TEST_CASE("gate: YAMNet skips inference on an all-quiet window, runs on sound") 
     REQUIRE(mockingbird_create(&c, &eng.e) == MOCKINGBIRD_OK);
     REQUIRE(mockingbird_start(eng.e) == MOCKINGBIRD_OK);
     uint64_t ts = 0;
-    push_frames(eng.e, square(0), 250, ts);          // 5 s of silence
+    push_frames(eng.e, square(0), 250, ts);
     auto s = stats(eng.e);
     CHECK(s.sound_class_inferences == 0u);
     CHECK(s.sound_class_inferences_skipped > 0u);
     const auto skipped_after_silence = s.sound_class_inferences_skipped;
 
-    push_frames(eng.e, square(6000), 100, ts);       // 2 s of sound
+    push_frames(eng.e, square(6000), 100, ts);
     s = stats(eng.e);
     CHECK(s.sound_class_inferences > 0u);
     CHECK(s.sound_class_inferences_skipped == skipped_after_silence);
@@ -168,19 +164,18 @@ void on_evt(const mockingbird_event_t* e, void* u) { static_cast<EvtSink*>(u)->e
 }
 
 TEST_CASE("degradation: sheds classifier work under load and reports it") {
-    EvtSink sink;   // declared BEFORE the engine: destroyed after the worker is joined
+    EvtSink sink;
     Engine eng; mockingbird_config_t c = host_config();
     const std::string model = yamnet_path();
     c.enable_sound_class = 1; c.sound_class_model_path = model.c_str();
     c.sound_class_interval_ms = 500;
     c.enable_adaptive_degradation = 1;
-    c.degrade_busy_ppm = 1;                          // any work at all is "overload"
+    c.degrade_busy_ppm = 1;
     REQUIRE(mockingbird_create(&c, &eng.e) == MOCKINGBIRD_OK);
     REQUIRE(mockingbird_set_event_callback(eng.e, on_evt, &sink) == MOCKINGBIRD_OK);
     REQUIRE(mockingbird_start(eng.e) == MOCKINGBIRD_OK);
 
     uint64_t ts = 0;
-    // ~2.4 s of wall: at least two health windows close => level >= 2.
     push_frames(eng.e, square(6000), 120, ts, /*pace_ms=*/20);
     const auto s = stats(eng.e);
     CHECK(s.degradation_level >= 2u);
@@ -189,7 +184,7 @@ TEST_CASE("degradation: sheds classifier work under load and reports it") {
     for (const auto& e : sink.evts) {
         if (e.type != MOCKINGBIRD_EVT_DEGRADATION) continue;
         ++n_deg;
-        CHECK(e.reason_mask == last_level + 1);      // one step at a time
+        CHECK(e.reason_mask == last_level + 1);
         CHECK(e.confidence >= 0.0f); CHECK(e.confidence <= 1.0f);
         last_level = e.reason_mask;
     }
@@ -198,7 +193,7 @@ TEST_CASE("degradation: sheds classifier work under load and reports it") {
 }
 
 TEST_CASE("degradation: never acts when disabled, even under 'load'") {
-    EvtSink sink;   // declared BEFORE the engine: destroyed after the worker is joined
+    EvtSink sink;
     Engine eng; mockingbird_config_t c = host_config();
     const std::string model = yamnet_path();
     c.enable_sound_class = 1; c.sound_class_model_path = model.c_str();

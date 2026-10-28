@@ -6,7 +6,6 @@
 #include <cstdint>
 
 namespace mockingbird {
-
 class MachTimebase {
 public:
     static const MachTimebase& instance() {
@@ -27,4 +26,4 @@ private:
     bool                      ready_ = false;
 };
 
-} // namespace mockingbird
+}

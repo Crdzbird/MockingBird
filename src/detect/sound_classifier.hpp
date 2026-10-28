@@ -9,7 +9,6 @@
 #include <memory>
 
 namespace mockingbird {
-
 class SoundClassifier {
 public:
     virtual ~SoundClassifier() = default;
@@ -22,4 +21,4 @@ public:
 
 std::unique_ptr<SoundClassifier> make_sound_classifier();
 
-} // namespace mockingbird
+}

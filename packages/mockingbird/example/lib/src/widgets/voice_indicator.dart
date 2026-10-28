@@ -2,8 +2,14 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 /// The language-agnostic "human voice" lamp.
-class VoiceIndicator extends StatelessWidget {
-  const VoiceIndicator({
+final class VoiceIndicator extends StatelessWidget {
+  const factory VoiceIndicator({
+    required bool active,
+    required bool running,
+    Key? key,
+  }) = VoiceIndicator._;
+
+  const VoiceIndicator._({
     required this.active,
     required this.running,
     super.key,

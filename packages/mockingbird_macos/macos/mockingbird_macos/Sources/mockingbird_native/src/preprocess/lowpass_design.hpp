@@ -7,7 +7,6 @@
 #include <vector>
 
 namespace mockingbird {
-
 inline std::vector<float> design_lowpass(size_t taps, double fc, double dc_gain) {
     std::vector<float> h(taps, 0.0f);
     const double center = static_cast<double>(taps - 1) / 2.0;
@@ -29,4 +28,4 @@ inline std::vector<float> design_lowpass(size_t taps, double fc, double dc_gain)
     return h;
 }
 
-} // namespace mockingbird
+}

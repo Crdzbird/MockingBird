@@ -6,7 +6,6 @@
 #include "engine_events.hpp"
 
 namespace mockingbird {
-
 void Segmenter::init(mockingbird_engine* e, uint32_t frame_samples) {
     e_ = e;
     emitter_.init(e, frame_samples);
@@ -56,4 +55,4 @@ void Segmenter::finish(uint64_t now_ts) {
     close(now_ts);
 }
 
-} // namespace mockingbird
+}

@@ -18,7 +18,7 @@ classifiers = [
     "Topic :: Multimedia :: Sound/Audio :: Analysis",
     "Topic :: Multimedia :: Sound/Audio :: Capture/Recording",
 ]
-# Pure ctypes — no build step and no third-party runtime dependency. The native
+# Pure ctypes: no build step and no third-party runtime dependency. The native
 # libmockingbird shared library is located at import time (see the README).
 dependencies = []
 

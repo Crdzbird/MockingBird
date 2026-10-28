@@ -7,7 +7,6 @@
 #include <cstdint>
 
 namespace mockingbird {
-
 class FrameClock {
 public:
     static constexpr uint64_t kUnset = ~uint64_t{0};
@@ -34,4 +33,4 @@ private:
     uint64_t                     index_ = 0;
 };
 
-} // namespace mockingbird
+}

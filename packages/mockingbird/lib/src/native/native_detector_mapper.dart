@@ -4,7 +4,9 @@ import 'package:mockingbird_platform_interface/mockingbird_platform_interface.da
 /// Flattens the detector groups of a [MockingbirdConfig].
 final class NativeDetectorMapper {
   /// Creates the mapper.
-  const NativeDetectorMapper();
+  const factory NativeDetectorMapper() = NativeDetectorMapper._;
+
+  const NativeDetectorMapper._();
 
   /// The detector mirror of [c].
   MockingbirdNativeDetectorConfig map(MockingbirdConfig c) =>

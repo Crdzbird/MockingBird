@@ -6,7 +6,6 @@
 #include <cmath>
 
 namespace mockingbird {
-
 AnomalyDetector::~AnomalyDetector() { teardown(); }
 
 mockingbird_status_t AnomalyDetector::allocate_fft() {
@@ -76,4 +75,4 @@ void AnomalyDetector::teardown() {
 
 std::unique_ptr<Detector> make_anomaly() { return std::make_unique<AnomalyDetector>(); }
 
-} // namespace mockingbird
+}

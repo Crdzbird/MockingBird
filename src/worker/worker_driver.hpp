@@ -5,9 +5,8 @@
 struct mockingbird_engine;
 
 namespace mockingbird {
-
 void driver_start(mockingbird_engine* e);
 void driver_pump(mockingbird_engine* e) noexcept;
 void driver_stop(mockingbird_engine* e);
 
-} // namespace mockingbird
+}

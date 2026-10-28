@@ -8,7 +8,6 @@
 #include <cstdint>
 
 namespace mockingbird {
-
 class LevelMeter {
 public:
     static Level measure(const int16_t* samples, uint32_t n) {
@@ -36,4 +35,4 @@ private:
     }
 };
 
-} // namespace mockingbird
+}

@@ -21,23 +21,19 @@ import 'package:mockingbird_platform_interface/ffi.dart';
 import 'package:ffi/ffi.dart';
 
 const int sampleRate = 16000;
-const int frameLen = 320; // 20 ms @ 16 kHz
-const int numSamples = 32000; // 2 s, 100 frames
+const int frameLen = 320;
+const int numSamples = 32000;
 const int goSeed = 0xA1A1A1A1A1A1A1A1;
 const int dartSeed = 0xB2B2B2B2B2B2B2B2;
-
-// --- deterministic signal (integer-only; identical to the Go generator) ------
 
 Int16List genSignal(int seed) {
   int x = seed;
   final out = Int16List(numSamples);
   for (int i = 0; i < numSamples; i++) {
-    // xorshift64: use >>> (logical shift) to match Go's uint64 semantics; <<
-    // wraps to 64 bits on the native VM, like Go.
     x ^= (x << 13);
     x ^= (x >>> 7);
     x ^= (x << 17);
-    int v = ((x >>> 40) & 0x1FFF) - 4096; // noise in [-4096, 4095]
+    int v = ((x >>> 40) & 0x1FFF) - 4096;
     if (i % 8000 < 1600) {
       v += ((i >> 3) & 1) == 0 ? 11000 : -11000;
     }
@@ -46,20 +42,18 @@ Int16List genSignal(int seed) {
     } else if (v < -32768) {
       v = -32768;
     }
-    out[i] = v; // Int16List stores the low 16 bits
+    out[i] = v;
   }
   return out;
 }
 
-// --- FNV-1a/64 over a fixed big-endian canonical encoding --------------------
-
 class Hasher {
-  int h = 0xcbf29ce484222325; // 14695981039346656037 (offset basis)
-  static const int _prime = 0x100000001b3; // 1099511628211
+  int h = 0xcbf29ce484222325;
+  static const int _prime = 0x100000001b3;
 
   void byteVal(int b) {
     h ^= (b & 0xFF);
-    h = h * _prime; // wraps to 64 bits on the VM, like Go's uint64
+    h = h * _prime;
   }
 
   void bytes(Uint8List p) {
@@ -96,8 +90,6 @@ class ProcResult {
   ProcResult(this.digest, this.nPackets, this.nEvents, this.nBytes);
 }
 
-// --- processing (drives libmockingbird through the FFI bindings) --------------------
-
 ProcResult process(MockingbirdBindings b, Int16List pcm) {
   final cfg = calloc<mockingbird_config_t>();
   final native = calloc<Int16>(pcm.length);
@@ -109,11 +101,10 @@ ProcResult process(MockingbirdBindings b, Int16List pcm) {
     if (b.mockingbird_config_defaults(cfg) != mockingbird_status.MOCKINGBIRD_OK) {
       throw StateError('mockingbird_config_defaults failed');
     }
-    cfg.ref.backendAsInt = 4; // HOST_PCM
-    cfg.ref.codecAsInt = 1; // OPUS
+    cfg.ref.backendAsInt = 4;
+    cfg.ref.codecAsInt = 1;
     cfg.ref.pcm_ring_frames = 1 << 17;
     cfg.ref.packet_queue_capacity = 4096;
-    // VAD(fast)+anomaly are already the C defaults; the rest match too.
 
     if (b.mockingbird_create(cfg, outEngine) != mockingbird_status.MOCKINGBIRD_OK) {
       throw StateError('mockingbird_create failed');
@@ -135,10 +126,10 @@ ProcResult process(MockingbirdBindings b, Int16List pcm) {
       }
     }
 
-    b.mockingbird_stop(engine); // flushes the worker's tail
+    b.mockingbird_stop(engine);
 
     final h = Hasher();
-    final packets = <List<int>>[]; // each: [seg,pts,cap,flags,codec,size]
+    final packets = <List<int>>[];
     final datas = <Uint8List>[];
     while (b.mockingbird_drain(engine, pkt) == mockingbird_status.MOCKINGBIRD_OK) {
       final r = pkt.ref;
@@ -209,8 +200,6 @@ ProcResult process(MockingbirdBindings b, Int16List pcm) {
     calloc.free(stats);
   }
 }
-
-// --- wire protocol -----------------------------------------------------------
 
 class ByteReader {
   final Queue<int> _buf = Queue<int>();
@@ -297,7 +286,6 @@ String hex16(int v) => '0x${(v & 0xFFFFFFFFFFFFFFFF).toRadixString(16).padLeft(1
 String ok(bool b) => b ? 'MATCH' : 'MISMATCH';
 
 String resolveLib(List<String> args) {
-  // Positional args only; skip flags like --peer=<name>.
   final positional = args.where((a) => !a.startsWith('--')).toList();
   if (positional.length >= 2) return positional[1];
   final ext = Platform.isMacOS ? 'dylib' : (Platform.isWindows ? 'dll' : 'so');
@@ -334,8 +322,6 @@ Future<void> main(List<String> args) async {
   socket.setOption(SocketOption.tcpNoDelay, true);
   final reader = ByteReader(socket);
 
-  // The peer name is cosmetic (log labels only). Any binding can be on the
-  // other end; the seeds belong to the ROLE, not the language.
   const name = 'dart';
   final peerName = args
       .firstWhere((a) => a.startsWith('--peer='), orElse: () => '--peer=go')
@@ -349,7 +335,6 @@ Future<void> main(List<String> args) async {
   writeFrame(socket, pcmToBytes(own));
   final peerBytes = await readFrame(reader);
 
-  // Generator parity: peer's bytes must equal our regeneration of the peer seed.
   if (!bytesEqual(peerBytes, pcmToBytes(genSignal(goSeed)))) {
     stdout.writeln('[$name] GENERATOR MISMATCH: $peerName signal differs from our local regeneration');
     await socket.close();
@@ -369,8 +354,8 @@ Future<void> main(List<String> args) async {
   final peerComputedForMine = rd.getUint64(0, Endian.big);
   final peerExpectedForTheirs = rd.getUint64(8, Endian.big);
 
-  final dirA = peerComputedForMine == expected.digest; // peer processed my audio like me
-  final dirB = computed.digest == peerExpectedForTheirs; // I processed peer's audio like peer
+  final dirA = peerComputedForMine == expected.digest;
+  final dirB = computed.digest == peerExpectedForTheirs;
 
   stdout.writeln('[$name] parity $name-audio to $peerName: ${ok(dirA)}   |   '
       '$peerName-audio to $name: ${ok(dirB)}');

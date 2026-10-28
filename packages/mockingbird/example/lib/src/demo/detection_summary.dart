@@ -5,9 +5,16 @@ import 'package:mockingbird_example/src/demo/event_formatter.dart';
 /// What the detectors currently say: voice state from Silero VAD, the latest
 /// recognised sound from YAMNet.
 final class DetectionSummary extends Equatable {
-  const DetectionSummary({
+  const factory DetectionSummary({
+    bool voiceActive,
+    String lastSound,
+    MockingbirdSoundCategory lastCategory,
+    double lastConfidence,
+  }) = DetectionSummary._;
+
+  const DetectionSummary._({
     this.voiceActive = false,
-    this.lastSound = '—',
+    this.lastSound = '-',
     this.lastCategory = .other,
     this.lastConfidence = 0,
   });

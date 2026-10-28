@@ -8,7 +8,6 @@
 struct mockingbird_engine;
 
 namespace mockingbird {
-
 mockingbird_event_t make_event(mockingbird_event_type_t type,
                          uint64_t           segment_id,
                          uint64_t           timestamp_us,
@@ -19,4 +18,4 @@ void emit_event(mockingbird_engine* e, const mockingbird_event_t& evt);
 
 void emit_backend_error(mockingbird_engine* e, mockingbird_status_t status);
 
-} // namespace mockingbird
+}

@@ -7,7 +7,6 @@
 #include "engine_events.hpp"
 
 namespace mockingbird {
-
 Worker::Worker(mockingbird_engine* e)
     : e_(e),
       frame_samples_(samples_per_frame(e->cfg)),
@@ -75,4 +74,4 @@ void worker_loop(mockingbird_engine* e) noexcept {
     }
 }
 
-} // namespace mockingbird
+}

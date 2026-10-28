@@ -11,7 +11,6 @@
 struct mockingbird_engine;
 
 namespace mockingbird {
-
 class Segmenter {
 public:
     void init(mockingbird_engine* e, uint32_t frame_samples);
@@ -46,4 +45,4 @@ private:
     uint32_t silence_frames_ = 0;
 };
 
-} // namespace mockingbird
+}

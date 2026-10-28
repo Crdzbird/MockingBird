@@ -4,7 +4,6 @@
 #include "detect/detection_result.hpp"
 
 namespace mockingbird {
-
 struct DetectionPair {
     DetectionResult vad;
     DetectionResult anomaly;
@@ -14,4 +13,4 @@ struct DetectionPair {
     bool running() const { return vad_on || anomaly_on; }
 };
 
-} // namespace mockingbird
+}

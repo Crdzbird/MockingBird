@@ -10,7 +10,6 @@
 struct mockingbird_engine;
 
 namespace mockingbird {
-
 class Detector;
 
 class Tunables {
@@ -34,4 +33,4 @@ private:
     uint64_t seen_generation_ = 0;
 };
 
-} // namespace mockingbird
+}

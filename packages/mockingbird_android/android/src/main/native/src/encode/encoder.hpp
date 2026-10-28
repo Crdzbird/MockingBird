@@ -9,7 +9,6 @@
 #include <memory>
 
 namespace mockingbird {
-
 class Encoder {
 public:
     virtual ~Encoder() = default;
@@ -25,4 +24,4 @@ std::unique_ptr<Encoder> make_encoder(mockingbird_codec_t codec);
 std::unique_ptr<Encoder> make_passthrough_encoder();
 std::unique_ptr<Encoder> make_opus_encoder();
 
-} // namespace mockingbird
+}

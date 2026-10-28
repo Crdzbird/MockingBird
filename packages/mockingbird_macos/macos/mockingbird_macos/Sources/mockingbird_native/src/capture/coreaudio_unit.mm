@@ -11,7 +11,6 @@
 #endif
 
 namespace mockingbird {
-
 AudioComponentInstance coreaudio_create_unit() {
     AudioComponentDescription desc{};
     desc.componentType = kAudioUnitType_Output;
@@ -60,6 +59,6 @@ OSStatus coreaudio_select_default_input(AudioComponentInstance unit) {
 #endif
 }
 
-} // namespace mockingbird
+}
 
 #endif

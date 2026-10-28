@@ -11,7 +11,6 @@
 #include <memory>
 
 namespace mockingbird {
-
 struct OboeBackend::Impl : public oboe::AudioStreamDataCallback,
                            public oboe::AudioStreamErrorCallback {
     std::shared_ptr<oboe::AudioStream> stream;
@@ -81,6 +80,6 @@ mockingbird_status_t OboeBackend::stop() {
     return MOCKINGBIRD_OK;
 }
 
-} // namespace mockingbird
+}
 
 #endif

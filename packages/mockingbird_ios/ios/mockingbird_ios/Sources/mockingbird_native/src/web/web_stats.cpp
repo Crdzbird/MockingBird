@@ -11,7 +11,6 @@
 using namespace mockingbird::web;
 
 extern "C" {
-
 EMSCRIPTEN_KEEPALIVE mockingbird_stats_t* mockingbird_web_stats_new(void) {
     return static_cast<mockingbird_stats_t*>(std::calloc(1, sizeof(mockingbird_stats_t)));
 }
@@ -45,6 +44,6 @@ EMSCRIPTEN_KEEPALIVE double mockingbird_web_stats_get(const mockingbird_stats_t*
     }
 }
 
-} // extern "C"
+}
 
 #endif

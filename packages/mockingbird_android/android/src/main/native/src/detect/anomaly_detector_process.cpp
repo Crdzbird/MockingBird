@@ -7,7 +7,6 @@
 #include <cstring>
 
 namespace mockingbird {
-
 SpectralMetrics AnomalyDetector::measure(const int16_t* frame, uint32_t n) {
     double sumsq = 0.0;
     for (uint32_t i = 0; i < n; ++i) {
@@ -91,4 +90,4 @@ DetectionResult AnomalyDetector::process(const int16_t* frame, uint32_t frame_co
     return r;
 }
 
-} // namespace mockingbird
+}

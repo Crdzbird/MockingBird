@@ -5,9 +5,7 @@
 #include <cmath>
 
 namespace mockingbird {
-
 namespace {
-
 constexpr uint32_t kMaxPcmRingFrames       = 1u << 24;
 constexpr uint32_t kMaxPacketQueueCapacity = 1u << 16;
 constexpr uint32_t kMaxDurationMs          = 300000u;
@@ -50,7 +48,7 @@ bool valid_durations(const mockingbird_config_t& c) {
            c.sound_class_interval_ms <= kMaxDurationMs;
 }
 
-} // namespace
+}
 
 mockingbird_status_t validate_config(const mockingbird_config_t& c) {
     const int backend       = enum_as_int(c.backend);
@@ -87,4 +85,4 @@ size_t batch_samples_for(const mockingbird_config_t& c, uint32_t batch_frames) {
     return wanted < 2u * frame ? 0 : wanted;
 }
 
-} // namespace mockingbird
+}

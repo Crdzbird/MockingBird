@@ -1,7 +1,24 @@
 /// The detector fields of `mockingbird_config_t`.
 final class MockingbirdNativeDetectorConfig {
   /// Creates the detector fields.
-  const MockingbirdNativeDetectorConfig({
+  const factory MockingbirdNativeDetectorConfig({
+    required bool enableVad,
+    required int vadTier,
+    required int vadAggressiveness,
+    required double vadNeuralThreshold,
+    required int vadHangoverMs,
+    required String? neuralVadModelPath,
+    required bool enableAnomaly,
+    required double anomalyRmsZ,
+    required double anomalyFluxZ,
+    required int anomalyBackgroundMs,
+    required bool enableSoundClass,
+    required String? soundClassModelPath,
+    required double soundClassThreshold,
+    required int soundClassIntervalMs,
+  }) = MockingbirdNativeDetectorConfig._;
+
+  const MockingbirdNativeDetectorConfig._({
     required this.enableVad,
     required this.vadTier,
     required this.vadAggressiveness,

@@ -7,7 +7,9 @@ import 'package:web/web.dart' as web;
 /// Loads the capture worklet and describes capture failures as events.
 final class WebCaptureWorklet {
   /// Creates the helper.
-  const WebCaptureWorklet();
+  const factory WebCaptureWorklet() = WebCaptureWorklet._;
+
+  const WebCaptureWorklet._();
 
   static const _file = 'mockingbird_capture_worklet.js';
   static const _permissionDenied = -8;

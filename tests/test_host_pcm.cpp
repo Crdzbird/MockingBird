@@ -12,7 +12,6 @@
 #include <vector>
 
 namespace {
-
 struct Engine {
     mockingbird_engine_t* e = nullptr;
     ~Engine() {
@@ -33,7 +32,7 @@ void run_passthrough_into(Engine& g,
     cfg.codec              = MOCKINGBIRD_CODEC_PCM_S16LE;
     cfg.sample_rate_hz     = 16000;
     cfg.frame_ms           = 20;
-    cfg.enable_vad         = 0;            // passthrough: every frame flows
+    cfg.enable_vad         = 0;
     cfg.enable_anomaly     = 0;
     REQUIRE(mockingbird_create(&cfg, &g.e) == MOCKINGBIRD_OK);
     REQUIRE(mockingbird_start(g.e) == MOCKINGBIRD_OK);
@@ -59,7 +58,7 @@ void run_passthrough_into(Engine& g,
     }
 }
 
-} // namespace
+}
 
 TEST_CASE("HOST_PCM passthrough: pushes match drained packet count") {
     Engine g;
@@ -77,11 +76,6 @@ TEST_CASE("HOST_PCM passthrough: pushes match drained packet count") {
 }
 
 TEST_CASE("HOST_PCM: per-frame timestamps are deterministic (frame clock)") {
-    // Each frame is pushed with its own capture time (p * 20 ms). Every packet
-    // must carry ITS frame's timestamp — base + index*frame_us — not the
-    // timestamp of the most-recent push. This makes the output a pure function
-    // of the input, independent of the producer/worker race (the property the
-    // Go<->Dart conformance harness depends on).
     Engine g;
     std::vector<mockingbird_packet_t> drained;
     run_passthrough_into(g, /*frame_count*/ 320, /*pushes*/ 10, drained);
@@ -89,7 +83,6 @@ TEST_CASE("HOST_PCM: per-frame timestamps are deterministic (frame clock)") {
     for (size_t p = 0; p < drained.size(); ++p) {
         CHECK(drained[p].capture_ts_us == static_cast<uint64_t>(p) * 20'000ull);
     }
-    // Not collapsed onto a single (latest-push) value.
     CHECK(drained.front().capture_ts_us != drained.back().capture_ts_us);
 }
 
@@ -108,7 +101,6 @@ TEST_CASE("HOST_PCM passthrough: SEGMENT_BEGIN/END events balance via poll") {
     Engine g;
     std::vector<mockingbird_packet_t> drained;
     run_passthrough_into(g, 320, 3, drained);
-    // stop forces SEGMENT_END.
     REQUIRE(mockingbird_stop(g.e) == MOCKINGBIRD_OK);
 
     uint32_t begins = 0, ends = 0;
@@ -132,8 +124,6 @@ TEST_CASE("HOST_PCM passthrough on wrong backend returns INVALID_STATE") {
     REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
     REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
 
-    // Trying to push BEFORE create with HOST_PCM is well-covered above; here
-    // verify a NULL samples buffer is rejected without crashing.
     CHECK(mockingbird_push_pcm(e, nullptr, 32, 0) == MOCKINGBIRD_ERR_INVALID_ARG);
 
     mockingbird_stop(e);

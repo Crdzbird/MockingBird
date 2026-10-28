@@ -2,7 +2,9 @@ import 'package:mockingbird/mockingbird.dart';
 
 /// Turns events into log lines, naming YAMNet classes from the label map.
 final class EventFormatter {
-  const EventFormatter(this.labels);
+  const factory EventFormatter(List<String> labels) = EventFormatter._;
+
+  const EventFormatter._(this.labels);
 
   final List<String> labels;
 

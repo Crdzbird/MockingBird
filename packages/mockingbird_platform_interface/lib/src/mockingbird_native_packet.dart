@@ -3,7 +3,16 @@ import 'dart:typed_data';
 /// A flat mirror of `mockingbird_packet_t` whose payload has been copied.
 final class MockingbirdNativePacket {
   /// Creates a packet record.
-  const MockingbirdNativePacket({
+  const factory MockingbirdNativePacket({
+    required int segmentId,
+    required int ptsUs,
+    required int captureTsUs,
+    required int flags,
+    required int codec,
+    required Uint8List data,
+  }) = MockingbirdNativePacket._;
+
+  const MockingbirdNativePacket._({
     required this.segmentId,
     required this.ptsUs,
     required this.captureTsUs,

@@ -12,7 +12,9 @@ extension type _EsModule(JSObject _) implements JSObject {
 /// Loads `mockingbird.js` from the package assets and instantiates the module.
 final class ModuleLoader {
   /// Creates the loader.
-  const ModuleLoader();
+  const factory ModuleLoader() = ModuleLoader._;
+
+  const ModuleLoader._();
 
   /// Imports the script as an ES module and runs its factory.
   Future<MockingbirdModule> load() async {

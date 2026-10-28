@@ -6,7 +6,6 @@
 #include <cstdint>
 
 namespace mockingbird {
-
 class DegradationPolicy {
 public:
     static constexpr uint32_t kMaxLevel    = 3;
@@ -44,4 +43,4 @@ private:
     uint32_t calm_  = 0;
 };
 
-} // namespace mockingbird
+}

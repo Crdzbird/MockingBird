@@ -32,7 +32,7 @@ class VadConfig:
         tier: VadTier = VadTier.NEURAL,
         model_path: str | None = None,
     ) -> VadConfig:
-        """Silero's threshold runs 0.80 → 0.20, libfvad's aggressiveness 3 → 0."""
+        """Silero's threshold runs 0.80 to 0.20, libfvad's aggressiveness 3 to 0."""
         return cls(
             enabled=enabled,
             tier=tier,

@@ -10,7 +10,6 @@
 #include <type_traits>
 
 namespace mockingbird {
-
 inline constexpr size_t kCacheLine = 64;
 
 inline size_t round_up_pow2(size_t v) noexcept {
@@ -96,4 +95,4 @@ private:
     alignas(kCacheLine) std::atomic<size_t> tail_{0};
 };
 
-} // namespace mockingbird
+}

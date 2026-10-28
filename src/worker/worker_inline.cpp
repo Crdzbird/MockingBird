@@ -11,7 +11,6 @@
 #include <memory>
 
 namespace mockingbird {
-
 void driver_start(mockingbird_engine* e) {
     e->inline_worker = std::make_unique<Worker>(e);
 }
@@ -37,6 +36,6 @@ void driver_stop(mockingbird_engine* e) {
     e->inline_worker.reset();
 }
 
-} // namespace mockingbird
+}
 
 #endif

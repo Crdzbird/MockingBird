@@ -1,7 +1,13 @@
 /// How detections are cut into segments of audio.
 final class MockingbirdSegmentConfig {
   /// Creates a segmentation configuration.
-  const MockingbirdSegmentConfig({
+  const factory MockingbirdSegmentConfig({
+    int preRollMs,
+    int postRollMs,
+    int maxMs,
+  }) = MockingbirdSegmentConfig._;
+
+  const MockingbirdSegmentConfig._({
     this.preRollMs = 300,
     this.postRollMs = 300,
     this.maxMs = 60000,

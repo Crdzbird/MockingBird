@@ -6,7 +6,14 @@ import 'package:mockingbird_web/src/web_capture.dart';
 /// A WebAssembly engine pointer plus its scratch records and capture.
 final class WebEngineHandle extends MockingbirdEngineHandle {
   /// Allocates the scratch records for [pointer].
-  WebEngineHandle(
+  factory WebEngineHandle(
+    MockingbirdModule m,
+    int pointer, {
+    required bool captures,
+    required int sampleRateHz,
+  }) = WebEngineHandle._;
+
+  WebEngineHandle._(
     MockingbirdModule m,
     this.pointer, {
     required this.captures,

@@ -2,8 +2,15 @@ import 'package:flutter/material.dart';
 
 /// Live input level from the engine's stats, which works whether or not a
 /// segment is open.
-class LevelMeter extends StatelessWidget {
-  const LevelMeter({
+final class LevelMeter extends StatelessWidget {
+  const factory LevelMeter({
+    required double rmsDbfs,
+    required double peakDbfs,
+    required bool running,
+    Key? key,
+  }) = LevelMeter._;
+
+  const LevelMeter._({
     required this.rmsDbfs,
     required this.peakDbfs,
     required this.running,
@@ -54,7 +61,7 @@ class LevelMeter extends StatelessWidget {
         SizedBox(
           width: 64,
           child: Text(
-            running ? '${rmsDbfs.toStringAsFixed(1)} dB' : '—',
+            running ? '${rmsDbfs.toStringAsFixed(1)} dB' : '-',
             style: Theme.of(context).textTheme.labelSmall,
             textAlign: TextAlign.right,
           ),

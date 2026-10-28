@@ -7,7 +7,10 @@ import 'package:mockingbird_platform_interface/src/mockingbird_engine_handle.dar
 /// A native engine pointer plus the scratch records polling reuses.
 final class FfiEngineHandle extends MockingbirdEngineHandle {
   /// Wraps [pointer] and allocates the scratch records once.
-  FfiEngineHandle(this.pointer)
+  factory FfiEngineHandle(ffi.Pointer<mockingbird_engine_t> pointer) =
+      FfiEngineHandle._;
+
+  FfiEngineHandle._(this.pointer)
     : event = calloc(),
       packet = calloc(),
       stats = calloc();

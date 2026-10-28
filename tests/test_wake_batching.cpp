@@ -22,7 +22,6 @@ mockingbird_config_t cfg_with_batch(uint32_t batch) {
     return c;
 }
 
-// Paced pushes so the worker parks between frames when unbatched.
 uint64_t wakeups_after(uint32_t batch, int frames) {
     Engine eng; mockingbird_config_t c = cfg_with_batch(batch);
     REQUIRE(mockingbird_create(&c, &eng.e) == MOCKINGBIRD_OK);
@@ -34,13 +33,12 @@ uint64_t wakeups_after(uint32_t batch, int frames) {
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
     mockingbird_stats_t s{}; mockingbird_get_stats(eng.e, &s);
-    // Every frame is still processed (mockingbird_stop drains the tail).
     mockingbird_stop(eng.e); mockingbird_get_stats(eng.e, &s);
     CHECK(s.frames_captured == static_cast<uint64_t>(frames) * kFrame);
     CHECK(s.packets_emitted == static_cast<uint64_t>(frames));
     return s.worker_wakeups;
 }
-} // namespace
+}
 
 TEST_CASE("batching: validation and defaults") {
     mockingbird_config_t c{}; mockingbird_config_defaults(&c);
@@ -53,8 +51,8 @@ TEST_CASE("batching: fewer wakeups, identical output") {
     const uint64_t unbatched = wakeups_after(0, 40);
     const uint64_t batched   = wakeups_after(8, 40);
     INFO("wakeups unbatched=" << unbatched << " batched=" << batched);
-    CHECK(unbatched >= 20u);            // paced pushes: roughly one wake per frame
-    CHECK(batched * 2u < unbatched);    // at most ~one wake per 8 frames
+    CHECK(unbatched >= 20u);
+    CHECK(batched * 2u < unbatched);
 }
 
 TEST_CASE("batching: live retune takes effect") {

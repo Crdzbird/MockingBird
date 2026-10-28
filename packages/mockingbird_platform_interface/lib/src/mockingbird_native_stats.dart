@@ -1,7 +1,28 @@
 /// A flat mirror of `mockingbird_stats_t`.
 final class MockingbirdNativeStats {
   /// Creates a stats record.
-  const MockingbirdNativeStats({
+  const factory MockingbirdNativeStats({
+    required int framesCaptured,
+    required int framesDroppedCapture,
+    required int packetsEmitted,
+    required int packetsDropped,
+    required int segmentsOpened,
+    required int segmentsClosed,
+    required int pcmRingFillFrames,
+    required int packetQueueFill,
+    required double inputRmsDbfs,
+    required double inputPeakDbfs,
+    required int tapSamplesDropped,
+    required int workerBusyPpm,
+    required int workerMaxFrameUs,
+    required int workerWakeups,
+    required int soundClassInferences,
+    required int soundClassInferencesSkipped,
+    required int preprocFramesSkipped,
+    required int degradationLevel,
+  }) = MockingbirdNativeStats._;
+
+  const MockingbirdNativeStats._({
     required this.framesCaptured,
     required this.framesDroppedCapture,
     required this.packetsEmitted,

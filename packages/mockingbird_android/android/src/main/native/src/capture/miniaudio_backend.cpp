@@ -8,9 +8,7 @@
 #include <cstdint>
 
 namespace mockingbird {
-
 namespace {
-
 mockingbird_status_t map_ma_result(ma_result r) noexcept {
     switch (r) {
         case MA_SUCCESS:                return MOCKINGBIRD_OK;
@@ -23,7 +21,7 @@ mockingbird_status_t map_ma_result(ma_result r) noexcept {
     }
 }
 
-} // namespace
+}
 
 struct MiniaudioBackend::Impl {
     ma_device   device{};
@@ -87,4 +85,4 @@ mockingbird_status_t MiniaudioBackend::stop() {
     return MOCKINGBIRD_OK;
 }
 
-} // namespace mockingbird
+}

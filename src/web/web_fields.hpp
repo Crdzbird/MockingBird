@@ -3,7 +3,6 @@
 #pragma once
 
 namespace mockingbird::web {
-
 enum ConfigField : int {
     kBackend, kSampleRateHz, kFrameMs, kEnableRnnoise, kEnableVad, kVadTier,
     kVadAggressiveness, kVadNeuralThreshold, kVadHangoverMs, kEnableAnomaly,
@@ -34,4 +33,4 @@ enum StatsField : int {
     kStatsFieldCount
 };
 
-} // namespace mockingbird::web
+}

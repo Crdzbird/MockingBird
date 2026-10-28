@@ -6,7 +6,6 @@
 #include "worker/level_meter.hpp"
 
 namespace mockingbird {
-
 void Worker::process_frame(uint64_t now_ts) {
     health_.begin_frame();
     tunables_.refresh(e_, bank_.vad(), bank_.anomaly());
@@ -27,4 +26,4 @@ void Worker::process_frame(uint64_t now_ts) {
     health_.end_frame(e_, now_ts, tunables_);
 }
 
-} // namespace mockingbird
+}

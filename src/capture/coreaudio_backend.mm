@@ -10,7 +10,6 @@
 #endif
 
 namespace mockingbird {
-
 CoreAudioBackend::CoreAudioBackend() : impl_(std::make_unique<Impl>()) {}
 
 CoreAudioBackend::~CoreAudioBackend() {
@@ -70,6 +69,6 @@ mockingbird_status_t CoreAudioBackend::stop() {
     return MOCKINGBIRD_OK;
 }
 
-} // namespace mockingbird
+}
 
 #endif

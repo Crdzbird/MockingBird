@@ -9,7 +9,9 @@ import 'package:mockingbird_web/src/web_record_field.dart';
 /// Reads native records through the shim's field getters.
 final class WebDecoders {
   /// Wraps the loaded module.
-  const WebDecoders(this._m);
+  const factory WebDecoders(MockingbirdModule m) = WebDecoders._;
+
+  const WebDecoders._(this._m);
 
   final MockingbirdModule _m;
 

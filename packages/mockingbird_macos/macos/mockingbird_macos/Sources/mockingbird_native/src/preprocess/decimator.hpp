@@ -9,7 +9,6 @@
 #include <vector>
 
 namespace mockingbird {
-
 class Decimator {
 public:
     void configure(int factor, size_t taps_per_phase = 16) {
@@ -61,4 +60,4 @@ private:
     std::vector<float> hist_;
 };
 
-} // namespace mockingbird
+}

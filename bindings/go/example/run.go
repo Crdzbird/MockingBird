@@ -27,7 +27,7 @@ func (t *tally) drain(e *mockingbird.Engine, labels []string) {
 }
 
 func runMic(e *mockingbird.Engine, seconds int, labels []string) {
-	fmt.Println("listening on the default mic — Ctrl-C to stop")
+	fmt.Println("listening on the default mic, Ctrl-C to stop")
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
 	var deadline <-chan time.Time
@@ -46,7 +46,7 @@ func runMic(e *mockingbird.Engine, seconds int, labels []string) {
 			t.bytes += len(p.Data)
 		case <-ticker.C:
 			st, _ := e.Stats()
-			fmt.Printf("   … %d frames · %d packets (%d B) · %d segments\n",
+			fmt.Printf("   ... %d frames, %d packets (%d B), %d segments\n",
 				st.FramesCaptured, t.packets, t.bytes, st.SegmentsOpened)
 		case <-sig:
 			report(e, t)
@@ -85,12 +85,12 @@ func report(e *mockingbird.Engine, t tally) {
 	st, _ := e.Stats()
 	de, dp := e.Dropped()
 	w := st.Worker
-	fmt.Printf("\n── summary ──\n"+
+	fmt.Printf("\n-- summary --\n"+
 		"frames captured : %d\n"+
 		"segments        : %d opened / %d closed\n"+
 		"packets to host : %d (%d bytes encoded)\n"+
 		"native dropped  : %d frames, %d packets  |  host-side dropped: %d events, %d packets\n"+
-		"worker          : %.2f%% busy, max frame %d µs, %d wakeups\n"+
+		"worker          : %.2f%% busy, max frame %d us, %d wakeups\n"+
 		"work shed       : YAMNet %d ran / %d skipped, RNNoise skipped %d quiet frames, degradation level %d\n",
 		st.FramesCaptured, st.SegmentsOpened, st.SegmentsClosed, t.packets, t.bytes,
 		st.FramesDroppedCapture, st.PacketsDropped, de, dp,

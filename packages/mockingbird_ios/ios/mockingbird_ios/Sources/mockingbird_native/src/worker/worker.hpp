@@ -14,7 +14,6 @@
 struct mockingbird_engine;
 
 namespace mockingbird {
-
 class Worker {
 public:
     explicit Worker(mockingbird_engine* e);
@@ -41,4 +40,4 @@ private:
 
 void worker_loop(mockingbird_engine* e) noexcept;
 
-} // namespace mockingbird
+}

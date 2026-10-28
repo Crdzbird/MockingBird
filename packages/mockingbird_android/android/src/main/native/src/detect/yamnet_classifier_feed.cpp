@@ -7,7 +7,6 @@
 #include <cstring>
 
 namespace mockingbird {
-
 void YamnetClassifier::append(const int16_t* frame, uint32_t n) {
     for (uint32_t i = 0; i < n; ++i) {
         buf_[write_pos_] = static_cast<float>(frame[i]) / 32768.0f;
@@ -54,6 +53,6 @@ ClassificationResult YamnetClassifier::feed(const int16_t* frame, uint32_t n,
     return fresh;
 }
 
-} // namespace mockingbird
+}
 
 #endif

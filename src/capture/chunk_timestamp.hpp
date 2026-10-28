@@ -7,7 +7,6 @@
 #include <cstdint>
 
 namespace mockingbird {
-
 inline uint64_t chunk_start_ts_us(uint32_t sample_rate_hz, uint32_t frame_count) noexcept {
     const uint64_t now = monotonic_now_us();
     const uint64_t chunk_us = (sample_rate_hz > 0)
@@ -16,4 +15,4 @@ inline uint64_t chunk_start_ts_us(uint32_t sample_rate_hz, uint32_t frame_count)
     return (now > chunk_us) ? (now - chunk_us) : 0;
 }
 
-} // namespace mockingbird
+}

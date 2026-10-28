@@ -8,7 +8,6 @@
 #include <algorithm>
 
 namespace mockingbird {
-
 void Segmenter::on_frame(const int16_t* samples, uint64_t now_ts, const DetectionPair& d,
                          uint32_t hangover_frames) {
     const bool is_active = d.vad.active || d.anomaly.active || !d.running();
@@ -55,4 +54,4 @@ void Segmenter::on_trailing_silence(const int16_t* samples, uint64_t now_ts,
     silence_frames_ = 0;
 }
 
-} // namespace mockingbird
+}

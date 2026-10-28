@@ -5,7 +5,6 @@
 #include "engine.hpp"
 
 namespace mockingbird {
-
 namespace {
 constexpr size_t kPullEventQueueCap = 1024;
 }
@@ -50,4 +49,4 @@ void emit_backend_error(mockingbird_engine* e, mockingbird_status_t status) {
                              static_cast<uint32_t>(status)));
 }
 
-} // namespace mockingbird
+}

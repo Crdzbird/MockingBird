@@ -11,9 +11,7 @@
 #endif
 
 namespace mockingbird {
-
 namespace {
-
 mockingbird_status_t activate_session(const mockingbird_config_t& cfg) {
 #if TARGET_OS_IPHONE
     AVAudioSession* session = [AVAudioSession sharedInstance];
@@ -42,7 +40,7 @@ OSStatus set_stream_format(AudioComponentInstance unit, const mockingbird_config
                                 kCoreAudioInputBus, &fmt, sizeof(fmt));
 }
 
-} // namespace
+}
 
 mockingbird_status_t coreaudio_open_unit(CoreAudioBackend::Impl& impl, const mockingbird_config_t& cfg) {
     const mockingbird_status_t session = activate_session(cfg);
@@ -60,6 +58,6 @@ mockingbird_status_t coreaudio_open_unit(CoreAudioBackend::Impl& impl, const moc
     return MOCKINGBIRD_OK;
 }
 
-} // namespace mockingbird
+}
 
 #endif
