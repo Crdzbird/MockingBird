@@ -1,5 +1,7 @@
 // mockingbird_start and mockingbird_stop. Capture starts last and stops first, so frames
-// only flow while the worker is there to consume them.
+// only flow while the worker is there to consume them. Each start after the
+// first opens a fresh capture backend, so an engine can be started again and
+// picks up a device or route that changed while it was stopped.
 #include "mockingbird/mockingbird.h"
 #include "clock.hpp"
 #include "engine.hpp"
@@ -15,7 +17,12 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_start(mockingbird_engine_t* e) 
         e->stop_requested.store(false, std::memory_order_release);
         e->last_capture_ts_us.store(mockingbird::monotonic_now_us(), std::memory_order_release);
         e->first_capture_ts_us.store(~uint64_t{0}, std::memory_order_release);
+        if (e->capture_backend && e->capture_backend_used) {
+            e->capture_backend = mockingbird::make_backend(e->cfg.backend);
+            if (!e->capture_backend) return MOCKINGBIRD_ERR_UNSUPPORTED;
+        }
         if (e->capture_backend) {
+            e->capture_backend_used = true;
             const mockingbird_status_t r =
                 e->capture_backend->init(e->cfg, mockingbird::backend_pcm_callback, e);
             if (r != MOCKINGBIRD_OK) return r;

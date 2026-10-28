@@ -29,6 +29,8 @@ struct MockState {
     int            init_calls   = 0;
     int            start_calls  = 0;
     int            stop_calls   = 0;
+    int            created      = 0;
+    bool           single_init  = false;
 };
 MockState g_mock;
 
@@ -40,6 +42,8 @@ public:
                         mockingbird::PcmCallback     cb,
                         void*                  user) override {
         ++g_mock.init_calls;
+        if (g_mock.single_init && inited_) return MOCKINGBIRD_ERR_INVALID_STATE;
+        inited_ = true;
         cb_ = cb;
         user_ = user;
         frame_samples_ = (cfg.sample_rate_hz / 1000u) * cfg.frame_ms;
@@ -77,9 +81,11 @@ private:
     uint32_t           frame_samples_ = 320;
     std::atomic<bool>  running_{false};
     std::thread        feeder_;
+    bool               inited_ = false;
 };
 
 std::unique_ptr<mockingbird::CaptureBackend> mock_factory(mockingbird_backend_t) {
+    ++g_mock.created;
     return std::make_unique<MockBackend>();
 }
 
@@ -185,4 +191,20 @@ TEST_CASE("Backend teardown: destroy while running stops the backend and joins")
 
     mockingbird_destroy(e);
     CHECK(g_mock.stop_calls >= 1);
+}
+
+TEST_CASE("Backend restart: a capture engine starts again with a fresh backend") {
+    MockGuard g;
+    g_mock.single_init = true;
+
+    mockingbird_config_t cfg = device_cfg();
+    mockingbird_engine_t* e = nullptr;
+    REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
+    for (int i = 0; i < 3; ++i) {
+        REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
+        REQUIRE(mockingbird_stop(e) == MOCKINGBIRD_OK);
+    }
+    CHECK(g_mock.created == 3);
+    CHECK(g_mock.init_calls == 3);
+    mockingbird_destroy(e);
 }

@@ -29,6 +29,7 @@ struct mockingbird_engine {
     mockingbird::PacketPool        packets;
 
     std::unique_ptr<mockingbird::CaptureBackend> capture_backend;
+    bool capture_backend_used = false;
     std::unique_ptr<mockingbird::Encoder>        encoder;
 
     std::thread                    worker_thread;
