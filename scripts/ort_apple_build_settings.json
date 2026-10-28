@@ -1,0 +1,26 @@
+{
+    "build_osx_archs": {
+        "iphoneos": ["arm64"],
+        "iphonesimulator": ["arm64", "x86_64"],
+        "macosx": ["arm64", "x86_64"]
+    },
+    "build_params": {
+        "base": [
+            "--parallel",
+            "--use_xcode",
+            "--build_apple_framework",
+            "--skip_tests",
+            "--skip_submodule_sync",
+            "--compile_no_warning_as_error",
+            "--minimal_build=extended",
+            "--disable_ml_ops",
+            "--enable_reduced_operator_type_support",
+            "--cmake_extra_defines=onnxruntime_BUILD_UNIT_TESTS=OFF",
+            "--cmake_extra_defines=FETCHCONTENT_TRY_FIND_PACKAGE_MODE=NEVER",
+            "--cmake_extra_defines=CMAKE_IGNORE_PREFIX_PATH=/opt/homebrew"
+        ],
+        "macosx": ["--macos=MacOSX", "--apple_deploy_target=12.0"],
+        "iphoneos": ["--ios", "--apple_deploy_target=15.0"],
+        "iphonesimulator": ["--ios", "--apple_deploy_target=15.0"]
+    }
+}

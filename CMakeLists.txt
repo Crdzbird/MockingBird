@@ -290,6 +290,14 @@ if(MOCKINGBIRD_ENABLE_NEURAL_VAD)
     if(ONNXRUNTIME_INCLUDE_DIR AND ONNXRUNTIME_LIBRARY)
         set(MOCKINGBIRD_HAVE_NEURAL_VAD ON)
         message(STATUS "Mockingbird: Neural VAD enabled (ONNX Runtime at ${ONNXRUNTIME_LIBRARY})")
+        # A static ONNX Runtime (scripts/build_ort_static.sh) links into the
+        # engine itself; its symbols stay hidden so an app can also load
+        # another ONNX Runtime without clashes.
+        if(ONNXRUNTIME_LIBRARY MATCHES "\\.a$" AND NOT EMSCRIPTEN)
+            set(MOCKINGBIRD_ORT_STATIC ON)
+        elseif(WIN32 AND NOT EXISTS "${ONNXRUNTIME_ROOT}/lib/onnxruntime.dll")
+            set(MOCKINGBIRD_ORT_STATIC ON)
+        endif()
         if(EMSCRIPTEN)
             # ONNX Runtime's WebAssembly build catches exceptions through
             # JavaScript; every object in the module has to agree.
@@ -382,6 +390,16 @@ function(_mockingbird_configure_target tgt)
         target_compile_definitions(${tgt} PRIVATE MOCKINGBIRD_HAVE_NEURAL_VAD=1)
         target_include_directories(${tgt} SYSTEM PRIVATE ${ONNXRUNTIME_INCLUDE_DIR})
         target_link_libraries(${tgt} PRIVATE ${ONNXRUNTIME_LIBRARY})
+        if(MOCKINGBIRD_ORT_STATIC AND NOT WIN32)
+            find_package(Threads REQUIRED)
+            target_link_libraries(${tgt} PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
+            if(ANDROID)
+                target_link_libraries(${tgt} PRIVATE log)
+            endif()
+            if(NOT APPLE)
+                target_link_options(${tgt} PRIVATE "LINKER:--exclude-libs,ALL")
+            endif()
+        endif()
         # YAMNet sound classifier reuses the same ORT integration.
         target_compile_definitions(${tgt} PRIVATE MOCKINGBIRD_HAVE_SOUND_CLASS=1)
     endif()
@@ -549,7 +567,7 @@ if(MOCKINGBIRD_ENABLE_TESTS AND TARGET mockingbird_static)
         target_compile_definitions(test_mockingbird PRIVATE MOCKINGBIRD_HAVE_RNNOISE=1)
     endif()
 
-    if(WIN32 AND MOCKINGBIRD_HAVE_NEURAL_VAD)
+    if(WIN32 AND MOCKINGBIRD_HAVE_NEURAL_VAD AND NOT MOCKINGBIRD_ORT_STATIC)
         add_custom_command(TARGET test_mockingbird POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
                         ${ONNXRUNTIME_ROOT}/lib/onnxruntime.dll
