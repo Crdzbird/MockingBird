@@ -12,6 +12,7 @@ WebAssembly, in the browser. The core is fuzzed, stress-tested and fault-injecte
 under AddressSanitizer, UndefinedBehaviorSanitizer and ThreadSanitizer.
 
 - Source: https://github.com/Crdzbird/MockingBird
+- Live demo in the browser: https://crdzbird.github.io/MockingBird/
 - Flutter package: https://pub.dev/packages/mockingbird
 - Issues: https://github.com/Crdzbird/MockingBird/issues
 

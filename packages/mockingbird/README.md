@@ -18,7 +18,8 @@ channels on the hot path.
 
 Supported platforms: Android, iOS, macOS, Linux, Windows and web. The web build
 runs the whole engine as WebAssembly, the neural detectors included, through a
-minimal ONNX Runtime linked into the module.
+minimal ONNX Runtime linked into the module. Try the example app in the
+browser at https://crdzbird.github.io/MockingBird/.
 
 ## Install
 
