@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <map>
 #include <thread>
 #include <vector>
 
@@ -83,6 +84,9 @@ struct VadResult {
     uint32_t packets       = 0;
     uint64_t frames_captured = 0;
     uint64_t frames_dropped  = 0;
+    std::vector<mockingbird_event_t> speech_events;
+    std::map<uint64_t, uint64_t>     first_packet_us;
+    std::map<uint64_t, uint64_t>     first_live_us;
 };
 
 VadResult run_vad_through_fixture(const WavInts16& wav, mockingbird_vad_tier_t tier) {
@@ -115,6 +119,9 @@ VadResult run_vad_through_fixture(const WavInts16& wav, mockingbird_vad_tier_t t
             REQUIRE(s == MOCKINGBIRD_OK);
             if (evt.type == MOCKINGBIRD_EVT_SPEECH_BEGIN)  ++vr.speech_begin;
             if (evt.type == MOCKINGBIRD_EVT_SPEECH_END)    ++vr.speech_end;
+            if (evt.type == MOCKINGBIRD_EVT_SPEECH_BEGIN || evt.type == MOCKINGBIRD_EVT_SPEECH_END) {
+                vr.speech_events.push_back(evt);
+            }
             if (evt.type == MOCKINGBIRD_EVT_SEGMENT_BEGIN) ++vr.segment_begin;
             if (evt.type == MOCKINGBIRD_EVT_SEGMENT_END)   ++vr.segment_end;
         }
@@ -126,6 +133,10 @@ VadResult run_vad_through_fixture(const WavInts16& wav, mockingbird_vad_tier_t t
             if (s == MOCKINGBIRD_ERR_QUEUE_EMPTY) return;
             REQUIRE(s == MOCKINGBIRD_OK);
             ++vr.packets;
+            vr.first_packet_us.emplace(pkt.segment_id, pkt.capture_ts_us);
+            if ((pkt.flags & MOCKINGBIRD_PKT_FLAG_PREROLL) == 0) {
+                vr.first_live_us.emplace(pkt.segment_id, pkt.capture_ts_us);
+            }
             REQUIRE(mockingbird_release(e, &pkt) == MOCKINGBIRD_OK);
         }
     };
@@ -283,6 +294,38 @@ TEST_CASE("Neural VAD vs FAST VAD: differential on hello.wav, both detect speech
 
     CHECK(fast.speech_begin   >= 1);
     CHECK(neural.speech_begin >= 1);
+}
+
+TEST_CASE("Neural VAD: SPEECH_BEGIN is stamped where the onset began, inside the segment") {
+    set_model_env(std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/silero_vad.onnx");
+    const auto wav = read_wav_int16(std::string(MOCKINGBIRD_TEST_FIXTURE_DIR) + "/hello.wav");
+    REQUIRE(wav.samples.size() > 0);
+
+    const auto fast   = run_vad_through_fixture(wav, MOCKINGBIRD_VAD_FAST);
+    const auto neural = run_vad_through_fixture(wav, MOCKINGBIRD_VAD_NEURAL);
+    REQUIRE(neural.speech_begin >= 1);
+
+    uint32_t backdated  = 0;
+    uint64_t last_end   = 0;
+    uint64_t last_seg   = 0;
+    for (const auto& ev : neural.speech_events) {
+        if (ev.type == MOCKINGBIRD_EVT_SPEECH_END) {
+            last_end = ev.timestamp_us;
+            continue;
+        }
+        CHECK(ev.timestamp_us >= last_end);
+        CHECK(ev.timestamp_us >= neural.first_packet_us.at(ev.segment_id));
+        if (ev.segment_id != last_seg && ev.timestamp_us < neural.first_live_us.at(ev.segment_id)) {
+            ++backdated;
+        }
+        last_seg = ev.segment_id;
+    }
+    CHECK(backdated >= 1);
+
+    for (const auto& ev : fast.speech_events) {
+        if (ev.type != MOCKINGBIRD_EVT_SPEECH_BEGIN) continue;
+        CHECK(ev.timestamp_us >= fast.first_live_us.at(ev.segment_id));
+    }
 }
 
 #else

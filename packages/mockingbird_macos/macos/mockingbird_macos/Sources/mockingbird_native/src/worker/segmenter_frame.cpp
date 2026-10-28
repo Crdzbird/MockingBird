@@ -40,7 +40,9 @@ void Segmenter::on_active(const int16_t* samples, uint64_t now_ts, const Detecti
     }
     if (d.vad_on && d.vad.active && !vad_was_active_ && !speech_open_) {
         speech_open_ = true;
-        emit_event(e_, make_event(MOCKINGBIRD_EVT_SPEECH_BEGIN, open_id_, now_ts, 0,
+        const uint64_t floor = std::min(now_ts, std::max(start_us_, speech_end_us_));
+        const uint64_t lead  = std::min(d.vad.onset_lead_us, now_ts - floor);
+        emit_event(e_, make_event(MOCKINGBIRD_EVT_SPEECH_BEGIN, open_id_, now_ts - lead, 0,
                                   d.vad.confidence));
     }
     if (d.anomaly_on && d.anomaly.active && !ano_was_active_) {

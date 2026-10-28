@@ -494,7 +494,7 @@ src/
   config_validation.*       config checks and derived sizes
 third_party/                vendored, permissive-only dependencies
 tests/                      122 doctest cases and the audio and model fixtures
-bench/                      the throughput benchmark and the package comparison
+bench/                      the throughput benchmark, the package comparison and the accuracy benchmark
 packages/                   Flutter federated plugin (mockingbird, platform interface,
                             android, ios, macos, linux, windows, web) and the example app
 bindings/go/                cgo binding, example and tests
@@ -543,6 +543,14 @@ the WebAssembly build under V8 on the same input. The results and how to read
 them are in `packages/mockingbird/README.md`. The web build costs about the same
 as native for the detectors and about twice as much for RNNoise, which has no
 SIMD there: everything the web build has, with Opus, is 2.9% of a core.
+
+`bench/accuracy` measures whether the detectors are right, on LibriSpeech and
+ESC-50. In noise at 0 dB SNR the neural tier keeps false alarms at a third of
+non-speech frames where the fast tier calls three quarters of it speech; with
+the hangover matched it is within one F1 point of vad_plus on the same Silero
+model. YAMNet with int8 weights classifies ESC-50 as well as the float model,
+69.5% top-1 across 47 categories. The full tables and method are in
+`bench/accuracy/README.md`.
 
 Measured and not adopted, with the same harness so the numbers can be rechecked:
 

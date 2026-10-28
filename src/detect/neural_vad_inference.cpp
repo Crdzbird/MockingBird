@@ -12,6 +12,7 @@ namespace mockingbird {
 bool NeuralVadDetector::decide(float p_speech) {
     if (!cached_active_) {
         if (p_speech >= threshold_) {
+            if (onset_count_ == 0) onset_start_ = consumed_;
             if (++onset_count_ >= onset_needed_) {
                 onset_count_ = 0;
                 return true;

@@ -40,6 +40,8 @@ private:
     float                         threshold_     = 0.5f;
     float                         neg_threshold_ = 0.35f;
     float                         last_p_        = 0.0f;
+    uint64_t                      consumed_      = 0;
+    uint64_t                      onset_start_   = 0;
     int                           onset_count_   = 0;
     int                           onset_needed_  = 2;
     bool                          cached_active_ = false;

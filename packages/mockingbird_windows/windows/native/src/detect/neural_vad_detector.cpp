@@ -49,6 +49,8 @@ mockingbird_status_t NeuralVadDetector::init(const mockingbird_config_t& cfg) {
     onset_needed_  = 2;
     onset_count_   = 0;
     last_p_        = 0.0f;
+    consumed_      = 0;
+    onset_start_   = 0;
     cached_active_ = false;
     return MOCKINGBIRD_OK;
 }
@@ -59,9 +61,15 @@ DetectionResult NeuralVadDetector::process(const int16_t* frame, uint32_t n) {
     const size_t old_size = buf_.size();
     buf_.resize(old_size + n);
     for (uint32_t i = 0; i < n; ++i) buf_[old_size + i] = static_cast<float>(frame[i]) / 32768.0f;
+    const bool was_active = cached_active_;
     while (buf_.size() >= window_) {
         cached_active_ = run_inference(buf_.data());
+        consumed_ += window_;
         buf_.erase(buf_.begin(), buf_.begin() + static_cast<std::ptrdiff_t>(window_));
+    }
+    const uint64_t frame_start = consumed_ + buf_.size() - n;
+    if (cached_active_ && !was_active && frame_start > onset_start_) {
+        r.onset_lead_us = (frame_start - onset_start_) * 1'000'000u / sample_rate_;
     }
     r.active     = cached_active_;
     r.confidence = std::min(1.0f, std::max(0.0f, last_p_));

@@ -41,6 +41,7 @@ private:
 
     uint64_t open_id_          = 0;
     uint64_t start_us_         = 0;
+    uint64_t speech_end_us_    = 0;
     uint64_t frame_us_         = 0;
     uint64_t max_us_           = 0;
     uint32_t post_roll_frames_ = 0;

@@ -66,7 +66,8 @@ void Segmenter::flush_preroll() {
 
 void Segmenter::emit_speech_end(uint64_t now_ts) {
     emit_event(e_, make_event(MOCKINGBIRD_EVT_SPEECH_END, open_id_, now_ts, 0, 1.0f));
-    speech_open_ = false;
+    speech_open_   = false;
+    speech_end_us_ = now_ts;
 }
 
 void Segmenter::finish(uint64_t now_ts) {

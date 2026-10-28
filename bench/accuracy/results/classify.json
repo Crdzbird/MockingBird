@@ -1,0 +1,38 @@
+{
+  "Mockingbird YAMNet (int8 weights)": {
+    "clips": 1880,
+    "top1": 0.6946808510638298,
+    "top3": 0.8835106382978724,
+    "hardest": {
+      "mouse_click": 0.0,
+      "door_wood_creaks": 0.025,
+      "rooster": 0.05,
+      "wind": 0.125,
+      "pouring_water": 0.175
+    }
+  },
+  "YAMNet (float weights)": {
+    "clips": 1880,
+    "top1": 0.6925531914893617,
+    "top3": 0.8845744680851064,
+    "hardest": {
+      "mouse_click": 0.0,
+      "rooster": 0.025,
+      "door_wood_creaks": 0.05,
+      "wind": 0.125,
+      "pouring_water": 0.175
+    }
+  },
+  "sherpa_onnx CED tiny": {
+    "clips": 1880,
+    "top1": 0.8292553191489361,
+    "top3": 0.9585106382978723,
+    "hardest": {
+      "hen": 0.05,
+      "crickets": 0.175,
+      "wind": 0.2,
+      "mouse_click": 0.225,
+      "door_wood_creaks": 0.55
+    }
+  }
+}

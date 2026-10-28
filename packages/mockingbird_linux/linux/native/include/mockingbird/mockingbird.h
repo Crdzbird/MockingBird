@@ -169,6 +169,10 @@ typedef enum mockingbird_codec {
 } mockingbird_codec_t;
 
 typedef enum mockingbird_event_type {
+    /* Stamped where speech began. The neural tier confirms speech a window
+     * or two after it starts and stamps the first window that crossed the
+     * threshold, never earlier than the segment's first packet or the
+     * previous SPEECH_END. */
     MOCKINGBIRD_EVT_SPEECH_BEGIN    = 1,
     MOCKINGBIRD_EVT_SPEECH_END      = 2,
     MOCKINGBIRD_EVT_ANOMALY         = 3,  /* point event; opens its own segment */
