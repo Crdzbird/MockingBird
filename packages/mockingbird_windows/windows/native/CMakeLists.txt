@@ -134,6 +134,7 @@ set(MOCKINGBIRD_SOURCES
         src/detect/kaldi_fbank.cpp
         src/detect/speaker_model.cpp
         src/decode/opus_frame_decoder.cpp
+        src/decode/opus_frame_decoder_stub.cpp
         src/encode/factory.cpp
         src/encode/pcm_encoder.cpp
         src/encode/opus_encoder.cpp
@@ -142,6 +143,7 @@ set(MOCKINGBIRD_SOURCES
         src/play/jitter_buffer.cpp
         src/play/jitter_buffer_play.cpp
         src/play/miniaudio_output.cpp
+        src/play/miniaudio_output_callbacks.cpp
         src/play/output_factory.cpp
         src/play/packet_queue.cpp
         src/play/player_config.cpp
@@ -160,6 +162,7 @@ if(APPLE)
             src/capture/coreaudio_unit.mm
             src/platform/apple_audio_session.mm
             src/play/coreaudio_output.mm
+            src/play/coreaudio_output_unit.mm
             src/play/coreaudio_output_watch.mm)
 endif()
 
@@ -171,7 +174,8 @@ if(EMSCRIPTEN)
             src/capture/miniaudio_devices.cpp
             src/capture/miniaudio_ids.cpp
             src/capture/miniaudio_impl.c
-            src/play/miniaudio_output.cpp)
+            src/play/miniaudio_output.cpp
+            src/play/miniaudio_output_callbacks.cpp)
     list(APPEND MOCKINGBIRD_SOURCES
             src/worker/worker_inline.cpp
             src/capture/backend_factory_host_only.cpp
@@ -179,6 +183,7 @@ if(EMSCRIPTEN)
             src/web/web_event.cpp
             src/web/web_files.cpp
             src/web/web_packet.cpp
+            src/web/web_player.cpp
             src/web/web_push.cpp
             src/web/web_stats.cpp)
     set(MOCKINGBIRD_BUILD_SHARED OFF)
@@ -232,7 +237,9 @@ set(MOCKINGBIRD_INTERNAL_HEADERS
         src/play/coreaudio_output_impl.hpp
         src/play/jitter_buffer.hpp
         src/play/miniaudio_output.hpp
+        src/play/miniaudio_output_impl.hpp
         src/play/oboe_output.hpp
+        src/play/oboe_output_impl.hpp
         src/play/output_backend.hpp
         src/play/packet_queue.hpp
         src/play/player.hpp

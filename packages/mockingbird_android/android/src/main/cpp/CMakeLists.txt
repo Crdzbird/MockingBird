@@ -73,6 +73,7 @@ set(MOCKINGBIRD_SOURCES
         ${MOCKINGBIRD_ROOT}/src/detect/kaldi_fbank.cpp
         ${MOCKINGBIRD_ROOT}/src/detect/speaker_model.cpp
         ${MOCKINGBIRD_ROOT}/src/decode/opus_frame_decoder.cpp
+        ${MOCKINGBIRD_ROOT}/src/decode/opus_frame_decoder_stub.cpp
         ${MOCKINGBIRD_ROOT}/src/encode/factory.cpp
         ${MOCKINGBIRD_ROOT}/src/encode/pcm_encoder.cpp
         ${MOCKINGBIRD_ROOT}/src/encode/opus_encoder.cpp
@@ -81,6 +82,7 @@ set(MOCKINGBIRD_SOURCES
         ${MOCKINGBIRD_ROOT}/src/play/jitter_buffer.cpp
         ${MOCKINGBIRD_ROOT}/src/play/jitter_buffer_play.cpp
         ${MOCKINGBIRD_ROOT}/src/play/miniaudio_output.cpp
+        ${MOCKINGBIRD_ROOT}/src/play/miniaudio_output_callbacks.cpp
         ${MOCKINGBIRD_ROOT}/src/play/output_factory.cpp
         ${MOCKINGBIRD_ROOT}/src/play/packet_queue.cpp
         ${MOCKINGBIRD_ROOT}/src/play/player_config.cpp

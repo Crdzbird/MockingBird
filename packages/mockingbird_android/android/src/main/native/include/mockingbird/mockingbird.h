@@ -843,7 +843,9 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_decoder_reset(mockingbird_decod
  * Feeding. mockingbird_player_push takes one packet: MOCKINGBIRD_CODEC_OPUS
  * bytes, or MOCKINGBIRD_CODEC_PCM_S16LE samples at the player's rate and
  * channel count, 1..8192 bytes and at most 120 ms. pts_us is the packet's
- * place on one timeline, in microseconds; flags are MOCKINGBIRD_PKT_FLAG_*,
+ * place on one timeline, in microseconds: for the engine's own packets that
+ * is mockingbird_packet_t.capture_ts_us, one clock for the whole run, since
+ * mockingbird_packet_t.pts_us restarts with every segment. flags are MOCKINGBIRD_PKT_FLAG_*,
  * and LAST ends a talkspurt so the player goes quiet without counting an
  * underrun. A packet is copied before the call returns. When every slot is
  * taken the packet is dropped and counted; push never blocks. Packets may be
