@@ -23,6 +23,7 @@ set(MOCKINGBIRD_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../native)
 
 set(MOCKINGBIRD_SOURCES
         ${MOCKINGBIRD_ROOT}/src/api/api_create.cpp
+        ${MOCKINGBIRD_ROOT}/src/api/api_decoder.cpp
         ${MOCKINGBIRD_ROOT}/src/api/api_defaults.cpp
         ${MOCKINGBIRD_ROOT}/src/api/api_push.cpp
         ${MOCKINGBIRD_ROOT}/src/api/api_queues.cpp
@@ -67,6 +68,7 @@ set(MOCKINGBIRD_SOURCES
         ${MOCKINGBIRD_ROOT}/src/detect/oww_keyword_spotter_feed.cpp
         ${MOCKINGBIRD_ROOT}/src/detect/kaldi_fbank.cpp
         ${MOCKINGBIRD_ROOT}/src/detect/speaker_model.cpp
+        ${MOCKINGBIRD_ROOT}/src/decode/opus_frame_decoder.cpp
         ${MOCKINGBIRD_ROOT}/src/encode/factory.cpp
         ${MOCKINGBIRD_ROOT}/src/encode/pcm_encoder.cpp
         ${MOCKINGBIRD_ROOT}/src/encode/opus_encoder.cpp

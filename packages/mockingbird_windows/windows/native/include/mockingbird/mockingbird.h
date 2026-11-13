@@ -772,6 +772,66 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_set_target_speaker(mockingbird_
                                                   float                 threshold);
 
 /* ============================================================================
+ * OPUS DECODER
+ *
+ * Turns the packets the engine emits with MOCKINGBIRD_CODEC_OPUS back into
+ * int16 PCM through the vendored libopus. Opus carries state from packet to
+ * packet, so a stream gets its own decoder, its packets go in in order, and a
+ * packet that never arrived goes through mockingbird_decoder_conceal in its
+ * place. Packets from any Opus encoder decode, not only the engine's.
+ *
+ * Counts are frames, one sample per channel: out receives frames * channels
+ * interleaved int16 values, and max_frames is how many frames out can hold.
+ * Nothing is written past max_frames * channels values.
+ *
+ * mockingbird_decoder_create takes the output rate, 8000, 12000, 16000, 24000
+ * or 48000 Hz, and 1 or 2 channels; any packet decodes at any of them, and a
+ * stereo packet is mixed down for a mono decoder. Anything else is
+ * MOCKINGBIRD_ERR_INVALID_ARG.
+ *
+ * mockingbird_decoder_decode decodes one packet of 1..65536 bytes and sets
+ * *out_frames to its duration. A packet libopus cannot parse, or one longer
+ * than max_frames, returns MOCKINGBIRD_ERR_INVALID_ARG and writes nothing to
+ * out; the decoder stays usable. A buffer of 120 ms (5760 frames at 48 kHz)
+ * fits every Opus packet.
+ *
+ * mockingbird_decoder_conceal synthesises `frames` of audio for one missing
+ * packet from the decoder's history (packet loss concealment), so the next
+ * packet continues smoothly. frames must be a multiple of 2.5 ms and at most
+ * 120 ms; 0 means the duration of the last decoded packet, or 20 ms before
+ * the first one.
+ *
+ * mockingbird_decoder_reset forgets the history, for a new stream on the
+ * same decoder. mockingbird_decoder_destroy is safe on NULL.
+ *
+ * A decoder is used by one thread at a time; separate decoders are
+ * independent. A build without libopus returns MOCKINGBIRD_ERR_UNSUPPORTED
+ * from mockingbird_decoder_create.
+ * ========================================================================== */
+typedef struct mockingbird_decoder mockingbird_decoder_t;
+
+MOCKINGBIRD_API mockingbird_status_t mockingbird_decoder_create(uint32_t                sample_rate_hz,
+                                                                uint16_t                channels,
+                                                                mockingbird_decoder_t** out_decoder);
+
+MOCKINGBIRD_API void mockingbird_decoder_destroy(mockingbird_decoder_t* decoder);
+
+MOCKINGBIRD_API mockingbird_status_t mockingbird_decoder_decode(mockingbird_decoder_t* decoder,
+                                                                const uint8_t*         data,
+                                                                uint32_t               size,
+                                                                int16_t*               out,
+                                                                uint32_t               max_frames,
+                                                                uint32_t*              out_frames);
+
+MOCKINGBIRD_API mockingbird_status_t mockingbird_decoder_conceal(mockingbird_decoder_t* decoder,
+                                                                 uint32_t               frames,
+                                                                 int16_t*               out,
+                                                                 uint32_t               max_frames,
+                                                                 uint32_t*              out_frames);
+
+MOCKINGBIRD_API mockingbird_status_t mockingbird_decoder_reset(mockingbird_decoder_t* decoder);
+
+/* ============================================================================
  * HOST PCM PUSH  (only when backend == MOCKINGBIRD_BACKEND_HOST_PCM)
  *
  * Lets a host with its own capture path feed PCM directly. Returns

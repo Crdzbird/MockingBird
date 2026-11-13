@@ -60,5 +60,16 @@ enum MockingbirdSymbolAnchor {
     mockingbird_destroy(engine)
     _ = mockingbird_status_str(0)
     _ = mockingbird_version_string()
+    keepDecoder(&sample)
+  }
+
+  static func keepDecoder(_ sample: inout Int16) {
+    var decoder: OpaquePointer? = nil
+    var frames: UInt32 = 0
+    _ = mockingbird_decoder_create(16000, 1, &decoder)
+    _ = mockingbird_decoder_decode(decoder, nil, 0, &sample, 0, &frames)
+    _ = mockingbird_decoder_conceal(decoder, 0, &sample, 0, &frames)
+    _ = mockingbird_decoder_reset(decoder)
+    mockingbird_decoder_destroy(decoder)
   }
 }
