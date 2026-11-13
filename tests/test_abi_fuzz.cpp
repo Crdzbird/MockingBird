@@ -12,6 +12,7 @@
 
 #include "doctest.h"
 #include "mockingbird/mockingbird.h"
+#include "opus_fixture.hpp"
 
 #include <chrono>
 #include <cstdint>
@@ -174,3 +175,68 @@ TEST_CASE("ABI fuzz: pathological queue sizes degrade to NO_MEMORY, never crash"
     CHECK(e == nullptr);
     if (s == MOCKINGBIRD_OK && e) mockingbird_destroy(e);
 }
+
+#ifdef MOCKINGBIRD_HAVE_OPUS
+
+namespace {
+constexpr int16_t kGuard = 0x7E57;
+
+void decode_hostile(mockingbird_decoder_t* d, const uint8_t* data, uint32_t size, uint32_t max_frames,
+                    uint16_t channels) {
+    std::vector<int16_t> out(static_cast<size_t>(max_frames) * channels + 32, kGuard);
+    uint32_t n = 0xFFFFFFFFu;
+    const mockingbird_status_t s = mockingbird_decoder_decode(d, data, size, out.data(), max_frames, &n);
+    REQUIRE((s == MOCKINGBIRD_OK || s == MOCKINGBIRD_ERR_INVALID_ARG));
+    REQUIRE(n <= max_frames);
+    if (s != MOCKINGBIRD_OK) REQUIRE(n == 0);
+    for (size_t i = static_cast<size_t>(max_frames) * channels; i < out.size(); ++i) REQUIRE(out[i] == kGuard);
+}
+
+}
+
+TEST_CASE("ABI fuzz: random bytes never make the Opus decoder write past its room") {
+    Rng r(0x0905u);
+    for (uint16_t channels : {uint16_t{1}, uint16_t{2}}) {
+        mockingbird_decoder_t* d = nullptr;
+        REQUIRE(mockingbird_decoder_create(48000, channels, &d) == MOCKINGBIRD_OK);
+        std::vector<uint8_t> bytes(1600);
+        for (int i = 0; i < 20000; ++i) {
+            const uint32_t size = 1 + r.u32() % 1600;
+            for (uint32_t k = 0; k < size; ++k) bytes[k] = static_cast<uint8_t>(r.u32());
+            const uint32_t room = r.u32() % 4 == 0 ? r.u32() % 6000 : 5760;
+            decode_hostile(d, bytes.data(), size, room, channels);
+            if (i % 97 == 0) {
+                std::vector<int16_t> pcm(5760u * channels);
+                uint32_t n = 0;
+                const mockingbird_status_t s =
+                    mockingbird_decoder_conceal(d, r.u32() % 7000, pcm.data(), 5760, &n);
+                REQUIRE((s == MOCKINGBIRD_OK || s == MOCKINGBIRD_ERR_INVALID_ARG));
+            }
+        }
+        mockingbird_decoder_destroy(d);
+    }
+}
+
+TEST_CASE("ABI fuzz: truncated and bit-flipped engine packets are refused or decoded, never overrun") {
+    const auto pcm  = opus_fixture::chord(16000, 16000);
+    const auto pkts = opus_fixture::encode(pcm, 16000, 20, 48000);
+    REQUIRE(pkts.size() >= 40);
+    mockingbird_decoder_t* d = nullptr;
+    REQUIRE(mockingbird_decoder_create(16000, 1, &d) == MOCKINGBIRD_OK);
+    Rng r(0xF11Bu);
+    for (size_t i = 0; i < 40; ++i) {
+        std::vector<uint8_t> p = pkts[i].bytes;
+        for (uint32_t len = 1; len <= p.size(); ++len) {
+            std::vector<uint8_t> cut(p.begin(), p.begin() + len);
+            decode_hostile(d, cut.data(), len, 320, 1);
+        }
+        for (int k = 0; k < 64; ++k) {
+            std::vector<uint8_t> flipped = p;
+            flipped[r.u32() % flipped.size()] ^= static_cast<uint8_t>(1u << (r.u32() % 8));
+            decode_hostile(d, flipped.data(), static_cast<uint32_t>(flipped.size()), 1 + r.u32() % 400, 1);
+        }
+    }
+    mockingbird_decoder_destroy(d);
+}
+
+#endif

@@ -84,6 +84,7 @@ set(MOCKINGBIRD_PUBLIC_HEADERS
 
 set(MOCKINGBIRD_SOURCES
         src/api/api_create.cpp
+        src/api/api_decoder.cpp
         src/api/api_devices.cpp
         src/api/api_keywords.cpp
         src/api/api_speaker.cpp
@@ -128,6 +129,7 @@ set(MOCKINGBIRD_SOURCES
         src/detect/oww_keyword_spotter_feed.cpp
         src/detect/kaldi_fbank.cpp
         src/detect/speaker_model.cpp
+        src/decode/opus_frame_decoder.cpp
         src/encode/factory.cpp
         src/encode/pcm_encoder.cpp
         src/encode/opus_encoder.cpp
@@ -198,6 +200,7 @@ set(MOCKINGBIRD_INTERNAL_HEADERS
         src/detect/speaker_state.hpp
         src/detect/spectral_metrics.hpp
         src/detect/yamnet_classifier.hpp
+        src/decode/opus_frame_decoder.hpp
         src/encode/encoder.hpp
         src/encode/ogg_crc.hpp
         src/encode/ogg_opus_headers.hpp
@@ -552,6 +555,8 @@ if(MOCKINGBIRD_ENABLE_TESTS AND TARGET mockingbird_static)
             tests/test_wake_batching.cpp
             tests/test_host_pcm.cpp
             tests/test_opus_encoder.cpp
+            tests/test_opus_decoder.cpp
+            tests/test_opus_conceal.cpp
             tests/test_ogg_opus.cpp
             tests/test_wake.cpp
             tests/test_capture_notices.cpp
