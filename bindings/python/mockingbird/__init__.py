@@ -27,6 +27,7 @@ from mockingbird.backend import Backend
 from mockingbird.capture_health import CaptureHealth
 from mockingbird.codec import Codec
 from mockingbird.config import Config, sensitive
+from mockingbird.decoder import Decoder
 from mockingbird.encoder_config import EncoderConfig
 from mockingbird.engine import Engine
 from mockingbird.error import MockingbirdError
@@ -36,6 +37,10 @@ from mockingbird.input_device import InputDevice, input_devices
 from mockingbird.packet import Packet
 from mockingbird.packet_flag import PacketFlag
 from mockingbird.performance_config import PerformanceConfig
+from mockingbird.player import Player
+from mockingbird.player_config import PlayerConfig
+from mockingbird.player_state import PlayerState
+from mockingbird.player_stats import PlayerStats
 from mockingbird.queue_config import QueueConfig
 from mockingbird.segment_config import SegmentConfig
 from mockingbird.sensitivity import Sensitivity
@@ -57,6 +62,7 @@ __all__ = [
     "CaptureHealth",
     "Codec",
     "Config",
+    "Decoder",
     "EncoderConfig",
     "Engine",
     "Event",
@@ -65,6 +71,10 @@ __all__ = [
     "Packet",
     "PacketFlag",
     "PerformanceConfig",
+    "Player",
+    "PlayerConfig",
+    "PlayerState",
+    "PlayerStats",
     "QueueConfig",
     "SegmentConfig",
     "Sensitivity",

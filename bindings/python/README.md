@@ -122,6 +122,50 @@ except mockingbird.MockingbirdError as exc:
         ...
 ```
 
+## Decoding and playback
+
+`Decoder` turns Opus packets, the engine's or any encoder's, back into int16
+PCM. Give each stream its own decoder, decode its packets in order, and call
+`conceal` for a packet that never arrived. Both return an `array('h')` of
+`frames * channels` interleaved samples:
+
+```python
+with mockingbird.Decoder(16000, 1) as decoder:
+    for packet in engine.drain_packets():
+        pcm = decoder.decode(packet.data)
+    filler = decoder.conceal()
+```
+
+A packet libopus cannot parse raises `MockingbirdError` with
+`Status.ERR_INVALID_ARG` and the decoder stays usable. `reset` starts a new
+stream on the same decoder.
+
+`Player` plays Opus or PCM packets on the device output through a jitter
+buffer ordered by `pts_us`. `PlayerConfig` holds the backend, rate, channel
+count, `target_delay_ms`, `max_delay_ms`, `conceal_max_ms` and
+`queue_packets`; its defaults match the native ones. A missing packet is
+concealed, a late or duplicate one is dropped, and `PacketFlag.LAST` ends a
+talkspurt without counting an underrun:
+
+```python
+with mockingbird.Player(mockingbird.PlayerConfig()) as player:
+    player.start()
+    for packet in packets:
+        player.push_packet(packet)
+    player.set_volume(0.8)
+    print(player.stats().state)
+```
+
+`push(data, pts_us, codec=Codec.OPUS, flags=0)` takes any bytes-like object;
+`push_packet` takes a `Packet` from `Engine.drain_packets` and places it at
+its `capture_ts_us`, one clock for the whole run, since `pts_us` restarts with
+every segment. `pause` keeps what
+is buffered, `stop` drops it, `flush` starts a new timeline, and `set_muted`
+silences the output without losing the volume. With `Backend.HOST_PCM` no
+device opens: call `read(frames)` from your own audio callback to pull the
+mixed output as an `array('h')`. `stats()` returns a `PlayerStats` whose
+`state` is a `PlayerState`, with played, concealed, dropped and late counts.
+
 ## Example
 
 [`example.py`](example.py) runs the engine on the microphone or a WAV file with

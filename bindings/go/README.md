@@ -120,6 +120,49 @@ and `VoiceNoiseSuppress`) asks the platform for its voice processing;
 chooses one before `Start`. Interruptions and route changes arrive as
 `EventCaptureInterrupted`, `EventCaptureResumed` and `EventRouteChanged`.
 
+## Playback
+
+`NewDecoder(rate, channels)` turns the packets of a `CodecOpus` engine, or of
+any Opus encoder, back into interleaved int16 PCM. One decoder per stream, its
+packets in order; a packet that never arrived goes through `Conceal(frames)`
+instead, where 0 frames means the last packet's duration:
+
+```go
+d, err := mockingbird.NewDecoder(16000, 1)
+if err != nil {
+    log.Fatal(err)
+}
+defer d.Close()
+pcm, err := d.Decode(pkt.Data)
+```
+
+`NewPlayer` plays Opus or PCM packets on the device's output through a jitter
+buffer ordered by pts. It starts from `DefaultPlayerConfig` (16 kHz mono,
+60 ms target delay) and takes options: `WithPlayerBackend`, `WithPlayerRate`,
+`WithPlayerChannels`, `WithTargetDelay`, `WithMaxDelay`, `WithConcealMax`,
+`WithQueuePackets` and `WithPlayerConfig`:
+
+```go
+p, err := mockingbird.NewPlayer(mockingbird.WithTargetDelay(80 * time.Millisecond))
+if err != nil {
+    log.Fatal(err)
+}
+defer p.Close()
+p.Start()
+for pkt := range e.Packets() {
+    p.PushPacket(pkt)
+}
+```
+
+`Push(codec, data, ptsUs, flags)` copies one packet and never blocks;
+`PushPacket` places an engine packet at its `CaptureTsUs`, one clock for the
+whole run, since `PtsUs` restarts with every segment;
+`PacketFlagLast` ends a talkspurt so the player goes quiet without counting an
+underrun. Missing packets are concealed, late and duplicate ones dropped.
+`Pause`, `Resume`, `Stop`, `Flush`, `SetVolume` and `SetMuted` control it, and
+`Stats` returns `PlayerStats` with a `PlayerState`. With `BackendHostPCM` no
+device opens: `Read(frames)` renders the output for the host to play itself.
+
 ## Ownership and threading
 
 Every method is safe from any goroutine; concurrent `PushPCM` calls are
@@ -138,7 +181,7 @@ if errors.As(err, &se) && se.Status == mockingbird.StatusErrPermission {
 }
 ```
 
-Methods on a closed engine return `mockingbird.ErrClosed`.
+Methods on a closed engine, decoder or player return `mockingbird.ErrClosed`.
 
 ## Testing
 
