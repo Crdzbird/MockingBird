@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Playback and Opus decoding in the browser: the player renders in the module and Web Audio plays it, scheduled 120 ms ahead; start it from a user gesture. Needs the module rebuilt with the player entry points.
 - Speaker verification in the browser.
 - `downloadModel` fetches models with retries and a SHA-256 check and keeps them in Cache Storage for later visits.
 - Keyword spotting in the browser: the reduced ONNX Runtime now carries the operators of the keyword front end and of openWakeWord keyword models, which load as `.ort` files.

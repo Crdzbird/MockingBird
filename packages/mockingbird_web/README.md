@@ -52,6 +52,14 @@ The browser asks for the microphone on the first `start()` of a capture engine.
 A refusal arrives as a `MockingbirdBackendErrorEvent` with status `permission`
 on `engine.events`.
 
+## Playback
+
+`MockingbirdPlayer` works here too. The player renders inside the module and
+Web Audio plays it: every 20 ms the package schedules the next buffers 120 ms
+ahead of the audio clock. Browsers let a page make sound only after a user
+gesture, so call `start` from one; started without one, the player waits
+silently until a later `resume` from a gesture.
+
 ## Hosting the files elsewhere
 
 Set `MockingbirdWeb.assetBaseUrl` to a directory URL before

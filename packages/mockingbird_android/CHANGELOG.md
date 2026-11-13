@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Playback through Oboe, and audio focus for the player: requested on start, abandoned on stop, with focus changes and the becoming-noisy broadcast passed to Dart over the plugin's first channel.
 - ONNX Runtime is a reduced static build linked into the engine, downloaded and checked against its SHA-256 at build time, instead of Microsoft's full library.
 - Native engine with speaker verification, keyword spotting, and SPEECH_BEGIN stamped where the neural tier found the onset.
 - Native engine with platform voice processing, input device selection, and interruption and route-change handling.

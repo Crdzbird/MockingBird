@@ -119,6 +119,143 @@ class MockingbirdBindings {
         )
       >();
 
+  mockingbird_status mockingbird_decoder_conceal(
+    ffi.Pointer<mockingbird_decoder_t> decoder,
+    int frames,
+    ffi.Pointer<ffi.Int16> out,
+    int max_frames,
+    ffi.Pointer<ffi.Uint32> out_frames,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_decoder_conceal(
+        decoder,
+        frames,
+        out,
+        max_frames,
+        out_frames,
+      ),
+    );
+  }
+
+  late final _mockingbird_decoder_concealPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<mockingbird_decoder_t>,
+            ffi.Uint32,
+            ffi.Pointer<ffi.Int16>,
+            ffi.Uint32,
+            ffi.Pointer<ffi.Uint32>,
+          )
+        >
+      >('mockingbird_decoder_conceal');
+  late final _mockingbird_decoder_conceal = _mockingbird_decoder_concealPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<mockingbird_decoder_t>,
+          int,
+          ffi.Pointer<ffi.Int16>,
+          int,
+          ffi.Pointer<ffi.Uint32>,
+        )
+      >();
+
+  mockingbird_status mockingbird_decoder_create(
+    int sample_rate_hz,
+    int channels,
+    ffi.Pointer<ffi.Pointer<mockingbird_decoder_t>> out_decoder,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_decoder_create(sample_rate_hz, channels, out_decoder),
+    );
+  }
+
+  late final _mockingbird_decoder_createPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Uint32,
+            ffi.Uint16,
+            ffi.Pointer<ffi.Pointer<mockingbird_decoder_t>>,
+          )
+        >
+      >('mockingbird_decoder_create');
+  late final _mockingbird_decoder_create = _mockingbird_decoder_createPtr
+      .asFunction<
+        int Function(int, int, ffi.Pointer<ffi.Pointer<mockingbird_decoder_t>>)
+      >();
+
+  mockingbird_status mockingbird_decoder_decode(
+    ffi.Pointer<mockingbird_decoder_t> decoder,
+    ffi.Pointer<ffi.Uint8> data,
+    int size,
+    ffi.Pointer<ffi.Int16> out,
+    int max_frames,
+    ffi.Pointer<ffi.Uint32> out_frames,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_decoder_decode(
+        decoder,
+        data,
+        size,
+        out,
+        max_frames,
+        out_frames,
+      ),
+    );
+  }
+
+  late final _mockingbird_decoder_decodePtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<mockingbird_decoder_t>,
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Uint32,
+            ffi.Pointer<ffi.Int16>,
+            ffi.Uint32,
+            ffi.Pointer<ffi.Uint32>,
+          )
+        >
+      >('mockingbird_decoder_decode');
+  late final _mockingbird_decoder_decode = _mockingbird_decoder_decodePtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<mockingbird_decoder_t>,
+          ffi.Pointer<ffi.Uint8>,
+          int,
+          ffi.Pointer<ffi.Int16>,
+          int,
+          ffi.Pointer<ffi.Uint32>,
+        )
+      >();
+
+  void mockingbird_decoder_destroy(ffi.Pointer<mockingbird_decoder_t> decoder) {
+    return _mockingbird_decoder_destroy(decoder);
+  }
+
+  late final _mockingbird_decoder_destroyPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Void Function(ffi.Pointer<mockingbird_decoder_t>)
+        >
+      >('mockingbird_decoder_destroy');
+  late final _mockingbird_decoder_destroy = _mockingbird_decoder_destroyPtr
+      .asFunction<void Function(ffi.Pointer<mockingbird_decoder_t>)>();
+
+  mockingbird_status mockingbird_decoder_reset(
+    ffi.Pointer<mockingbird_decoder_t> decoder,
+  ) {
+    return mockingbird_status.fromValue(_mockingbird_decoder_reset(decoder));
+  }
+
+  late final _mockingbird_decoder_resetPtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Int Function(ffi.Pointer<mockingbird_decoder_t>)>
+      >('mockingbird_decoder_reset');
+  late final _mockingbird_decoder_reset = _mockingbird_decoder_resetPtr
+      .asFunction<int Function(ffi.Pointer<mockingbird_decoder_t>)>();
+
   void mockingbird_destroy(ffi.Pointer<mockingbird_engine_t> engine) {
     return _mockingbird_destroy(engine);
   }
@@ -212,6 +349,255 @@ class MockingbirdBindings {
               ffi.Pointer<ffi.Uint32>,
             )
           >();
+
+  mockingbird_status mockingbird_player_config_defaults(
+    ffi.Pointer<mockingbird_player_config_t> out_cfg,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_player_config_defaults(out_cfg),
+    );
+  }
+
+  late final _mockingbird_player_config_defaultsPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<mockingbird_player_config_t>)
+        >
+      >('mockingbird_player_config_defaults');
+  late final _mockingbird_player_config_defaults =
+      _mockingbird_player_config_defaultsPtr
+          .asFunction<int Function(ffi.Pointer<mockingbird_player_config_t>)>();
+
+  mockingbird_status mockingbird_player_create(
+    ffi.Pointer<mockingbird_player_config_t> cfg,
+    ffi.Pointer<ffi.Pointer<mockingbird_player_t>> out_player,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_player_create(cfg, out_player),
+    );
+  }
+
+  late final _mockingbird_player_createPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<mockingbird_player_config_t>,
+            ffi.Pointer<ffi.Pointer<mockingbird_player_t>>,
+          )
+        >
+      >('mockingbird_player_create');
+  late final _mockingbird_player_create = _mockingbird_player_createPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<mockingbird_player_config_t>,
+          ffi.Pointer<ffi.Pointer<mockingbird_player_t>>,
+        )
+      >();
+
+  void mockingbird_player_destroy(ffi.Pointer<mockingbird_player_t> player) {
+    return _mockingbird_player_destroy(player);
+  }
+
+  late final _mockingbird_player_destroyPtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Void Function(ffi.Pointer<mockingbird_player_t>)>
+      >('mockingbird_player_destroy');
+  late final _mockingbird_player_destroy = _mockingbird_player_destroyPtr
+      .asFunction<void Function(ffi.Pointer<mockingbird_player_t>)>();
+
+  mockingbird_status mockingbird_player_flush(
+    ffi.Pointer<mockingbird_player_t> player,
+  ) {
+    return mockingbird_status.fromValue(_mockingbird_player_flush(player));
+  }
+
+  late final _mockingbird_player_flushPtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Int Function(ffi.Pointer<mockingbird_player_t>)>
+      >('mockingbird_player_flush');
+  late final _mockingbird_player_flush = _mockingbird_player_flushPtr
+      .asFunction<int Function(ffi.Pointer<mockingbird_player_t>)>();
+
+  mockingbird_status mockingbird_player_get_stats(
+    ffi.Pointer<mockingbird_player_t> player,
+    ffi.Pointer<mockingbird_player_stats_t> out_stats,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_player_get_stats(player, out_stats),
+    );
+  }
+
+  late final _mockingbird_player_get_statsPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<mockingbird_player_t>,
+            ffi.Pointer<mockingbird_player_stats_t>,
+          )
+        >
+      >('mockingbird_player_get_stats');
+  late final _mockingbird_player_get_stats = _mockingbird_player_get_statsPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<mockingbird_player_t>,
+          ffi.Pointer<mockingbird_player_stats_t>,
+        )
+      >();
+
+  mockingbird_status mockingbird_player_pause(
+    ffi.Pointer<mockingbird_player_t> player,
+  ) {
+    return mockingbird_status.fromValue(_mockingbird_player_pause(player));
+  }
+
+  late final _mockingbird_player_pausePtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Int Function(ffi.Pointer<mockingbird_player_t>)>
+      >('mockingbird_player_pause');
+  late final _mockingbird_player_pause = _mockingbird_player_pausePtr
+      .asFunction<int Function(ffi.Pointer<mockingbird_player_t>)>();
+
+  mockingbird_status mockingbird_player_push(
+    ffi.Pointer<mockingbird_player_t> player,
+    mockingbird_codec codec,
+    ffi.Pointer<ffi.Uint8> data,
+    int size,
+    int pts_us,
+    int flags,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_player_push(player, codec.value, data, size, pts_us, flags),
+    );
+  }
+
+  late final _mockingbird_player_pushPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<mockingbird_player_t>,
+            ffi.UnsignedInt,
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Uint32,
+            ffi.Uint64,
+            ffi.Uint32,
+          )
+        >
+      >('mockingbird_player_push');
+  late final _mockingbird_player_push = _mockingbird_player_pushPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<mockingbird_player_t>,
+          int,
+          ffi.Pointer<ffi.Uint8>,
+          int,
+          int,
+          int,
+        )
+      >();
+
+  mockingbird_status mockingbird_player_read(
+    ffi.Pointer<mockingbird_player_t> player,
+    ffi.Pointer<ffi.Int16> out,
+    int frames,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_player_read(player, out, frames),
+    );
+  }
+
+  late final _mockingbird_player_readPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<mockingbird_player_t>,
+            ffi.Pointer<ffi.Int16>,
+            ffi.Uint32,
+          )
+        >
+      >('mockingbird_player_read');
+  late final _mockingbird_player_read = _mockingbird_player_readPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<mockingbird_player_t>,
+          ffi.Pointer<ffi.Int16>,
+          int,
+        )
+      >();
+
+  mockingbird_status mockingbird_player_resume(
+    ffi.Pointer<mockingbird_player_t> player,
+  ) {
+    return mockingbird_status.fromValue(_mockingbird_player_resume(player));
+  }
+
+  late final _mockingbird_player_resumePtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Int Function(ffi.Pointer<mockingbird_player_t>)>
+      >('mockingbird_player_resume');
+  late final _mockingbird_player_resume = _mockingbird_player_resumePtr
+      .asFunction<int Function(ffi.Pointer<mockingbird_player_t>)>();
+
+  mockingbird_status mockingbird_player_set_muted(
+    ffi.Pointer<mockingbird_player_t> player,
+    int muted,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_player_set_muted(player, muted),
+    );
+  }
+
+  late final _mockingbird_player_set_mutedPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<mockingbird_player_t>, ffi.Int)
+        >
+      >('mockingbird_player_set_muted');
+  late final _mockingbird_player_set_muted = _mockingbird_player_set_mutedPtr
+      .asFunction<int Function(ffi.Pointer<mockingbird_player_t>, int)>();
+
+  mockingbird_status mockingbird_player_set_volume(
+    ffi.Pointer<mockingbird_player_t> player,
+    double volume,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_player_set_volume(player, volume),
+    );
+  }
+
+  late final _mockingbird_player_set_volumePtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<mockingbird_player_t>, ffi.Float)
+        >
+      >('mockingbird_player_set_volume');
+  late final _mockingbird_player_set_volume = _mockingbird_player_set_volumePtr
+      .asFunction<int Function(ffi.Pointer<mockingbird_player_t>, double)>();
+
+  mockingbird_status mockingbird_player_start(
+    ffi.Pointer<mockingbird_player_t> player,
+  ) {
+    return mockingbird_status.fromValue(_mockingbird_player_start(player));
+  }
+
+  late final _mockingbird_player_startPtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Int Function(ffi.Pointer<mockingbird_player_t>)>
+      >('mockingbird_player_start');
+  late final _mockingbird_player_start = _mockingbird_player_startPtr
+      .asFunction<int Function(ffi.Pointer<mockingbird_player_t>)>();
+
+  mockingbird_status mockingbird_player_stop(
+    ffi.Pointer<mockingbird_player_t> player,
+  ) {
+    return mockingbird_status.fromValue(_mockingbird_player_stop(player));
+  }
+
+  late final _mockingbird_player_stopPtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Int Function(ffi.Pointer<mockingbird_player_t>)>
+      >('mockingbird_player_stop');
+  late final _mockingbird_player_stop = _mockingbird_player_stopPtr
+      .asFunction<int Function(ffi.Pointer<mockingbird_player_t>)>();
 
   mockingbird_status mockingbird_poll_event(
     ffi.Pointer<mockingbird_engine_t> engine,
@@ -838,6 +1224,10 @@ final class mockingbird_config extends ffi.Struct {
 
 typedef mockingbird_config_t = mockingbird_config;
 
+final class mockingbird_decoder extends ffi.Opaque {}
+
+typedef mockingbird_decoder_t = mockingbird_decoder;
+
 final class mockingbird_device extends ffi.Struct {
   @ffi.Array.multi([256])
   external ffi.Array<ffi.Char> id;
@@ -1001,6 +1391,105 @@ final class mockingbird_packet extends ffi.Struct {
 }
 
 typedef mockingbird_packet_t = mockingbird_packet;
+
+final class mockingbird_player extends ffi.Opaque {}
+
+final class mockingbird_player_config extends ffi.Struct {
+  @ffi.UnsignedInt()
+  external int backendAsInt;
+
+  mockingbird_backend get backend =>
+      mockingbird_backend.fromValue(backendAsInt);
+  set backend(mockingbird_backend value) => backendAsInt = value.value;
+
+  @ffi.Uint32()
+  external int sample_rate_hz;
+
+  @ffi.Uint16()
+  external int channels;
+
+  @ffi.Uint32()
+  external int target_delay_ms;
+
+  @ffi.Uint32()
+  external int max_delay_ms;
+
+  @ffi.Uint32()
+  external int conceal_max_ms;
+
+  @ffi.Uint32()
+  external int queue_packets;
+
+  @ffi.Array.multi([4])
+  external ffi.Array<ffi.Uint32> _reserved;
+}
+
+typedef mockingbird_player_config_t = mockingbird_player_config;
+
+enum mockingbird_player_state {
+  MOCKINGBIRD_PLAYER_STOPPED(0),
+  MOCKINGBIRD_PLAYER_IDLE(1),
+  MOCKINGBIRD_PLAYER_BUFFERING(2),
+  MOCKINGBIRD_PLAYER_PLAYING(3),
+  MOCKINGBIRD_PLAYER_PAUSED(4),
+  MOCKINGBIRD_PLAYER_INTERRUPTED(5);
+
+  final int value;
+  const mockingbird_player_state(this.value);
+
+  static mockingbird_player_state fromValue(int value) => switch (value) {
+    0 => MOCKINGBIRD_PLAYER_STOPPED,
+    1 => MOCKINGBIRD_PLAYER_IDLE,
+    2 => MOCKINGBIRD_PLAYER_BUFFERING,
+    3 => MOCKINGBIRD_PLAYER_PLAYING,
+    4 => MOCKINGBIRD_PLAYER_PAUSED,
+    5 => MOCKINGBIRD_PLAYER_INTERRUPTED,
+    _ => throw ArgumentError(
+      'Unknown value for mockingbird_player_state: $value',
+    ),
+  };
+}
+
+final class mockingbird_player_stats extends ffi.Struct {
+  @ffi.Uint64()
+  external int packets_received;
+
+  @ffi.Uint64()
+  external int packets_played;
+
+  @ffi.Uint64()
+  external int packets_concealed;
+
+  @ffi.Uint64()
+  external int packets_dropped;
+
+  @ffi.Uint64()
+  external int packets_late;
+
+  @ffi.Uint64()
+  external int underruns;
+
+  @ffi.Uint64()
+  external int frames_rendered;
+
+  @ffi.Uint32()
+  external int buffered_packets;
+
+  @ffi.Uint32()
+  external int buffered_ms;
+
+  @ffi.Uint32()
+  external int state;
+
+  @ffi.Uint32()
+  external int output_restarts;
+
+  @ffi.Array.multi([6])
+  external ffi.Array<ffi.Uint32> _reserved;
+}
+
+typedef mockingbird_player_stats_t = mockingbird_player_stats;
+typedef mockingbird_player_t = mockingbird_player;
 
 enum mockingbird_sample_format {
   MOCKINGBIRD_SAMPLE_S16(0);

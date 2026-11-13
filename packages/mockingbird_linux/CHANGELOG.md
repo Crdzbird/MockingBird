@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Playback through miniaudio on the default output.
 - ONNX Runtime is a reduced static build linked into the engine, downloaded and checked against its SHA-256 at build time, instead of Microsoft's full library.
 - Native engine with speaker verification, keyword spotting, and SPEECH_BEGIN stamped where the neural tier found the onset.
 - Native engine with platform voice processing, input device selection, and interruption and route-change handling.

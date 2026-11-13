@@ -1,5 +1,6 @@
 /// Native audio capture, multilingual voice detection, anomaly gating and
-/// sound classification for Flutter, over a shared C engine.
+/// sound classification for Flutter, over a shared C engine, and playback
+/// of the Opus packets it emits.
 library;
 
 export 'package:mockingbird/src/config/mockingbird_anomaly_config.dart';
@@ -18,6 +19,7 @@ export 'package:mockingbird/src/mockingbird.dart';
 export 'package:mockingbird/src/mockingbird_backend.dart';
 export 'package:mockingbird/src/mockingbird_capture_health.dart';
 export 'package:mockingbird/src/mockingbird_codec.dart';
+export 'package:mockingbird/src/mockingbird_decoder.dart';
 export 'package:mockingbird/src/mockingbird_devices.dart';
 export 'package:mockingbird/src/mockingbird_engine.dart';
 export 'package:mockingbird/src/mockingbird_exception.dart';
@@ -31,3 +33,7 @@ export 'package:mockingbird/src/mockingbird_status.dart';
 export 'package:mockingbird/src/mockingbird_vad_tier.dart';
 export 'package:mockingbird/src/mockingbird_wav.dart';
 export 'package:mockingbird/src/mockingbird_worker_health.dart';
+export 'package:mockingbird/src/player/mockingbird_player.dart';
+export 'package:mockingbird/src/player/mockingbird_player_config.dart';
+export 'package:mockingbird/src/player/mockingbird_player_state.dart';
+export 'package:mockingbird/src/player/mockingbird_player_stats.dart';

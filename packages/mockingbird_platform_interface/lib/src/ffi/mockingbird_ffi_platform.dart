@@ -6,10 +6,10 @@ import 'package:mockingbird_platform_interface/src/ffi/ffi_engine_handle.dart';
 import 'package:mockingbird_platform_interface/src/ffi/ffi_keywords.dart';
 import 'package:mockingbird_platform_interface/src/ffi/ffi_model_downloader.dart';
 import 'package:mockingbird_platform_interface/src/ffi/ffi_speaker.dart';
-import 'package:mockingbird_platform_interface/src/ffi/mockingbird_ffi_platform_base.dart';
+import 'package:mockingbird_platform_interface/src/ffi/mockingbird_ffi_playback_base.dart';
 
 /// The `dart:ffi` implementation; a platform package supplies the library.
-abstract class MockingbirdFfiPlatform extends MockingbirdFfiPlatformBase {
+abstract class MockingbirdFfiPlatform extends MockingbirdFfiPlaybackBase {
   late final FfiDevices _devices = FfiDevices(bindings);
   late final FfiKeywords _keywords = FfiKeywords(bindings);
   late final FfiSpeaker _speaker = FfiSpeaker(bindings);
