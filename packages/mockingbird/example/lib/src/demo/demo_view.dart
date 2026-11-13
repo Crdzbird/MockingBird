@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mockingbird_example/src/demo/demo_cubit.dart';
 import 'package:mockingbird_example/src/demo/demo_state.dart';
+import 'package:mockingbird_example/src/demo/playback_cubit.dart';
+import 'package:mockingbird_example/src/demo/playback_state.dart';
 import 'package:mockingbird_example/src/widgets/denoise_switch.dart';
 import 'package:mockingbird_example/src/widgets/error_banner.dart';
 import 'package:mockingbird_example/src/widgets/event_log.dart';
 import 'package:mockingbird_example/src/widgets/last_sound_card.dart';
 import 'package:mockingbird_example/src/widgets/level_meter.dart';
+import 'package:mockingbird_example/src/widgets/playback_card.dart';
 import 'package:mockingbird_example/src/widgets/preset_chips.dart';
 import 'package:mockingbird_example/src/widgets/sensitivity_slider.dart';
 import 'package:mockingbird_example/src/widgets/start_stop_bar.dart';
@@ -68,6 +71,14 @@ final class DemoView extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               LastSoundCard(detection: state.detection, running: state.running),
+              const SizedBox(height: 12),
+              BlocBuilder<PlaybackCubit, PlaybackState>(
+                builder: (context, playback) => PlaybackCard(
+                  state: playback,
+                  capturing: state.running,
+                  onPlay: context.read<PlaybackCubit>().play,
+                ),
+              ),
               const SizedBox(height: 12),
               StatsCard(
                 stats: state.stats,
