@@ -3,6 +3,9 @@ abstract final class MockingbirdStatusCode {
   /// Success.
   static const int ok = 0;
 
+  /// `MOCKINGBIRD_ERR_INVALID_ARG`: an argument or configuration was rejected.
+  static const int invalidArg = -1;
+
   /// `MOCKINGBIRD_ERR_INVALID_STATE`: not allowed in the engine's state.
   static const int invalidState = -2;
 

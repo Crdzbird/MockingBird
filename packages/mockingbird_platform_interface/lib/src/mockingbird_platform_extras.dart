@@ -4,12 +4,12 @@ import 'package:mockingbird_platform_interface/src/mockingbird_download_progress
 import 'package:mockingbird_platform_interface/src/mockingbird_engine_handle.dart';
 import 'package:mockingbird_platform_interface/src/mockingbird_model_spec.dart';
 import 'package:mockingbird_platform_interface/src/mockingbird_native_device.dart';
+import 'package:mockingbird_platform_interface/src/mockingbird_platform_decoding.dart';
 import 'package:mockingbird_platform_interface/src/mockingbird_results.dart';
 import 'package:mockingbird_platform_interface/src/mockingbird_status_code.dart';
-import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 /// The operations a platform may leave out; each default says it cannot.
-abstract class MockingbirdPlatformExtras extends PlatformInterface {
+abstract class MockingbirdPlatformExtras extends MockingbirdPlatformDecoding {
   /// Passes the verification [token] up.
   MockingbirdPlatformExtras({required super.token});
 

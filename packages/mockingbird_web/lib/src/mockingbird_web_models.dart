@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
-import 'package:mockingbird_web/src/mockingbird_web_base.dart';
+import 'package:mockingbird_web/src/mockingbird_web_playback.dart';
 import 'package:mockingbird_web/src/module_registry.dart';
 import 'package:mockingbird_web/src/web_engine_handle.dart';
 import 'package:mockingbird_web/src/web_keywords.dart';
@@ -11,7 +11,7 @@ import 'package:mockingbird_web/src/web_speaker.dart';
 
 /// The model-backed operations of the web platform: keywords, speaker
 /// verification and models kept in the module's memory.
-abstract class MockingbirdWebModels extends MockingbirdWebBase {
+abstract class MockingbirdWebModels extends MockingbirdWebPlayback {
   @override
   int setKeywordFrontend(
     MockingbirdEngineHandle handle,

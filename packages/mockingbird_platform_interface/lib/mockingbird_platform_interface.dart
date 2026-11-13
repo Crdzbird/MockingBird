@@ -2,6 +2,7 @@
 /// engine operations every platform implementation provides.
 library;
 
+export 'package:mockingbird_platform_interface/src/mockingbird_decoder_handle.dart';
 export 'package:mockingbird_platform_interface/src/mockingbird_download_exception.dart';
 export 'package:mockingbird_platform_interface/src/mockingbird_download_progress.dart';
 export 'package:mockingbird_platform_interface/src/mockingbird_engine_handle.dart';
@@ -13,9 +14,15 @@ export 'package:mockingbird_platform_interface/src/mockingbird_native_device.dar
 export 'package:mockingbird_platform_interface/src/mockingbird_native_event.dart';
 export 'package:mockingbird_platform_interface/src/mockingbird_native_output_config.dart';
 export 'package:mockingbird_platform_interface/src/mockingbird_native_packet.dart';
+export 'package:mockingbird_platform_interface/src/mockingbird_native_player_config.dart';
+export 'package:mockingbird_platform_interface/src/mockingbird_native_player_stats.dart';
 export 'package:mockingbird_platform_interface/src/mockingbird_native_stats.dart';
 export 'package:mockingbird_platform_interface/src/mockingbird_native_worker_stats.dart';
 export 'package:mockingbird_platform_interface/src/mockingbird_platform.dart';
+export 'package:mockingbird_platform_interface/src/mockingbird_platform_decoding.dart';
 export 'package:mockingbird_platform_interface/src/mockingbird_platform_extras.dart';
+export 'package:mockingbird_platform_interface/src/mockingbird_platform_playback.dart';
+export 'package:mockingbird_platform_interface/src/mockingbird_playback_focus.dart';
+export 'package:mockingbird_platform_interface/src/mockingbird_player_handle.dart';
 export 'package:mockingbird_platform_interface/src/mockingbird_results.dart';
 export 'package:mockingbird_platform_interface/src/mockingbird_status_code.dart';
