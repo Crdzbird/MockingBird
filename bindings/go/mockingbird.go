@@ -21,8 +21,9 @@ import "C"
 
 import "errors"
 
-// ErrClosed is returned by every method of an engine that has been closed.
-var ErrClosed = errors.New("mockingbird: engine is closed")
+// ErrClosed is returned by every method of an engine, decoder or player that
+// has been closed.
+var ErrClosed = errors.New("mockingbird: closed")
 
 // Version returns the "X.Y.Z" version of the linked libmockingbird.
 func Version() string { return C.GoString(C.mockingbird_version_string()) }

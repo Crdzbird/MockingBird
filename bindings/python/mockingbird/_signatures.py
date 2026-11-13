@@ -6,6 +6,7 @@ from mockingbird._config_struct import ConfigStruct
 from mockingbird._device_struct import DeviceStruct
 from mockingbird._event_struct import EventStruct
 from mockingbird._packet_struct import PacketStruct
+from mockingbird._playback_signatures import PLAYBACK_SIGNATURES
 from mockingbird._stats_struct import StatsStruct
 
 EnginePtr = ctypes.c_void_p
@@ -33,4 +34,4 @@ SIGNATURES = [
     ("mockingbird_set_target_speaker", [EnginePtr, ctypes.POINTER(ctypes.c_float), ctypes.c_uint32, ctypes.c_float], ctypes.c_int),
     ("mockingbird_status_str", [ctypes.c_int], ctypes.c_char_p),
     ("mockingbird_version_string", [], ctypes.c_char_p),
-]
+] + PLAYBACK_SIGNATURES
