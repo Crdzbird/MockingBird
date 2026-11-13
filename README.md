@@ -43,6 +43,8 @@ under AddressSanitizer, UndefinedBehaviorSanitizer and ThreadSanitizer.
 | Keyword spotting (optional) | openWakeWord's front end through ONNX Runtime | your own openWakeWord keyword models |
 | Speaker verification (optional) | CAM++ speaker embeddings through ONNX Runtime | is each utterance the enrolled person |
 | Encode | libopus, raw or in Ogg, or PCM | per segment |
+| Decode (optional) | libopus decoder with packet loss concealment | any Opus packet, 8 to 48 kHz, mono or stereo |
+| Play (optional) | jitter buffer on Core Audio, Oboe, miniaudio, or Web Audio | Opus or PCM packets ordered by timestamp |
 
 A segment opens when the voice detector or the anomaly gate triggers. Packets
 flow only while a segment is open, so the host receives speech and events, not
@@ -76,6 +78,11 @@ Other things the engine provides:
   suppression on request, input device listing and selection, and capture that
   survives interruptions and headset or default-device changes, with an event
   for each.
+- Playback. A player takes the packets back, from this engine or from a
+  sender across a network, orders them in a jitter buffer, conceals a missing
+  one with the Opus decoder, drops late ones and keeps a steady delay, and
+  plays them on the device's output with volume, mute, pause and resume. It
+  follows route changes and respects interruptions and audio focus.
 - Nothing leaves the device. The engine writes nothing to disk, logs no audio,
   and switches off ONNX Runtime's telemetry.
 
@@ -129,6 +136,24 @@ while (mockingbird_poll_event(e, &ev) == MOCKINGBIRD_OK) { /* SPEECH_BEGIN, ANOM
 mockingbird_stop(e);
 mockingbird_destroy(e);
 ```
+
+To play packets back, on this device or on the one receiving them:
+
+```c
+mockingbird_player_config_t pc;
+mockingbird_player_config_defaults(&pc);           /* 16 kHz mono, 60 ms target delay */
+mockingbird_player_t* player = NULL;
+mockingbird_player_create(&pc, &player);
+mockingbird_player_start(player);
+/* for each packet, in any order the network delivers them: */
+mockingbird_player_push(player, MOCKINGBIRD_CODEC_OPUS, pkt.data, pkt.size,
+                        pkt.capture_ts_us, pkt.flags);
+mockingbird_player_destroy(player);
+```
+
+`mockingbird_decoder_create` and `mockingbird_decoder_decode` are the bare
+decoder for a host that only wants PCM, with `mockingbird_decoder_conceal`
+for a packet that never arrived.
 
 Instead of draining on a timer, a host can register a wake callback with
 `mockingbird_set_wake_callback`. It fires on an engine thread when an event or
@@ -244,8 +269,10 @@ cmake --build build -j
 ./build/bench_mockingbird 20
 ```
 
-`test_mockingbird` runs 122 doctest cases, including fuzz, stress and
-fault-injection cases. `bench_mockingbird` pushes synthetic audio through the
+`test_mockingbird` runs 164 doctest cases with the neural detectors (146
+without), including fuzz, stress and fault-injection cases.
+`MOCKINGBIRD_TEST_AUDIO_OUTPUT=1` adds a case that plays, muted, through the
+machine's real output on every device backend. `bench_mockingbird` pushes synthetic audio through the
 engine faster than real time and prints the CPU share per feature; the optional
 argument is the number of seconds of audio per configuration (default 30).
 `MOCKINGBIRD_BENCH_ONLY=<text>` runs only the configurations whose name contains
@@ -462,6 +489,14 @@ cd packages/mockingbird_web
 CHROME_EXECUTABLE=../../scripts/chrome_fake_mic.sh flutter test --platform chrome
 ```
 
+The player works on the web through the same C code with the HOST_PCM
+backend: the web package pulls 20 ms of output at a time from the module and
+schedules it through Web Audio 120 ms ahead. Browsers allow sound only after
+a user gesture, so call `MockingbirdPlayer.start` from one (a button press);
+started without one, the player waits silently and a later `resume` from a
+gesture lets it play. The module must be rebuilt with `build_wasm.sh` after a
+change to the player's or decoder's entry points.
+
 `src/web/` holds the shim the JavaScript side calls: config fields, event,
 packet and stats records are reached by numbered accessors, so no struct layout
 is duplicated outside C++. Those files, the inline worker driver and the
@@ -558,6 +593,17 @@ flowchart TB
   to T1 or T2; the packet pool drops the oldest packet and raises
   `MOCKINGBIRD_EVT_OVERRUN`.
 
+Playback runs the other way and adds no thread. The host pushes packets into
+fixed slots and hands their indices to the output's audio thread through two
+lock-free rings; that thread orders them in the jitter buffer, decodes or
+conceals one packet at a time, applies volume and mute, and fills the
+device's buffer. It never allocates, locks or blocks. A flush or stop is a
+generation number the audio thread applies before it next reads, and the
+counters it keeps are atomics any thread may read. With the HOST_PCM backend
+the same render step runs inside `mockingbird_player_read` on the host's
+thread, which is how the web plays: Web Audio pulls 20 ms buffers and
+schedules them 120 ms ahead.
+
 The C ABI in `include/mockingbird/mockingbird.h` is the contract: an opaque
 handle, plain structs, status codes, no C++ types or exceptions across the
 boundary, and borrowed packets guarded by a generation cookie against stale or
@@ -576,10 +622,14 @@ src/
   web/                      the WebAssembly shim (Emscripten builds only)
   preprocess/               RNNoise and the integer-ratio resamplers
   encode/                   Opus, Ogg Opus and PCM encoders
+  decode/                   the libopus decoder behind the C ABI's checks
+  play/                     the player: slot queue, jitter buffer, renderer and
+                            the Core Audio, Oboe and miniaudio outputs
+  platform/                 the iOS audio session shared by capture and playback
   engine.hpp                the engine state behind the opaque handle
   config_validation.*       config checks and derived sizes
 third_party/                vendored, permissive-only dependencies
-tests/                      122 doctest cases and the audio and model fixtures
+tests/                      164 doctest cases and the audio and model fixtures
 bench/                      the throughput benchmark, the package comparison and the accuracy benchmark
 packages/                   Flutter federated plugin (mockingbird, platform interface,
                             android, ios, macos, linux, windows, web) and the example app
@@ -680,6 +730,17 @@ correctly on each platform. They are already encoded in the build files under
   carries no `libonnxruntime.so` and an app that loads another ONNX Runtime
   does not clash with it.
 - `abiFilters arm64-v8a, x86_64`.
+- Playback needs no permission; `RECORD_AUDIO` is only for capture. Audio
+  focus is a Java API with no NDK counterpart, so the plugin's Kotlin side
+  (`MockingbirdAudioFocus`) holds it on a method and an event channel, the
+  only channels in the plugin. `MockingbirdPlayer.start` requests
+  `AUDIOFOCUS_GAIN` for `USAGE_MEDIA` and `CONTENT_TYPE_SPEECH`, accepting a
+  delayed grant, and `stop` abandons it. A transient loss pauses the player
+  until focus returns, `CAN_DUCK` lowers it to a fifth, and a permanent loss or
+  `ACTION_AUDIO_BECOMING_NOISY` (headphones unplugged) pauses it until the app
+  resumes. An app driving the C ABI without Flutter requests focus itself.
+  The Oboe output resamples with Oboe's converter and reopens on a new route
+  when its stream disconnects.
 - The engine sources are a copy kept in `android/src/main/native` by
   `scripts/sync_native.sh`, so the published package is self-contained. The
   plugin's CMake file lists them explicitly, so a new source file must be added
@@ -716,6 +777,20 @@ correctly on each platform. They are already encoded in the build files under
   default input device or it captures silence; the backend does this too. The
   demo requests authorization through `AVCaptureDevice.requestAccess`, and the
   app carries the audio-input entitlement and usage string.
+- The iOS audio session. Capture and playback share one `AVAudioSession`
+  (`src/platform/apple_audio_session.mm`), counted by holder: `Record` for
+  capture alone, exactly as before; `Playback` for a player alone, which plays
+  with the ring/silent switch on silent; `PlayAndRecord` with
+  `DefaultToSpeaker` and `AllowBluetoothA2DP` when both run; and
+  `PlayAndRecord` in `VoiceChat` mode for voice processing. The session goes
+  inactive, letting other apps resume, only when the last holder lets go. The
+  player's output is a RemoteIO unit: an interruption (a call, Siri, an alarm)
+  stops it and it restarts when iOS sets `ShouldResume`; the old route going
+  away (headphones unplugged, Bluetooth off) pauses it until the app resumes,
+  and a new route is followed. An app that plays in the background adds
+  `audio` to `UIBackgroundModes`; the app sets its own session only if it
+  needs a category the engine does not choose. On macOS the default output
+  unit moves to a new default device by itself.
 
 ## Contributing
 

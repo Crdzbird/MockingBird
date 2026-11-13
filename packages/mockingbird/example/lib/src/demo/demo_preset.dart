@@ -51,6 +51,7 @@ final class DemoPreset {
     anomaly: anomaly,
     soundClass: soundClass,
     soundClassModelPath: soundClassModelPath,
+    encoder: const MockingbirdEncoderConfig.opus(),
     performance: const MockingbirdPerformanceConfig.mobile(),
   );
 }

@@ -1,21 +1,21 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mockingbird/mockingbird.dart';
+import 'package:mockingbird_example/src/demo/demo_models.dart';
 import 'package:mockingbird_example/src/demo/demo_state.dart';
 import 'package:mockingbird_example/src/demo/detection_summary.dart';
 import 'package:mockingbird_example/src/demo/engine_session.dart';
-import 'package:mockingbird_example/src/demo/event_formatter.dart';
 import 'package:mockingbird_example/src/demo/mic_permission.dart';
 
 /// Drives one engine session from the screen's controls.
 final class DemoCubit extends Cubit<DemoState> {
-  factory DemoCubit() = DemoCubit._;
+  factory DemoCubit([void Function(MockingbirdPacket)? onPacket]) = DemoCubit._;
 
-  DemoCubit._() : super(const DemoState());
+  DemoCubit._([this._onPacket]) : super(const DemoState());
+
+  final void Function(MockingbirdPacket)? _onPacket;
 
   EngineSession? _session;
-  EventFormatter _formatter = const EventFormatter([]);
-  String _neuralVadModelPath = '';
-  String _soundClassModelPath = '';
+  DemoModels _models = const DemoModels();
 
   Future<void> start() async {
     emit(state.copyWith(error: () => null, packetCount: 0, packetBytes: 0));
@@ -23,18 +23,23 @@ final class DemoCubit extends Cubit<DemoState> {
       emit(state.copyWith(error: () => denied));
       return;
     }
-    await _loadModels();
+    _models = await DemoModels.load();
     try {
       _session = await EngineSession.open(
         _config(state.sensitivity),
-        onEvent: (e) => emit(state.withEvent(e, _formatter)),
+        onEvent: (e) => emit(state.withEvent(e, _models.formatter)),
         onStats: (s) => emit(state.copyWith(stats: s)),
-        onPacket: (p) => emit(state.withPacket(p)),
+        onPacket: _packet,
       );
       emit(state.copyWith(running: true));
     } on MockingbirdException catch (e) {
       emit(state.copyWith(error: () => '$e'));
     }
+  }
+
+  void _packet(MockingbirdPacket p) {
+    _onPacket?.call(p);
+    emit(state.withPacket(p));
   }
 
   Future<void> stop() async {
@@ -77,17 +82,11 @@ final class DemoCubit extends Cubit<DemoState> {
     await super.close();
   }
 
-  Future<void> _loadModels() async {
-    _formatter = EventFormatter(await MockingbirdModels.yamnetLabels());
-    _neuralVadModelPath = await MockingbirdModels.neuralVadPath();
-    _soundClassModelPath = await MockingbirdModels.soundClassPath();
-  }
-
   MockingbirdConfig _config(double sensitivity) => state.preset.config(
     sensitivity: sensitivity,
     denoise: state.denoise,
-    neuralVadModelPath: _neuralVadModelPath,
-    soundClassModelPath: _soundClassModelPath,
+    neuralVadModelPath: _models.neuralVadModelPath,
+    soundClassModelPath: _models.soundClassModelPath,
   );
 
   Future<void> _restartIfRunning() async {

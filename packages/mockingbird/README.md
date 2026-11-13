@@ -158,6 +158,7 @@ you want to change.
 | `engine.events` | `MockingbirdEvent`, a sealed hierarchy: `MockingbirdSpeechBeginEvent`, `MockingbirdSpeechEndEvent`, `MockingbirdAnomalyEvent`, `MockingbirdSegmentBeginEvent`, `MockingbirdSegmentEndEvent`, `MockingbirdSoundClassEvent`, `MockingbirdOverrunEvent`, `MockingbirdBackendErrorEvent`, `MockingbirdDegradationEvent` |
 | `engine.packets` | `MockingbirdPacket`: encoded audio in a `Uint8List` you own, with `isPreroll`, `isPostroll`, `isKeyframe`, `isLast` |
 | `engine.segments` | `MockingbirdSegment`: one finished segment with all its packets; `toFile()` gives a WAV or Ogg Opus file |
+| `player.stats` | `MockingbirdPlayerStats` for a running `MockingbirdPlayer`, see [Playback](#playback) |
 | `engine.stats` | `MockingbirdStats`: counters, input level in dBFS, queue fill, and `worker` health |
 
 `MockingbirdEvent` is sealed, so a `switch` over it is exhaustive and each
@@ -252,6 +253,69 @@ engine.pushPcm(samples, captureTsUs: ts); // Int16List, mono, at sampleRateHz
 Files, network audio and test vectors go through the same pipeline as the
 microphone. Output timestamps depend only on frame position, so the same input
 always gives the same packets and events.
+
+## Playback
+
+`MockingbirdPlayer` plays the engine's Opus packets, or raw Opus bytes from
+anywhere, on the device's output. Packets go through a small jitter buffer
+ordered by their timestamp: the first one waits `targetDelay`, a missing one
+is concealed by the Opus decoder, a late or duplicate one is dropped, and a
+backlog past `maxDelay` is cut back to the target, so live audio over a
+network keeps a steady delay.
+
+```dart
+final player = MockingbirdPlayer.create(
+  const MockingbirdPlayerConfig(targetDelay: Duration(milliseconds: 80)),
+);
+await player.start();
+player.stats.listen((s) => print('${s.state.name} played ${s.played} '
+    'concealed ${s.concealed} underruns ${s.underruns}'));
+
+engine.packets.listen(player.push);
+player.pushOpus(bytesFromTheNetwork, ptsUs: senderTimestampUs);
+
+player.volume = 0.8;
+player.muted = true;
+await player.pause();
+await player.resume();
+await player.dispose();
+```
+
+`push` places an engine packet at its capture time, which runs on one clock
+for the whole session; `pushOpus` and `pushPcm` take the timestamp from you,
+and `last: true` ends a talkspurt so the player goes quiet without counting an
+underrun. A failed call throws `MockingbirdException` with the C status, for
+example `MockingbirdStatus.unsupported` for an Ogg Opus packet, which is a
+file format and plays with any system player instead.
+
+| Stats field | Meaning |
+|---|---|
+| `received`, `played` | packets accepted, packets decoded and played |
+| `concealed` | missing packets replaced by concealment |
+| `dropped`, `late` | late, duplicate, over `maxDelay`, without a slot or undecodable; `late` is the late and duplicate share |
+| `underruns` | times the output ran dry while playing |
+| `buffered`, `bufferedPackets` | what waits to play |
+| `state` | `stopped`, `idle`, `buffering`, `playing`, `paused` or `interrupted` |
+| `outputRestarts` | route changes the output followed |
+
+The output follows a new route (headphones, Bluetooth, a new default device).
+On Android the player holds audio focus while it runs: a transient loss, a
+call for example, pauses it until focus returns, ducking lowers it, and a
+permanent loss or unplugged headphones pause it until you call `resume`. On
+iOS an interruption pauses it until iOS says to resume, and the route going
+away pauses it until `resume`. On the web it plays through Web Audio; call
+`start` from a user gesture, as browsers allow sound only after one.
+
+`MockingbirdBackend.hostPcm` opens no device: `read(frames)` renders the
+output for an app that plays audio itself. `MockingbirdDecoder` is the bare
+decoder, for one stream in order:
+
+```dart
+final decoder = MockingbirdDecoder.create(sampleRateHz: 16000);
+final pcm = decoder.decode(packet.data);
+final filler = decoder.conceal(); // for a packet that never arrived
+decoder.dispose();
+```
 
 ## Sound classes
 
@@ -494,7 +558,8 @@ The web build is the same engine compiled to WebAssembly, running
 single-threaded in the page and fed by an AudioWorklet. Every API above works,
 the neural tier, YAMNet and keywords included, through a minimal ONNX Runtime
 linked into the module. `MockingbirdModels` puts the models in the module's
-memory, and keeps downloaded ones in the browser's cache. See
+memory, and keeps downloaded ones in the browser's cache. The player renders
+in the module and Web Audio plays it, scheduled 120 ms ahead. See
 [mockingbird_web](https://pub.dev/packages/mockingbird_web) for the details and
 for hosting the files on a CDN.
 
@@ -502,9 +567,10 @@ for hosting the files on a CDN.
 
 The [example](example) is a complete demo on `flutter_bloc`: presets switch
 detector recipes, a slider retunes the running engine, an RNNoise toggle, a
-level meter, the latest recognised sound and the full stats card. It runs on
-macOS, iOS, Android, Linux, Windows and the web, with every preset on every
-platform.
+level meter, the latest recognised sound and the full stats card. It keeps
+the last ten seconds of Opus packets it captured and plays them back through
+`MockingbirdPlayer`, with the player's counters. It runs on macOS, iOS,
+Android, Linux, Windows and the web, with every preset on every platform.
 
 ## Engine
 
