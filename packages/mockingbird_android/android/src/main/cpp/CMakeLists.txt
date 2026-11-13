@@ -30,6 +30,10 @@ set(MOCKINGBIRD_SOURCES
         ${MOCKINGBIRD_ROOT}/src/api/api_run.cpp
         ${MOCKINGBIRD_ROOT}/src/api/api_devices.cpp
         ${MOCKINGBIRD_ROOT}/src/api/api_keywords.cpp
+        ${MOCKINGBIRD_ROOT}/src/api/api_player.cpp
+        ${MOCKINGBIRD_ROOT}/src/api/api_player_control.cpp
+        ${MOCKINGBIRD_ROOT}/src/api/api_player_feed.cpp
+        ${MOCKINGBIRD_ROOT}/src/api/api_player_run.cpp
         ${MOCKINGBIRD_ROOT}/src/api/api_speaker.cpp
         ${MOCKINGBIRD_ROOT}/src/api/api_stats.cpp
         ${MOCKINGBIRD_ROOT}/src/api/api_tuning.cpp
@@ -74,8 +78,18 @@ set(MOCKINGBIRD_SOURCES
         ${MOCKINGBIRD_ROOT}/src/encode/opus_encoder.cpp
         ${MOCKINGBIRD_ROOT}/src/encode/ogg_opus_encoder.cpp
         ${MOCKINGBIRD_ROOT}/src/encode/ogg_page_writer.cpp
+        ${MOCKINGBIRD_ROOT}/src/play/jitter_buffer.cpp
+        ${MOCKINGBIRD_ROOT}/src/play/jitter_buffer_play.cpp
+        ${MOCKINGBIRD_ROOT}/src/play/miniaudio_output.cpp
+        ${MOCKINGBIRD_ROOT}/src/play/output_factory.cpp
+        ${MOCKINGBIRD_ROOT}/src/play/packet_queue.cpp
+        ${MOCKINGBIRD_ROOT}/src/play/player_config.cpp
+        ${MOCKINGBIRD_ROOT}/src/play/player_output.cpp
+        ${MOCKINGBIRD_ROOT}/src/play/player_renderer.cpp
+        ${MOCKINGBIRD_ROOT}/src/play/player_renderer_fill.cpp
         ${MOCKINGBIRD_ROOT}/src/preprocess/rnnoise_preprocessor.cpp
-        ${MOCKINGBIRD_ROOT}/src/capture/oboe_backend.cpp)
+        ${MOCKINGBIRD_ROOT}/src/capture/oboe_backend.cpp
+        ${MOCKINGBIRD_ROOT}/src/play/oboe_output.cpp)
 
 # Vendored RNNoise (BSD-3, Xiph), classic baked-model revision bad0a75.
 set(MOCKINGBIRD_RNNOISE_DIR ${MOCKINGBIRD_ROOT}/third_party/rnnoise)

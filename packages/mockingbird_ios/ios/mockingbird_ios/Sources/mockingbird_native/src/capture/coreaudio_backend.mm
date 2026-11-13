@@ -5,10 +5,6 @@
 
 #include "capture/coreaudio_impl.hpp"
 
-#if TARGET_OS_IPHONE
-#import <AVFoundation/AVFoundation.h>
-#endif
-
 namespace mockingbird {
 CoreAudioBackend::CoreAudioBackend() : impl_(std::make_unique<Impl>()) {}
 
@@ -20,6 +16,7 @@ CoreAudioBackend::~CoreAudioBackend() {
         AudioUnitUninitialize(impl_->unit);
         AudioComponentInstanceDispose(impl_->unit);
     }
+    impl_->release_session();
 }
 
 mockingbird_status_t CoreAudioBackend::init(const mockingbird_config_t& cfg, PcmCallback cb, void* user) {
@@ -81,12 +78,7 @@ mockingbird_status_t CoreAudioBackend::stop() {
     if (!impl_->running) return MOCKINGBIRD_OK;
     AudioOutputUnitStop(impl_->unit);
     impl_->running = false;
-#if TARGET_OS_IPHONE
-    [[AVAudioSession sharedInstance]
-        setActive:NO
-      withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation
-            error:nil];
-#endif
+    impl_->release_session();
     return MOCKINGBIRD_OK;
 }
 

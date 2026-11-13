@@ -2,6 +2,7 @@
 #pragma once
 
 #include "capture/coreaudio_backend.hpp"
+#include "platform/apple_audio_session.hpp"
 
 #include <AudioToolbox/AudioToolbox.h>
 #include <AudioUnit/AudioUnit.h>
@@ -34,6 +35,14 @@ struct CoreAudioBackend::Impl {
     std::mutex             route_mu;
     bool                   watching        = false;
     void*                  observers[3]    = {nullptr, nullptr, nullptr};
+    bool                   session_held    = false;
+    SessionUse             session_use     = SessionUse::Capture;
+
+    void release_session() {
+        if (!session_held) return;
+        session_held = false;
+        audio_session_release(session_use);
+    }
 
     void tell(mockingbird_event_type_t type) {
         if (notice != nullptr) notice(notice_user, type, 0);
