@@ -34,6 +34,11 @@ mockingbird_status_t OpusFrameDecoder::init(uint32_t sample_rate_hz, uint16_t ch
     return MOCKINGBIRD_OK;
 }
 
+int OpusFrameDecoder::frames_in(const uint8_t* data, uint32_t size, uint32_t hz) noexcept {
+    if (data == nullptr || size == 0 || size > kMaxPacketBytes || !valid_rate(hz)) return -1;
+    return opus_packet_get_nb_samples(data, static_cast<opus_int32>(size), static_cast<opus_int32>(hz));
+}
+
 int OpusFrameDecoder::packet_frames(const uint8_t* data, uint32_t size) const noexcept {
     if (dec_ == nullptr || data == nullptr || size == 0 || size > kMaxPacketBytes) return -1;
     const int n = opus_decoder_get_nb_samples(dec_, data, static_cast<opus_int32>(size));
@@ -91,6 +96,7 @@ OpusFrameDecoder::~OpusFrameDecoder() = default;
 bool OpusFrameDecoder::valid_rate(uint32_t) noexcept { return false; }
 mockingbird_status_t OpusFrameDecoder::init(uint32_t, uint16_t) noexcept { return MOCKINGBIRD_ERR_UNSUPPORTED; }
 int OpusFrameDecoder::packet_frames(const uint8_t*, uint32_t) const noexcept { return -1; }
+int OpusFrameDecoder::frames_in(const uint8_t*, uint32_t, uint32_t) noexcept { return -1; }
 mockingbird_status_t OpusFrameDecoder::decode(const uint8_t*, uint32_t, int16_t*, uint32_t,
                                               uint32_t& out_frames) noexcept {
     out_frames = 0;

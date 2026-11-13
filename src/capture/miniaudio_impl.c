@@ -1,5 +1,6 @@
 /* The single translation unit that compiles miniaudio's implementation.
- * Mockingbird only captures, so playback-side subsystems are compiled out. */
+ * Capture and playback use the device API only, so the decoding, encoding,
+ * generation and engine subsystems are compiled out. */
 #define MA_NO_DECODING
 #define MA_NO_ENCODING
 #define MA_NO_GENERATION

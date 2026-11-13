@@ -1,6 +1,7 @@
 // Opens and configures the capture unit. iOS requires an active recording
-// AVAudioSession before the unit will initialise; voice processing uses the
-// play-and-record category in voice-chat mode, as VoiceProcessingIO expects.
+// AVAudioSession before the unit will initialise; the shared session picks the
+// category, and voice processing gets play-and-record in voice-chat mode, as
+// VoiceProcessingIO expects.
 // VoiceProcessingIO only initialises with its output side live, so in that
 // mode the unit keeps output enabled and renders silence into it.
 #include "capture/coreaudio_backend.hpp"
@@ -9,32 +10,8 @@
 
 #include "capture/coreaudio_impl.hpp"
 
-#if TARGET_OS_IPHONE
-#import <AVFoundation/AVFoundation.h>
-#endif
-
 namespace mockingbird {
 namespace {
-mockingbird_status_t activate_session(const mockingbird_config_t& cfg) {
-#if TARGET_OS_IPHONE
-    AVAudioSession* session = [AVAudioSession sharedInstance];
-    NSError* err = nil;
-    const bool voice = cfg.voice_processing != 0;
-    const BOOL set = voice
-        ? [session setCategory:AVAudioSessionCategoryPlayAndRecord
-                          mode:AVAudioSessionModeVoiceChat
-                       options:0
-                         error:&err]
-        : [session setCategory:AVAudioSessionCategoryRecord error:&err];
-    if (!set) return MOCKINGBIRD_ERR_BACKEND;
-    [session setPreferredSampleRate:static_cast<double>(cfg.sample_rate_hz) error:nil];
-    if (![session setActive:YES error:&err]) return MOCKINGBIRD_ERR_BACKEND;
-#else
-    (void)cfg;
-#endif
-    return MOCKINGBIRD_OK;
-}
-
 OSStatus set_stream_format(AudioComponentInstance unit, const mockingbird_config_t& cfg, bool voice) {
     AudioStreamBasicDescription fmt{};
     fmt.mSampleRate       = cfg.sample_rate_hz;
@@ -56,8 +33,10 @@ OSStatus set_stream_format(AudioComponentInstance unit, const mockingbird_config
 }
 
 mockingbird_status_t coreaudio_open_unit(CoreAudioBackend::Impl& impl, const mockingbird_config_t& cfg) {
-    const mockingbird_status_t session = activate_session(cfg);
+    impl.session_use = cfg.voice_processing != 0 ? SessionUse::VoiceCapture : SessionUse::Capture;
+    const mockingbird_status_t session = audio_session_acquire(impl.session_use, cfg.sample_rate_hz);
     if (session != MOCKINGBIRD_OK) return session;
+    impl.session_held = true;
     impl.voice_requested = cfg.voice_processing;
     impl.unit = coreaudio_create_unit(impl.voice_requested != 0);
     if (impl.unit == nullptr) return MOCKINGBIRD_ERR_BACKEND;

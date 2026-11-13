@@ -61,6 +61,7 @@ enum MockingbirdSymbolAnchor {
     _ = mockingbird_status_str(0)
     _ = mockingbird_version_string()
     keepDecoder(&sample)
+    keepPlayer(&sample)
   }
 
   static func keepDecoder(_ sample: inout Int16) {
@@ -71,5 +72,24 @@ enum MockingbirdSymbolAnchor {
     _ = mockingbird_decoder_conceal(decoder, 0, &sample, 0, &frames)
     _ = mockingbird_decoder_reset(decoder)
     mockingbird_decoder_destroy(decoder)
+  }
+
+  static func keepPlayer(_ sample: inout Int16) {
+    var cfg = mockingbird_player_config_t()
+    var player: OpaquePointer? = nil
+    var stats = mockingbird_player_stats_t()
+    _ = mockingbird_player_config_defaults(&cfg)
+    _ = mockingbird_player_create(&cfg, &player)
+    _ = mockingbird_player_start(player)
+    _ = mockingbird_player_pause(player)
+    _ = mockingbird_player_resume(player)
+    _ = mockingbird_player_push(player, MOCKINGBIRD_CODEC_OPUS, nil, 0, 0, 0)
+    _ = mockingbird_player_flush(player)
+    _ = mockingbird_player_read(player, &sample, 0)
+    _ = mockingbird_player_set_volume(player, 1)
+    _ = mockingbird_player_set_muted(player, 0)
+    _ = mockingbird_player_get_stats(player, &stats)
+    _ = mockingbird_player_stop(player)
+    mockingbird_player_destroy(player)
   }
 }

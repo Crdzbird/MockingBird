@@ -832,6 +832,132 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_decoder_conceal(mockingbird_dec
 MOCKINGBIRD_API mockingbird_status_t mockingbird_decoder_reset(mockingbird_decoder_t* decoder);
 
 /* ============================================================================
+ * PLAYER
+ *
+ * Plays Opus packets, or int16 PCM, on the device's output through a small
+ * jitter buffer ordered by pts_us. The same backends as capture: Core Audio
+ * on Apple, Oboe on Android, miniaudio on Linux and Windows. HOST_PCM opens
+ * no device: the host pulls the mixed-down output with mockingbird_player_read
+ * and plays it itself, which is how the web build plays through Web Audio.
+ *
+ * Feeding. mockingbird_player_push takes one packet: MOCKINGBIRD_CODEC_OPUS
+ * bytes, or MOCKINGBIRD_CODEC_PCM_S16LE samples at the player's rate and
+ * channel count, 1..8192 bytes and at most 120 ms. pts_us is the packet's
+ * place on one timeline, in microseconds; flags are MOCKINGBIRD_PKT_FLAG_*,
+ * and LAST ends a talkspurt so the player goes quiet without counting an
+ * underrun. A packet is copied before the call returns. When every slot is
+ * taken the packet is dropped and counted; push never blocks. Packets may be
+ * pushed before start; they play once it starts.
+ *
+ * Playout. The first packet waits target_delay_ms, or until that much audio
+ * is buffered, then packets play back to back in pts order:
+ *   - a packet that is missing when its turn comes is concealed, as long as
+ *     the hole is at most conceal_max_ms; a longer hole is silence between
+ *     talkspurts, and the next packet starts after target_delay_ms again
+ *   - a packet that arrives after its turn, or twice, is dropped
+ *   - with nothing buffered and no LAST seen the output underruns: one
+ *     concealed frame fades it out and the player buffers again
+ *   - more than max_delay_ms buffered drops the oldest packets down to the
+ *     target, so a stalled link that recovers does not keep its delay
+ *   - a pts more than 2 s behind the playout point starts a new timeline
+ *     (the sender restarted); so does mockingbird_player_flush
+ *
+ * Lifecycle. start opens the output and returns MOCKINGBIRD_ERR_ALREADY_RUNNING
+ * when it runs. pause keeps what is buffered and stops the output; resume
+ * starts it again. stop closes the output and drops everything buffered.
+ * When the output device changes (headphones, Bluetooth, a new default) the
+ * player follows the new route. On iOS a phone call or another app's audio
+ * pauses output until the interruption ends, and the route the player used
+ * going away (headphones unplugged) pauses it until resume, as iOS apps are
+ * expected to; the state in the stats says which. Android audio focus lives
+ * in the Flutter plugin, see the platform notes.
+ *
+ * Threads. Push and flush come from one host thread at a time, read from one
+ * thread, and create, start, pause, resume, stop and destroy are serialised
+ * by the host and must not overlap destroy. set_volume, set_muted and
+ * get_stats are safe from any thread. On a device backend the output runs on
+ * the OS audio thread, which never allocates, locks or blocks; the player
+ * starts no thread of its own.
+ * ========================================================================== */
+typedef struct mockingbird_player mockingbird_player_t;
+
+typedef enum mockingbird_player_state {
+    MOCKINGBIRD_PLAYER_STOPPED     = 0,
+    MOCKINGBIRD_PLAYER_IDLE        = 1,   /* started, nothing to play */
+    MOCKINGBIRD_PLAYER_BUFFERING   = 2,   /* waiting for target_delay_ms of audio */
+    MOCKINGBIRD_PLAYER_PLAYING     = 3,
+    MOCKINGBIRD_PLAYER_PAUSED      = 4,   /* by pause, or by the route going away */
+    MOCKINGBIRD_PLAYER_INTERRUPTED = 5    /* the OS took the output away */
+} mockingbird_player_state_t;
+
+typedef struct mockingbird_player_config {
+    mockingbird_backend_t backend;           /* AUTO, a device backend, or HOST_PCM */
+    uint32_t              sample_rate_hz;    /* 8000, 12000, 16000, 24000 or 48000 */
+    uint16_t              channels;          /* 1 or 2 */
+    uint32_t              target_delay_ms;   /* 0..2000, default 60 */
+    uint32_t              max_delay_ms;      /* target..10000, default 400 */
+    uint32_t              conceal_max_ms;    /* 0..1000, default 100 */
+    uint32_t              queue_packets;     /* packet slots, 4..4096, default 128 */
+    uint32_t              _reserved[4];      /* zeroed by defaults; must be 0 */
+} mockingbird_player_config_t;
+
+typedef struct mockingbird_player_stats {
+    uint64_t packets_received;               /* accepted by push */
+    uint64_t packets_played;
+    uint64_t packets_concealed;              /* missing packets replaced by concealment */
+    uint64_t packets_dropped;                /* late, duplicate, over max_delay_ms,
+                                              * no free slot, or undecodable */
+    uint64_t packets_late;                   /* the late and duplicate share of dropped */
+    uint64_t underruns;
+    uint64_t frames_rendered;                /* frames given to the output, silence too */
+    uint32_t buffered_packets;
+    uint32_t buffered_ms;
+    uint32_t state;                          /* mockingbird_player_state_t */
+    uint32_t output_restarts;                /* route changes the output followed */
+    uint32_t _reserved[6];                   /* additive growth; always 0 */
+} mockingbird_player_stats_t;
+
+/* Defaults: AUTO backend, 16 kHz mono, the delays above. */
+MOCKINGBIRD_API mockingbird_status_t mockingbird_player_config_defaults(mockingbird_player_config_t* out_cfg);
+
+/* Validates every field; on failure *out_player is NULL. Pair with destroy. */
+MOCKINGBIRD_API mockingbird_status_t mockingbird_player_create(const mockingbird_player_config_t* cfg,
+                                                               mockingbird_player_t**             out_player);
+
+/* Stops if needed and frees. Safe on NULL. */
+MOCKINGBIRD_API void mockingbird_player_destroy(mockingbird_player_t* player);
+
+MOCKINGBIRD_API mockingbird_status_t mockingbird_player_start(mockingbird_player_t* player);
+MOCKINGBIRD_API mockingbird_status_t mockingbird_player_pause(mockingbird_player_t* player);
+MOCKINGBIRD_API mockingbird_status_t mockingbird_player_resume(mockingbird_player_t* player);
+MOCKINGBIRD_API mockingbird_status_t mockingbird_player_stop(mockingbird_player_t* player);
+
+MOCKINGBIRD_API mockingbird_status_t mockingbird_player_push(mockingbird_player_t* player,
+                                                             mockingbird_codec_t   codec,
+                                                             const uint8_t*        data,
+                                                             uint32_t              size,
+                                                             uint64_t              pts_us,
+                                                             uint32_t              flags);
+
+/* Drops everything pushed so far and starts a new timeline. */
+MOCKINGBIRD_API mockingbird_status_t mockingbird_player_flush(mockingbird_player_t* player);
+
+/* HOST_PCM only: renders exactly `frames` frames (frames * channels values)
+ * into out, silence where there is nothing to play, and advances playout by
+ * that much. MOCKINGBIRD_ERR_INVALID_STATE on a device backend,
+ * MOCKINGBIRD_ERR_NOT_RUNNING before start. At most 1 s per call. */
+MOCKINGBIRD_API mockingbird_status_t mockingbird_player_read(mockingbird_player_t* player,
+                                                             int16_t*              out,
+                                                             uint32_t              frames);
+
+/* Linear gain in [0, 1], applied with a short ramp. Muting keeps the volume. */
+MOCKINGBIRD_API mockingbird_status_t mockingbird_player_set_volume(mockingbird_player_t* player, float volume);
+MOCKINGBIRD_API mockingbird_status_t mockingbird_player_set_muted(mockingbird_player_t* player, int muted);
+
+MOCKINGBIRD_API mockingbird_status_t mockingbird_player_get_stats(mockingbird_player_t*       player,
+                                                                  mockingbird_player_stats_t* out_stats);
+
+/* ============================================================================
  * HOST PCM PUSH  (only when backend == MOCKINGBIRD_BACKEND_HOST_PCM)
  *
  * Lets a host with its own capture path feed PCM directly. Returns

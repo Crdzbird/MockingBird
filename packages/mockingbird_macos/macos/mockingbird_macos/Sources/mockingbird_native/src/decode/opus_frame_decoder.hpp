@@ -21,6 +21,7 @@ public:
 
     static bool valid_rate(uint32_t hz) noexcept;
     static uint32_t max_frames_for(uint32_t hz) noexcept { return hz / 1000u * 120u; }
+    static int frames_in(const uint8_t* data, uint32_t size, uint32_t hz) noexcept;
 
     mockingbird_status_t init(uint32_t sample_rate_hz, uint16_t channels) noexcept;
     mockingbird_status_t decode(const uint8_t* data, uint32_t size, int16_t* out,

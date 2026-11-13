@@ -87,6 +87,10 @@ set(MOCKINGBIRD_SOURCES
         src/api/api_decoder.cpp
         src/api/api_devices.cpp
         src/api/api_keywords.cpp
+        src/api/api_player.cpp
+        src/api/api_player_control.cpp
+        src/api/api_player_feed.cpp
+        src/api/api_player_run.cpp
         src/api/api_speaker.cpp
         src/api/api_defaults.cpp
         src/api/api_push.cpp
@@ -135,6 +139,15 @@ set(MOCKINGBIRD_SOURCES
         src/encode/opus_encoder.cpp
         src/encode/ogg_opus_encoder.cpp
         src/encode/ogg_page_writer.cpp
+        src/play/jitter_buffer.cpp
+        src/play/jitter_buffer_play.cpp
+        src/play/miniaudio_output.cpp
+        src/play/output_factory.cpp
+        src/play/packet_queue.cpp
+        src/play/player_config.cpp
+        src/play/player_output.cpp
+        src/play/player_renderer.cpp
+        src/play/player_renderer_fill.cpp
         src/preprocess/rnnoise_preprocessor.cpp)
 
 if(APPLE)
@@ -144,7 +157,10 @@ if(APPLE)
             src/capture/coreaudio_devices.mm
             src/capture/coreaudio_render.mm
             src/capture/coreaudio_routes.mm
-            src/capture/coreaudio_unit.mm)
+            src/capture/coreaudio_unit.mm
+            src/platform/apple_audio_session.mm
+            src/play/coreaudio_output.mm
+            src/play/coreaudio_output_watch.mm)
 endif()
 
 if(EMSCRIPTEN)
@@ -154,7 +170,8 @@ if(EMSCRIPTEN)
             src/capture/miniaudio_backend.cpp
             src/capture/miniaudio_devices.cpp
             src/capture/miniaudio_ids.cpp
-            src/capture/miniaudio_impl.c)
+            src/capture/miniaudio_impl.c
+            src/play/miniaudio_output.cpp)
     list(APPEND MOCKINGBIRD_SOURCES
             src/worker/worker_inline.cpp
             src/capture/backend_factory_host_only.cpp
@@ -210,6 +227,17 @@ set(MOCKINGBIRD_INTERNAL_HEADERS
         src/engine_ingest.hpp
         src/frame_clock.hpp
         src/packet_pool.hpp
+        src/platform/apple_audio_session.hpp
+        src/play/coreaudio_output.hpp
+        src/play/coreaudio_output_impl.hpp
+        src/play/jitter_buffer.hpp
+        src/play/miniaudio_output.hpp
+        src/play/oboe_output.hpp
+        src/play/output_backend.hpp
+        src/play/packet_queue.hpp
+        src/play/player.hpp
+        src/play/player_renderer.hpp
+        src/play/player_shared.hpp
         src/preprocess/decimator.hpp
         src/preprocess/interpolator.hpp
         src/preprocess/lowpass_design.hpp
@@ -557,6 +585,11 @@ if(MOCKINGBIRD_ENABLE_TESTS AND TARGET mockingbird_static)
             tests/test_opus_encoder.cpp
             tests/test_opus_decoder.cpp
             tests/test_opus_conceal.cpp
+            tests/test_player_jitter.cpp
+            tests/test_player_timeline.cpp
+            tests/test_player_abi.cpp
+            tests/test_player_threads.cpp
+            tests/test_player_device.cpp
             tests/test_ogg_opus.cpp
             tests/test_wake.cpp
             tests/test_capture_notices.cpp
