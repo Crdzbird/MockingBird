@@ -34,6 +34,9 @@ struct CoreAudioOutput::Impl {
     void stop_unit();
 };
 
+AudioComponentInstance coreaudio_output_create_unit();
+OSStatus coreaudio_output_configure(AudioComponentInstance unit, const OutputFormat& fmt,
+                                    CoreAudioOutput::Impl* impl);
 void coreaudio_output_watch(const std::shared_ptr<CoreAudioOutput::Impl>& impl);
 void coreaudio_output_unwatch(CoreAudioOutput::Impl& impl);
 
