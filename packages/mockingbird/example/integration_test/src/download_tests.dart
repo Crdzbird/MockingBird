@@ -9,5 +9,5 @@ void downloadTests() {
   test('YAMNet and the speaker model download on first use', () async {
     expect(await MockingbirdModels.soundClassPath(), isNotEmpty);
     expect(await MockingbirdModels.speakerModelPath(), isNotEmpty);
-  }, timeout: const Timeout(Duration(minutes: 5)));
+  }, timeout: const Timeout(Duration(minutes: 10)));
 }

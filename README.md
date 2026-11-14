@@ -530,7 +530,7 @@ flutter test integration_test -d <device-id>
 ```
 
 The first run on a fresh device or simulator downloads YAMNet and the speaker
-model, 13.5 MB together. That happens in one test with a five-minute timeout,
+model, 13.5 MB together. That happens in one test with a ten-minute timeout,
 so a slow network fails there and not in the model or speaker tests, which
 then open the kept files and only time the engine.
 

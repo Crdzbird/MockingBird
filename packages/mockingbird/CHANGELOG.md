@@ -1,7 +1,7 @@
 ## 0.2.1
 
 - `MockingbirdEngine.create` throws a `MockingbirdException` with `unsupported` for Opus or Ogg Opus with `frameMs: 30`. Opus has no 30 ms frame, so such an engine used to start and emit no packets. Opus takes 10 or 20 ms frames; PCM keeps 30.
-- The example's integration tests download YAMNet and the speaker model in a test of their own with a five-minute timeout, so a slow first download on a fresh simulator no longer times out the speaker test.
+- The example's integration tests download YAMNet and the speaker model in a test of their own with a ten-minute timeout, so a slow first download on a fresh simulator no longer times out the speaker test.
 
 ## 0.2.0
 
