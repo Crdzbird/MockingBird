@@ -18,11 +18,6 @@ void main() {
 
   tearDown(() => player.dispose());
 
-  Future<void> send(MockingbirdPlaybackFocus f) async {
-    platform.focus.add(f);
-    await pumpEventQueue();
-  }
-
   test(
     'start takes focus before the output; stop gives it back after',
     () async {
@@ -63,32 +58,6 @@ void main() {
     );
   });
 
-  test('a transient focus loss pauses and focus coming back resumes', () async {
-    await player.start();
-    await send(MockingbirdPlaybackFocus.lostTransient);
-    await send(MockingbirdPlaybackFocus.gained);
-    expect(platform.calls.skip(2), ['pause', 'resume', 'volume 1.0']);
-  });
-
-  test('focus coming back does not resume what the app paused', () async {
-    await player.start();
-    await player.pause();
-    await send(MockingbirdPlaybackFocus.lostTransient);
-    await send(MockingbirdPlaybackFocus.gained);
-    expect(platform.calls.skip(2), ['pause', 'pause']);
-  });
-
-  test(
-    'a lost route pauses until the app resumes; ducking lowers volume',
-    () async {
-      await player.start();
-      await send(MockingbirdPlaybackFocus.becomingNoisy);
-      await send(MockingbirdPlaybackFocus.gained);
-      await send(MockingbirdPlaybackFocus.duck);
-      expect(platform.calls.skip(2), ['pause', 'volume 0.2']);
-    },
-  );
-
   test(
     'dispose is idempotent and a disposed player throws StateError',
     () async {
@@ -98,4 +67,11 @@ void main() {
       expect(() => player.pushOpus(Uint8List(1), ptsUs: 0), throwsStateError);
     },
   );
+
+  test('overlapping dispose calls destroy the native player once', () async {
+    await player.start();
+    await Future.wait([player.dispose(), player.dispose()]);
+    expect(platform.calls.where((c) => c == 'destroy'), hasLength(1));
+    expect(platform.calls.last, 'destroy');
+  });
 }

@@ -27,7 +27,7 @@ class MockingbirdPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, EventC
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        focus?.abandon()
+        focus?.release()
         focus = null
         methods?.setMethodCallHandler(null)
         events?.setStreamHandler(null)
