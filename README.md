@@ -529,6 +529,11 @@ including the Silero and YAMNet loads through ONNX Runtime:
 flutter test integration_test -d <device-id>
 ```
 
+The first run on a fresh device or simulator downloads YAMNet and the speaker
+model, 13.5 MB together. That happens in one test with a five-minute timeout,
+so a slow network fails there and not in the model or speaker tests, which
+then open the kept files and only time the engine.
+
 Notes for Android devices:
 
 - A debug APK carries every ABI plus debug assets and is about 270 MB. Android
