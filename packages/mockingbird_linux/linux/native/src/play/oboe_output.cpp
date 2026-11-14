@@ -7,14 +7,14 @@
 #include "play/oboe_output_impl.hpp"
 
 namespace mockingbird {
-OboeOutput::OboeOutput() : impl_(std::make_unique<Impl>()) {}
+OboeOutput::OboeOutput() : impl_(std::make_shared<Impl>()) {}
 
 OboeOutput::~OboeOutput() {
     std::shared_ptr<oboe::AudioStream> s;
     {
         std::lock_guard lk(impl_->mu);
         impl_->running = false;
-        s = impl_->stream;
+        s = std::move(impl_->stream);
     }
     if (s) {
         s->stop();

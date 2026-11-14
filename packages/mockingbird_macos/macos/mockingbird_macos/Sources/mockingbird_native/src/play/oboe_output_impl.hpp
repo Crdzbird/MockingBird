@@ -1,7 +1,10 @@
 // The Oboe output's stream and callbacks: a low-latency int16 output stream
 // with Oboe's resampler, so the player's rate plays on any device rate. A
 // stream that disconnects (headphones, Bluetooth, USB) is reopened on the new
-// route from Oboe's error callback, where Oboe allows it.
+// route from Oboe's error callback, where Oboe allows it. Each stream holds
+// the callbacks by shared_ptr, so Oboe's error thread, which keeps its stream
+// alive, can never reach a freed Impl; `running` is cleared under the mutex
+// before teardown, so that thread never calls into a player being destroyed.
 #pragma once
 
 #include "play/oboe_output.hpp"
@@ -14,7 +17,9 @@
 #include <mutex>
 
 namespace mockingbird {
-struct OboeOutput::Impl : public oboe::AudioStreamDataCallback, public oboe::AudioStreamErrorCallback {
+struct OboeOutput::Impl : public oboe::AudioStreamDataCallback,
+                          public oboe::AudioStreamErrorCallback,
+                          public std::enable_shared_from_this<OboeOutput::Impl> {
     std::shared_ptr<oboe::AudioStream> stream;
     OutputFormat                       fmt{};
     RenderCallback                     cb          = nullptr;
@@ -39,8 +44,9 @@ struct OboeOutput::Impl : public oboe::AudioStreamDataCallback, public oboe::Aud
         b.setSampleRateConversionQuality(oboe::SampleRateConversionQuality::Medium);
         b.setUsage(oboe::Usage::Media);
         b.setContentType(oboe::ContentType::Speech);
-        b.setDataCallback(this);
-        b.setErrorCallback(this);
+        const std::shared_ptr<Impl> self = shared_from_this();
+        b.setDataCallback(self);
+        b.setErrorCallback(self);
         return b.openStream(stream);
     }
 
