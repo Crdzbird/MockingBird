@@ -3,7 +3,10 @@
 // Oboe's error callback, which is where Oboe allows it. Voice processing
 // switches to the VOICE_COMMUNICATION input preset, which applies the
 // device's echo canceller, gain control and noise suppressor where it has
-// them; a selected device is an AudioDeviceInfo id.
+// them; a selected device is an AudioDeviceInfo id. Each stream holds the
+// callbacks by shared_ptr, so Oboe's error thread, which keeps its stream
+// alive, can never reach a freed Impl; `running` is cleared under the mutex
+// before teardown, so that thread never calls into an engine being destroyed.
 #include "capture/oboe_backend.hpp"
 
 #ifdef MOCKINGBIRD_HAVE_OBOE
@@ -20,7 +23,8 @@
 
 namespace mockingbird {
 struct OboeBackend::Impl : public oboe::AudioStreamDataCallback,
-                           public oboe::AudioStreamErrorCallback {
+                           public oboe::AudioStreamErrorCallback,
+                           public std::enable_shared_from_this<OboeBackend::Impl> {
     std::shared_ptr<oboe::AudioStream> stream;
     PcmCallback                        cb          = nullptr;
     void*                              user        = nullptr;
@@ -44,8 +48,9 @@ struct OboeBackend::Impl : public oboe::AudioStreamDataCallback,
         b.setChannelCount(static_cast<int>(cfg.channels));
         b.setSampleRate(static_cast<int32_t>(cfg.sample_rate_hz));
         b.setFramesPerDataCallback(static_cast<int32_t>((cfg.sample_rate_hz / 1000u) * cfg.frame_ms));
-        b.setDataCallback(this);
-        b.setErrorCallback(this);
+        const std::shared_ptr<Impl> self = shared_from_this();
+        b.setDataCallback(self);
+        b.setErrorCallback(self);
         b.setDeviceId(device_id);
         b.setInputPreset(cfg.voice_processing != 0 ? oboe::InputPreset::VoiceCommunication
                                                    : oboe::InputPreset::VoiceRecognition);
@@ -75,14 +80,14 @@ struct OboeBackend::Impl : public oboe::AudioStreamDataCallback,
     }
 };
 
-OboeBackend::OboeBackend() : impl_(std::make_unique<Impl>()) {}
+OboeBackend::OboeBackend() : impl_(std::make_shared<Impl>()) {}
 
 OboeBackend::~OboeBackend() {
     std::shared_ptr<oboe::AudioStream> s;
     {
         std::lock_guard lk(impl_->mu);
         impl_->running = false;
-        s = impl_->stream;
+        s = std::move(impl_->stream);
     }
     if (s) {
         s->stop();
