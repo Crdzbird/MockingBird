@@ -1,4 +1,4 @@
-## Unreleased
+## 0.2.0
 
 - Playback through the default output unit, which follows the default device.
 - With Swift Package Manager, ONNX Runtime is a reduced static xcframework pinned by checksum instead of Microsoft's package; CocoaPods now requires `onnxruntime-c` 1.30.

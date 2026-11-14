@@ -1,4 +1,4 @@
-## Unreleased
+## 0.2.0
 
 - Player and Opus decoder operations (`createPlayer`, `playerPush`, `playerStats`, `createDecoder`, `decoderDecode` and the rest), playback focus hooks, and their `dart:ffi` implementation; bindings regenerated for the new C entry points.
 - `setSpeakerModel`, `speakerEmbedding` and `setTargetSpeaker`, with `MockingbirdSpeakerEmbeddingResult`.

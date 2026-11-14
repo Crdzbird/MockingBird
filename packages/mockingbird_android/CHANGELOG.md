@@ -1,4 +1,4 @@
-## Unreleased
+## 0.2.0
 
 - Playback through Oboe, and audio focus for the player: requested on start, abandoned on stop, with focus changes and the becoming-noisy broadcast passed to Dart over the plugin's first channel.
 - ONNX Runtime is a reduced static build linked into the engine, downloaded and checked against its SHA-256 at build time, instead of Microsoft's full library.
@@ -7,6 +7,7 @@
 - An engine that captures from the microphone can be started again after `stop`; the second start used to fail with an invalid-state error.
 - ONNX Runtime telemetry is switched off: its 1.30 builds would otherwise upload usage events and a device id to Microsoft. The engine sets `ORT_DISABLE_TELEMETRY=1` before its first ONNX Runtime environment, unless the app set it, and disables telemetry events on it.
 - Native engine with the Ogg Opus encoder and segment-end fixes.
+- The Oboe capture and playback streams hold their callbacks by `shared_ptr`, so a stream that disconnects while the engine or a player is being destroyed no longer runs the error callback on freed memory.
 
 ## 0.1.0
 

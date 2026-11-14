@@ -1,4 +1,4 @@
-## Unreleased
+## 0.2.0
 
 - Playback: `MockingbirdPlayer` plays the engine's Opus packets, or raw Opus or PCM with your own timestamps, on the device output through a jitter buffer that conceals missing packets, drops late ones and keeps a steady delay, with volume, mute, pause, resume, a stats stream and typed `MockingbirdException`s. It holds audio focus on Android and follows interruptions and route changes. `MockingbirdDecoder` decodes and conceals Opus packets on their own. The example plays back what it captured.
 - The native platforms link a reduced ONNX Runtime 1.30.0 built for Mockingbird's models: statically into the engine on Android, Linux and Windows, and as a static xcframework with Swift Package Manager. The arm64 release APK of the example shrinks from 63.2 MB to 33.5 MB. Models are now `.ort` files everywhere, so keyword models must be converted to `.ort`; the bundled `.onnx` assets are gone. The Swift Package Manager floor on macOS drops from 14.0 to 12.0.
@@ -24,6 +24,10 @@
 - `segments.postRollMs` is honoured: a segment keeps the longer of the hangover and the post-roll after the detectors go quiet.
 - Each segment's encoder state starts fresh, so every segment decodes on its own.
 - A flickering voice inside one segment no longer repeats `MockingbirdSpeechBeginEvent` without an end in between.
+- On Android, a stream that disconnects while the engine or a player is being destroyed no longer runs Oboe's error callback on freed memory.
+- Each platform gets only its own assets: mobile and desktop apps no longer carry the web module and its worklet (5.6 MB), and web apps no longer carry the models. `MockingbirdModels.yamnetLabels()` throws `UnsupportedError` on the web like the other model calls.
+- The native libraries and the WebAssembly no longer contain absolute paths of the machine that built them.
+- The example runs in the browser at https://crdzbird.github.io/MockingBird/.
 
 ## 0.1.0
 

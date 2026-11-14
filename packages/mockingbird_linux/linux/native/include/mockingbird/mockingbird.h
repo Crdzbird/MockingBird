@@ -106,7 +106,7 @@ extern "C" {
  * ========================================================================== */
 
 #define MOCKINGBIRD_VERSION_MAJOR 0
-#define MOCKINGBIRD_VERSION_MINOR 1
+#define MOCKINGBIRD_VERSION_MINOR 2
 #define MOCKINGBIRD_VERSION_PATCH 0
 
 /* ============================================================================

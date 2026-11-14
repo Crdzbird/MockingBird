@@ -1,4 +1,4 @@
-## Unreleased
+## 0.2.0
 
 - Playback through a RemoteIO unit, with one audio session shared by capture and playback (Record, Playback, or PlayAndRecord when both run); interruptions pause and resume it, and a lost route pauses it.
 - With Swift Package Manager, ONNX Runtime is a reduced static xcframework pinned by checksum instead of Microsoft's package; CocoaPods now requires `onnxruntime-c` 1.30.

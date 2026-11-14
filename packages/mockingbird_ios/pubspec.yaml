@@ -1,7 +1,7 @@
 name: mockingbird_ios
 description: >-
   The iOS implementation of the mockingbird plugin: the Mockingbird engine built from source with Core Audio capture and ONNX Runtime detectors.
-version: 0.1.0
+version: 0.2.0
 repository: https://github.com/Crdzbird/MockingBird/tree/main/packages/mockingbird_ios
 issue_tracker: https://github.com/Crdzbird/MockingBird/issues
 topics:
@@ -26,7 +26,7 @@ flutter:
 dependencies:
   flutter:
     sdk: flutter
-  mockingbird_platform_interface: ^0.1.0
+  mockingbird_platform_interface: ^0.2.0
 
 dev_dependencies:
   flutter_test:

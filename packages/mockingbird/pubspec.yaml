@@ -1,7 +1,7 @@
 name: mockingbird
 description: >-
   Native audio capture with multilingual voice detection, an anomaly gate, YAMNet sound classification, RNNoise and Opus packets over dart:ffi, on Android, iOS, macOS and web.
-version: 0.1.0
+version: 0.2.0
 repository: https://github.com/Crdzbird/MockingBird/tree/main/packages/mockingbird
 issue_tracker: https://github.com/Crdzbird/MockingBird/issues
 topics:
@@ -42,13 +42,13 @@ flutter:
 dependencies:
   flutter:
     sdk: flutter
-  mockingbird_android: ^0.1.0
-  mockingbird_ios: ^0.1.0
-  mockingbird_linux: ^0.1.0
-  mockingbird_macos: ^0.1.0
-  mockingbird_platform_interface: ^0.1.0
-  mockingbird_web: ^0.1.0
-  mockingbird_windows: ^0.1.0
+  mockingbird_android: ^0.2.0
+  mockingbird_ios: ^0.2.0
+  mockingbird_linux: ^0.2.0
+  mockingbird_macos: ^0.2.0
+  mockingbird_platform_interface: ^0.2.0
+  mockingbird_web: ^0.2.0
+  mockingbird_windows: ^0.2.0
   path_provider: ^2.1.6
 
 dev_dependencies:
