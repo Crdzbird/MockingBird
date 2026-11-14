@@ -3,9 +3,12 @@
 // that has grown past max_delay_ms back down to the target.
 #include "play/jitter_buffer.hpp"
 
+#include <algorithm>
+
 namespace mockingbird {
 namespace {
 constexpr uint64_t kResetBehindUs = 2'000'000;
+constexpr int64_t  kMaxGapUs      = 3'600'000'000;
 }
 
 void JitterBuffer::init(const JitterSettings& s, PacketQueue* queue, PlayerShared* shared) {
@@ -16,7 +19,8 @@ void JitterBuffer::init(const JitterSettings& s, PacketQueue* queue, PlayerShare
 }
 
 int64_t JitterBuffer::to_frames(int64_t us) const noexcept {
-    return us * static_cast<int64_t>(cfg_.sample_rate_hz) / 1'000'000;
+    const int64_t bounded = std::clamp(us, -kMaxGapUs, kMaxGapUs);
+    return bounded * static_cast<int64_t>(cfg_.sample_rate_hz) / 1'000'000;
 }
 
 uint64_t JitterBuffer::end_us(const PacketSlot* s) const noexcept {

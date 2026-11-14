@@ -1,6 +1,7 @@
 // miniaudio playback callbacks. The data callback runs on miniaudio's audio
 // thread and only calls the player's renderer; notifications become output
-// notices, and a stop the player did not ask for counts as an interruption.
+// notices, and a stop the player did not ask for counts as an interruption
+// and leaves the device stopped, so a resume starts it again.
 #ifndef __EMSCRIPTEN__
 
 #include "play/miniaudio_output_impl.hpp"
@@ -20,7 +21,9 @@ void miniaudio_output_notice(const ma_device_notification* n) {
         case ma_device_notification_type_interruption_began: impl->tell(OutputNotice::Interrupted); break;
         case ma_device_notification_type_interruption_ended: impl->tell(OutputNotice::Resumed); break;
         case ma_device_notification_type_stopped:
-            if (!impl->stopping.load(std::memory_order_acquire)) impl->tell(OutputNotice::Interrupted);
+            if (impl->stopping.load(std::memory_order_acquire)) break;
+            impl->running.store(false, std::memory_order_release);
+            impl->tell(OutputNotice::Interrupted);
             break;
         default: break;
     }
