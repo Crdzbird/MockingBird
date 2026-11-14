@@ -12,8 +12,9 @@ import "unsafe"
 const maxOpusPacketBytes = 65536
 
 // Decode decodes one Opus packet of 1 to 65536 bytes and returns its frames,
-// frames * channels interleaved samples. A packet libopus cannot parse is a
-// StatusErrInvalidArg error and leaves the decoder usable.
+// frames * channels interleaved samples in a slice of exactly that length. A
+// packet libopus cannot parse is a StatusErrInvalidArg error and leaves the
+// decoder usable.
 func (d *Decoder) Decode(packet []byte) ([]int16, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -23,7 +24,7 @@ func (d *Decoder) Decode(packet []byte) ([]int16, error) {
 	if len(packet) == 0 || len(packet) > maxOpusPacketBytes {
 		return nil, StatusErrInvalidArg.err("mockingbird_decoder_decode")
 	}
-	out := make([]int16, d.maxFrames*d.channels)
+	out := d.scratch
 	var n C.uint32_t
 	st := Status(C.mockingbird_decoder_decode(d.c,
 		(*C.uint8_t)(unsafe.Pointer(&packet[0])), C.uint32_t(len(packet)),
@@ -31,7 +32,7 @@ func (d *Decoder) Decode(packet []byte) ([]int16, error) {
 	if st != StatusOK {
 		return nil, st.err("mockingbird_decoder_decode")
 	}
-	return out[:int(n)*d.channels], nil
+	return append([]int16(nil), out[:int(n)*d.channels]...), nil
 }
 
 // Conceal synthesises audio for one missing packet so the next one continues
@@ -46,14 +47,14 @@ func (d *Decoder) Conceal(frames int) ([]int16, error) {
 	if frames < 0 || frames > d.maxFrames {
 		return nil, StatusErrInvalidArg.err("mockingbird_decoder_conceal")
 	}
-	out := make([]int16, d.maxFrames*d.channels)
+	out := d.scratch
 	var n C.uint32_t
 	st := Status(C.mockingbird_decoder_conceal(d.c, C.uint32_t(frames),
 		(*C.int16_t)(unsafe.Pointer(&out[0])), C.uint32_t(d.maxFrames), &n))
 	if st != StatusOK {
 		return nil, st.err("mockingbird_decoder_conceal")
 	}
-	return out[:int(n)*d.channels], nil
+	return append([]int16(nil), out[:int(n)*d.channels]...), nil
 }
 
 // Reset forgets the decoder's history, for a new stream on the same decoder.
