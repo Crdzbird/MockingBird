@@ -1,11 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// Start and Stop, one of which is always enabled.
 final class StartStopBar extends StatelessWidget {
   const factory StartStopBar({
     required bool running,
-    required VoidCallback onStart,
-    required VoidCallback onStop,
+    required AsyncCallback onStart,
+    required AsyncCallback onStop,
     Key? key,
   }) = StartStopBar._;
 
@@ -17,15 +18,15 @@ final class StartStopBar extends StatelessWidget {
   });
 
   final bool running;
-  final VoidCallback onStart;
-  final VoidCallback onStop;
+  final AsyncCallback onStart;
+  final AsyncCallback onStop;
 
   @override
   Widget build(BuildContext context) => Row(
     children: [
       Expanded(
         child: FilledButton.icon(
-          onPressed: running ? null : onStart,
+          onPressed: running ? null : () async => await onStart(),
           icon: const Icon(Icons.mic),
           label: const Text('Start'),
         ),
@@ -33,7 +34,7 @@ final class StartStopBar extends StatelessWidget {
       const SizedBox(width: 12),
       Expanded(
         child: OutlinedButton.icon(
-          onPressed: running ? onStop : null,
+          onPressed: running ? () async => await onStop() : null,
           icon: const Icon(Icons.stop),
           label: const Text('Stop'),
         ),

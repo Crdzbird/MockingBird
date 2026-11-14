@@ -24,6 +24,9 @@ final class FakePlayerPlatform extends MockingbirdPlatform {
   /// Focus changes the test sends.
   final focus = StreamController<MockingbirdPlaybackFocus>.broadcast();
 
+  /// A change sent while focus is requested, as a delayed grant does.
+  MockingbirdPlaybackFocus? onRequest;
+
   @override
   MockingbirdPlayerCreateResult createPlayer(MockingbirdNativePlayerConfig c) =>
       (status: MockingbirdStatusCode.ok, handle: const FakePlayerHandle());
@@ -64,7 +67,10 @@ final class FakePlayerPlatform extends MockingbirdPlatform {
   }
 
   @override
-  Future<void> requestPlaybackFocus() async => calls.add('focus');
+  Future<void> requestPlaybackFocus() async {
+    calls.add('focus');
+    if (onRequest case final change?) focus.add(change);
+  }
 
   @override
   Future<void> abandonPlaybackFocus() async => calls.add('abandon');

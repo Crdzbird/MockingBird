@@ -39,8 +39,10 @@ final class MockingbirdAndroid extends MockingbirdFfiPlatform {
     await _methods.invokeMethod<void>('abandonFocus');
   }
 
+  /// One stream for every player: the channel has a single listener on the
+  /// platform side, held while any player listens.
   @override
-  Stream<MockingbirdPlaybackFocus> get playbackFocusChanges => _events
+  late final Stream<MockingbirdPlaybackFocus> playbackFocusChanges = _events
       .receiveBroadcastStream()
       .map((name) => MockingbirdPlaybackFocus.values.byName(name! as String));
 }

@@ -23,10 +23,12 @@ final class PlaybackCubit extends Cubit<PlaybackState> {
     if (state.playing) return;
     emit(state.copyWith(playing: true));
     try {
-      await _replay.play((s) => emit(state.copyWith(stats: s)));
-      emit(state.copyWith(playing: false));
+      await _replay.play((s) {
+        if (!isClosed) emit(state.copyWith(stats: s));
+      });
+      if (!isClosed) emit(state.copyWith(playing: false));
     } on MockingbirdException catch (e) {
-      emit(state.copyWith(playing: false, error: '$e'));
+      if (!isClosed) emit(state.copyWith(playing: false, error: '$e'));
     }
   }
 }

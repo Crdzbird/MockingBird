@@ -41,9 +41,11 @@ final class MockingbirdPlayer {
     onDuck: _duck,
   );
   Timer? _timer;
+  Future<int>? _halting;
   double _volume = 1;
   bool _muted = false;
   bool _disposed = false;
+  bool _focusPaused = false;
 
   /// A counters snapshot per stats tick while the player runs.
   Stream<MockingbirdPlayerStats> get stats => _stats.stream;
@@ -62,8 +64,8 @@ final class MockingbirdPlayer {
   /// Stops if needed and destroys the native player. Idempotent.
   Future<void> dispose() async {
     if (_disposed) return;
-    if (isRunning) await stop();
     _disposed = true;
+    await _halt();
     await _platform.destroyPlayer(_handle);
     await _stats.close();
   }

@@ -4,7 +4,8 @@ import 'package:mockingbird/mockingbird.dart';
 
 /// Keeps the last ten seconds of captured packets and plays them back
 /// through a [MockingbirdPlayer] at their capture times, so the gaps
-/// between segments close up and each segment plays at its own pace.
+/// between segments close up and each segment plays at its own pace. The
+/// player gets a slot for every packet, since they are all pushed at once.
 final class CaptureReplay {
   factory CaptureReplay() = CaptureReplay._;
 
@@ -31,7 +32,10 @@ final class CaptureReplay {
   Future<void> play(void Function(MockingbirdPlayerStats) onStats) async {
     if (_packets.isEmpty) return;
     final player = MockingbirdPlayer.create(
-      const MockingbirdPlayerConfig(maxDelay: Duration(seconds: 10)),
+      MockingbirdPlayerConfig(
+        maxDelay: const Duration(seconds: 10),
+        queuePackets: (_packets.length + 4).clamp(128, 4096),
+      ),
     );
     final done = Completer<void>();
     final sub = player.stats.listen((s) {

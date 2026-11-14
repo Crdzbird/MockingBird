@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mockingbird_example/src/demo/playback_state.dart';
 import 'package:mockingbird_example/src/widgets/stat_row.dart';
@@ -7,7 +8,7 @@ final class PlaybackCard extends StatelessWidget {
   const factory PlaybackCard({
     required PlaybackState state,
     required bool capturing,
-    required VoidCallback onPlay,
+    required AsyncCallback onPlay,
     Key? key,
   }) = PlaybackCard._;
 
@@ -20,7 +21,7 @@ final class PlaybackCard extends StatelessWidget {
 
   final PlaybackState state;
   final bool capturing;
-  final VoidCallback onPlay;
+  final AsyncCallback onPlay;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +40,7 @@ final class PlaybackCard extends StatelessWidget {
             const SizedBox(height: 8),
             FilledButton.tonalIcon(
               key: const Key('play_back'),
-              onPressed: ready ? onPlay : null,
+              onPressed: ready ? () async => await onPlay() : null,
               icon: const Icon(Icons.play_arrow),
               label: Text(state.playing ? 'Playing' : 'Play back'),
             ),
