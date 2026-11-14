@@ -1,3 +1,7 @@
+## 0.2.1
+
+- The native engine refuses Opus and Ogg Opus with 30 ms frames when it is created, with `MOCKINGBIRD_ERR_UNSUPPORTED`. Opus has no 30 ms frame, so such an engine used to run and emit no packets.
+
 ## 0.2.0
 
 First release.

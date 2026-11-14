@@ -1,3 +1,8 @@
+## 0.2.1
+
+- `MockingbirdEngine.create` throws a `MockingbirdException` with `unsupported` for Opus or Ogg Opus with `frameMs: 30`. Opus has no 30 ms frame, so such an engine used to start and emit no packets. Opus takes 10 or 20 ms frames; PCM keeps 30.
+- The example's integration tests download YAMNet and the speaker model in a test of their own with a five-minute timeout, so a slow first download on a fresh simulator no longer times out the speaker test.
+
 ## 0.2.0
 
 - Playback: `MockingbirdPlayer` plays the engine's Opus packets, or raw Opus or PCM with your own timestamps, on the device output through a jitter buffer that conceals missing packets, drops late ones and keeps a steady delay, with volume, mute, pause, resume, a stats stream and typed `MockingbirdException`s. It holds audio focus on Android and follows interruptions and route changes. `MockingbirdDecoder` decodes and conceals Opus packets on their own. The example plays back what it captured.

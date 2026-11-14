@@ -1,3 +1,7 @@
+## 0.2.1
+
+- Version 0.2.1, with the engine that refuses Opus with 30 ms frames; no API change.
+
 ## 0.2.0
 
 - Player and Opus decoder operations (`createPlayer`, `playerPush`, `playerStats`, `createDecoder`, `decoderDecode` and the rest), playback focus hooks, and their `dart:ffi` implementation; bindings regenerated for the new C entry points.

@@ -1,7 +1,7 @@
 name: mockingbird_android
 description: >-
   The Android implementation of the mockingbird plugin: the Mockingbird engine built from source with Oboe capture and ONNX Runtime detectors.
-version: 0.2.0
+version: 0.2.1
 repository: https://github.com/Crdzbird/MockingBird/tree/main/packages/mockingbird_android
 issue_tracker: https://github.com/Crdzbird/MockingBird/issues
 topics:
@@ -27,7 +27,7 @@ flutter:
 dependencies:
   flutter:
     sdk: flutter
-  mockingbird_platform_interface: ^0.2.0
+  mockingbird_platform_interface: ^0.2.1
 
 dev_dependencies:
   flutter_test:

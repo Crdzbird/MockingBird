@@ -1,3 +1,8 @@
+## 0.2.1
+
+- The engine refuses Opus and Ogg Opus with 30 ms frames when it is created, with `MOCKINGBIRD_ERR_UNSUPPORTED`. Opus has no 30 ms frame, so such an engine used to run and emit no packets.
+- The modules are rebuilt with it.
+
 ## 0.2.0
 
 - Playback and Opus decoding in the browser: the player renders in the module and Web Audio plays it, scheduled 120 ms ahead; start it from a user gesture.
