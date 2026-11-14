@@ -2,8 +2,9 @@
 //
 // The player's timeline rules: a backlog past max_delay_ms is cut to the
 // target, a long hole is silence between talkspurts rather than
-// concealment, a sender restart starts a new timeline, flush and stop drop
-// what is buffered, PCM plays as pushed, and volume and mute scale it.
+// concealment, a sender restart or a jump far ahead starts a new timeline,
+// flush and stop drop what is buffered, PCM plays as pushed, and volume and
+// mute scale it.
 
 #include "doctest.h"
 #include "mockingbird/mockingbird.h"
@@ -71,6 +72,18 @@ TEST_CASE("player: a pts far behind the playout point starts a new timeline") {
     const auto out = read(p, 5 * kFrame);
     CHECK(std::all_of(out.begin(), out.end(), [](int16_t v) { return v == 900; }));
     CHECK(stats(p).packets_late == 0);
+    mockingbird_player_destroy(p);
+}
+
+TEST_CASE("player: a pts far ahead of the playout point plays as a new talkspurt") {
+    mockingbird_player_t* p = make(0, 10000);
+    for (uint64_t i = 0; i < 5; ++i) push_pcm(p, 300, i * kFrameUs);
+    read(p, 5 * kFrame);
+    const uint64_t epoch_us = 1'700'000'000'000'000;
+    for (uint64_t i = 0; i < 5; ++i) push_pcm(p, 900, epoch_us + i * kFrameUs);
+    const auto out = read(p, 5 * kFrame);
+    CHECK(std::all_of(out.begin(), out.end(), [](int16_t v) { return v == 900; }));
+    CHECK(stats(p).packets_concealed == 0);
     mockingbird_player_destroy(p);
 }
 

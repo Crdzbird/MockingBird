@@ -37,19 +37,18 @@ mockingbird_status_t MiniaudioOutput::init(const OutputFormat& fmt, RenderCallba
 
 mockingbird_status_t MiniaudioOutput::start() {
     if (!impl_->initialized) return MOCKINGBIRD_ERR_INVALID_STATE;
-    if (impl_->running) return MOCKINGBIRD_ERR_ALREADY_RUNNING;
+    if (impl_->running.load(std::memory_order_acquire)) return MOCKINGBIRD_ERR_ALREADY_RUNNING;
     impl_->stopping.store(false, std::memory_order_release);
     const ma_result r = ma_device_start(&impl_->device);
     if (r != MA_SUCCESS) return miniaudio_output_status(r);
-    impl_->running = true;
+    impl_->running.store(true, std::memory_order_release);
     return MOCKINGBIRD_OK;
 }
 
 mockingbird_status_t MiniaudioOutput::stop() {
-    if (!impl_->running) return MOCKINGBIRD_OK;
     impl_->stopping.store(true, std::memory_order_release);
+    if (!impl_->running.exchange(false, std::memory_order_acq_rel)) return MOCKINGBIRD_OK;
     ma_device_stop(&impl_->device);
-    impl_->running = false;
     return MOCKINGBIRD_OK;
 }
 

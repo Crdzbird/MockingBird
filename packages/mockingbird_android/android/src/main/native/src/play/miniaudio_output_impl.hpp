@@ -11,7 +11,7 @@ namespace mockingbird {
 struct MiniaudioOutput::Impl {
     ma_device            device{};
     bool                 initialized = false;
-    bool                 running     = false;
+    std::atomic<bool>    running{false};
     std::atomic<bool>    stopping{false};
     RenderCallback       cb          = nullptr;
     void*                user        = nullptr;
