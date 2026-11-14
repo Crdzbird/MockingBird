@@ -1,16 +1,17 @@
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
 
 /// A 16 kHz host-PCM config with fast VAD and the anomaly gate, or the given
-/// [detectors], encoding with `mockingbird_codec_t` [codec].
+/// [detectors], encoding [frameMs] frames with `mockingbird_codec_t` [codec].
 MockingbirdNativeConfig testConfig({
   int backend = 4,
   bool denoise = false,
   int codec = 0,
+  int frameMs = 20,
   MockingbirdNativeDetectorConfig? detectors,
 }) => MockingbirdNativeConfig(
   backend: backend,
   sampleRateHz: 16000,
-  frameMs: 20,
+  frameMs: frameMs,
   enableRnnoise: denoise,
   voiceProcessing: 0,
   detectors:

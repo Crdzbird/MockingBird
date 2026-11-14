@@ -5,7 +5,9 @@ package mockingbird
 type Config struct {
 	Backend      Backend
 	SampleRateHz uint32
-	FrameMs      uint32
+	// FrameMs is 10, 20 or 30. Opus and Ogg Opus take 10 or 20, and New
+	// returns StatusErrUnsupported for 30.
+	FrameMs uint32
 	// Denoise runs RNNoise ahead of every detector and the encoder; the
 	// sample rate must then be 8, 16 or 48 kHz.
 	Denoise bool

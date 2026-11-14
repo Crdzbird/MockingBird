@@ -83,6 +83,50 @@ TEST_CASE("Opus rejects 32 kHz: not a libopus sample rate") {
     CHECK(e == nullptr);
 }
 
+TEST_CASE("Opus and Ogg Opus reject 30 ms frames: not a libopus frame size") {
+    for (const mockingbird_codec_t codec : {MOCKINGBIRD_CODEC_OPUS, MOCKINGBIRD_CODEC_OGG_OPUS}) {
+        CAPTURE(static_cast<int>(codec));
+        mockingbird_config_t cfg{};
+        mockingbird_config_defaults(&cfg);
+        cfg.backend  = MOCKINGBIRD_BACKEND_HOST_PCM;
+        cfg.codec    = codec;
+        cfg.frame_ms = 30;
+        mockingbird_engine_t* e = nullptr;
+        CHECK(mockingbird_create(&cfg, &e) == MOCKINGBIRD_ERR_UNSUPPORTED);
+        CHECK(e == nullptr);
+    }
+}
+
+TEST_CASE("Opus at 10 ms frames emits one packet per frame") {
+    mockingbird_config_t cfg{};
+    REQUIRE(mockingbird_config_defaults(&cfg) == MOCKINGBIRD_OK);
+    cfg.backend        = MOCKINGBIRD_BACKEND_HOST_PCM;
+    cfg.codec          = MOCKINGBIRD_CODEC_OPUS;
+    cfg.frame_ms       = 10;
+    cfg.enable_vad     = 0;
+    cfg.enable_anomaly = 0;
+
+    mockingbird_engine_t* e = nullptr;
+    REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
+    REQUIRE(mockingbird_start(e) == MOCKINGBIRD_OK);
+    const auto pcm = tone(160);
+    for (uint32_t i = 0; i < 10; ++i) {
+        REQUIRE(mockingbird_push_pcm(e, pcm.data(), 160, uint64_t{i} * 10'000ull) == MOCKINGBIRD_OK);
+    }
+    REQUIRE(mockingbird_stop(e) == MOCKINGBIRD_OK);
+
+    uint32_t drained = 0;
+    mockingbird_packet_t pkt{};
+    while (mockingbird_drain(e, &pkt) == MOCKINGBIRD_OK) {
+        CHECK(pkt.codec == MOCKINGBIRD_CODEC_OPUS);
+        CHECK(pkt.size > 0);
+        ++drained;
+        REQUIRE(mockingbird_release(e, &pkt) == MOCKINGBIRD_OK);
+    }
+    mockingbird_destroy(e);
+    CHECK(drained == 10);
+}
+
 #else
 
 TEST_CASE("Opus tests skipped: MOCKINGBIRD_HAVE_OPUS not defined in this build") {

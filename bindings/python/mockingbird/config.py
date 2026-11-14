@@ -25,6 +25,7 @@ class Config:
     backend: Backend = Backend.AUTO
     sample_rate_hz: int = 16000
     frame_ms: int = 20
+    """10, 20 or 30. Opus and Ogg Opus take 10 or 20; 30 raises ERR_UNSUPPORTED."""
     denoise: bool = False
     """RNNoise ahead of every detector; needs 8, 16 or 48 kHz."""
     voice_processing: VoiceProcessing = VoiceProcessing.NONE

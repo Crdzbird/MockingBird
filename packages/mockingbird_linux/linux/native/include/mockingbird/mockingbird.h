@@ -248,7 +248,11 @@ typedef struct mockingbird_config {
     uint32_t               sample_rate_hz;    /* 8000, 16000, 32000 or 48000 */
     uint16_t               channels;          /* v1: 1 (mono). Validated. */
     mockingbird_sample_format_t  sample_format;
-    uint32_t               frame_ms;          /* 10, 20 or 30 */
+    uint32_t               frame_ms;          /* 10, 20 or 30; OPUS and OGG_OPUS
+                                               * take 10 or 20 only, and
+                                               * mockingbird_create returns
+                                               * MOCKINGBIRD_ERR_UNSUPPORTED
+                                               * for 30, as for 32 kHz */
 
     /* --- Preprocess -------------------------------------------------------- */
     int  enable_rnnoise;                      /* 0 = off, 1 = on */

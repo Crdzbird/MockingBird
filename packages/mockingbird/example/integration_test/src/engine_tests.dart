@@ -83,4 +83,17 @@ void engineTests() {
       throwsA(isA<MockingbirdException>()),
     );
   });
+
+  test('Opus has no 30 ms frame, so the engine refuses it', () {
+    expect(
+      () => MockingbirdEngine.create(
+        const MockingbirdConfig(
+          backend: .hostPcm,
+          frameMs: 30,
+          encoder: MockingbirdEncoderConfig.opus(),
+        ),
+      ),
+      throwsA(isA<MockingbirdException>()),
+    );
+  });
 }

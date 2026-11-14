@@ -68,7 +68,8 @@ final class MockingbirdConfig {
   /// Working sample rate: 8000, 16000, 32000 or 48000.
   final int sampleRateHz;
 
-  /// Frame length in milliseconds.
+  /// Frame length in milliseconds: 10, 20 or 30. Opus and Ogg Opus take 10
+  /// or 20, and creating an engine with 30 throws `unsupported`.
   final int frameMs;
 
   /// RNNoise ahead of every detector; needs 8, 16 or 48 kHz.
