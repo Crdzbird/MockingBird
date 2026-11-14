@@ -20,6 +20,7 @@ type Decoder struct {
 	c         *C.mockingbird_decoder_t
 	channels  int
 	maxFrames int
+	scratch   []int16
 }
 
 // NewDecoder creates a decoder that outputs sampleRateHz (8000, 12000,
@@ -34,7 +35,8 @@ func NewDecoder(sampleRateHz int, channels int) (*Decoder, error) {
 	if st != StatusOK {
 		return nil, st.err("mockingbird_decoder_create")
 	}
-	d := &Decoder{c: c, channels: channels, maxFrames: sampleRateHz / 1000 * 120}
+	maxFrames := sampleRateHz / 1000 * 120
+	d := &Decoder{c: c, channels: channels, maxFrames: maxFrames, scratch: make([]int16, maxFrames*channels)}
 	runtime.SetFinalizer(d, func(d *Decoder) { _ = d.Close() })
 	return d, nil
 }
