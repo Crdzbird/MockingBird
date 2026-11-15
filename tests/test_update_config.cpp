@@ -87,7 +87,8 @@ TEST_CASE("mockingbird_update_config rejects structural changes") {
     SUBCASE("frame_ms")      { up.frame_ms = 30; }
     SUBCASE("backend")       { up.backend = MOCKINGBIRD_BACKEND_MINIAUDIO; }
     SUBCASE("codec")         { up.codec = MOCKINGBIRD_CODEC_OPUS; }
-    SUBCASE("ring size")     { up.pcm_ring_frames = 1u << 15; }
+    SUBCASE("ring size")     { up.pcm_ring_frames = cfg.pcm_ring_frames * 2u; }
+    SUBCASE("capture mode")  { up.capture_performance = MOCKINGBIRD_CAPTURE_PERFORMANCE_LOW_LATENCY; }
     SUBCASE("queue size")    { up.packet_queue_capacity = 512; }
     SUBCASE("pre_roll_ms")   { up.pre_roll_ms = 1000; }
     SUBCASE("background_ms") { up.anomaly_background_ms = 5000; }

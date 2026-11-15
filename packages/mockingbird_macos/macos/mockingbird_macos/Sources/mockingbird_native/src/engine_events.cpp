@@ -1,8 +1,10 @@
 // A push-only host never drains the pull queue, so it is capped and drops
-// the oldest entry, the same policy as the packet queue.
+// the oldest entry, the same policy as the packet queue. The wake runs under
+// wake_mu, so unregistering waits for a wake in flight and none follows.
 #include "engine_events.hpp"
 
 #include "engine.hpp"
+#include "host_post.hpp"
 
 namespace mockingbird {
 namespace {
@@ -47,6 +49,10 @@ void emit_event(mockingbird_engine* e, const mockingbird_event_t& evt) {
 void notify_host(mockingbird_engine* e) {
     if (e->wake_pending.exchange(true, std::memory_order_acq_rel)) return;
     std::lock_guard lk(e->wake_mu);
+    if (e->wake_post != nullptr) {
+        post_null(e->wake_post, e->wake_port);
+        return;
+    }
     if (e->wake_cb == nullptr) return;
     try {
         e->wake_cb(e->wake_user);

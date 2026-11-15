@@ -1,4 +1,5 @@
 import 'dart:ffi' as ffi;
+import 'dart:isolate';
 
 import 'package:ffi/ffi.dart';
 import 'package:mockingbird_platform_interface/src/bindings.dart';
@@ -31,8 +32,8 @@ final class FfiEngineHandle extends MockingbirdEngineHandle {
   /// Reports start and stop calls queued on the engine's own thread.
   final FfiLifecycle lifecycle = FfiLifecycle();
 
-  /// The registered wake listener, if any.
-  ffi.NativeCallable<mockingbird_wake_cbFunction>? wake;
+  /// The port the engine's wake is posted to, if registered.
+  RawReceivePort? wake;
 
   /// Frees the scratch records; the engine itself is destroyed separately.
   void free() {

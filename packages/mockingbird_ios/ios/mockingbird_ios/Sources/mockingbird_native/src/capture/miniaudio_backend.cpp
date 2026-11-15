@@ -120,6 +120,9 @@ mockingbird_status_t MiniaudioBackend::init(const mockingbird_config_t& cfg, Pcm
     dc.capture.channels     = cfg.channels;
     dc.sampleRate           = cfg.sample_rate_hz;
     dc.periodSizeInFrames   = (cfg.sample_rate_hz / 1000u) * cfg.frame_ms;
+    dc.performanceProfile   = cfg.capture_performance == MOCKINGBIRD_CAPTURE_PERFORMANCE_POWER_SAVING
+                                  ? ma_performance_profile_conservative
+                                  : ma_performance_profile_low_latency;
     dc.dataCallback         = miniaudio_data_callback;
     dc.notificationCallback = miniaudio_notification;
     dc.pUserData            = impl_.get();

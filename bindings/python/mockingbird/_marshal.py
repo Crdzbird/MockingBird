@@ -43,6 +43,7 @@ def to_struct(cfg: Config, defaults: ConfigStruct) -> ConfigStruct:
     c.enable_adaptive_degradation = int(cfg.performance.adaptive_degradation)
     c.degrade_busy_ppm = cfg.performance.degrade_busy_ppm
     c.worker_batch_frames = cfg.performance.worker_batch_frames
+    c.capture_performance = int(cfg.performance.capture)
     c.keepalive = [p.encode() for p in (cfg.vad.model_path, cfg.sound_class.model_path) if p]
     c.neural_vad_model_path = cfg.vad.model_path.encode() if cfg.vad.model_path else None
     c.sound_class_model_path = (

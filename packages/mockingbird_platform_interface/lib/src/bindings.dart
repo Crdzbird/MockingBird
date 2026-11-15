@@ -631,6 +631,39 @@ class MockingbirdBindings {
         )
       >();
 
+  mockingbird_status mockingbird_player_submit_port(
+    ffi.Pointer<mockingbird_player_t> player,
+    mockingbird_player_op op,
+    mockingbird_post_cb post,
+    int port,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_player_submit_port(player, op.value, post, port),
+    );
+  }
+
+  late final _mockingbird_player_submit_portPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<mockingbird_player_t>,
+            ffi.UnsignedInt,
+            mockingbird_post_cb,
+            ffi.Int64,
+          )
+        >
+      >('mockingbird_player_submit_port');
+  late final _mockingbird_player_submit_port =
+      _mockingbird_player_submit_portPtr
+          .asFunction<
+            int Function(
+              ffi.Pointer<mockingbird_player_t>,
+              int,
+              mockingbird_post_cb,
+              int,
+            )
+          >();
+
   mockingbird_status mockingbird_poll_event(
     ffi.Pointer<mockingbird_engine_t> engine,
     ffi.Pointer<mockingbird_event_t> out_evt,
@@ -917,6 +950,35 @@ class MockingbirdBindings {
         )
       >();
 
+  mockingbird_status mockingbird_set_wake_port(
+    ffi.Pointer<mockingbird_engine_t> engine,
+    mockingbird_post_cb post,
+    int port,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_set_wake_port(engine, post, port),
+    );
+  }
+
+  late final _mockingbird_set_wake_portPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<mockingbird_engine_t>,
+            mockingbird_post_cb,
+            ffi.Int64,
+          )
+        >
+      >('mockingbird_set_wake_port');
+  late final _mockingbird_set_wake_port = _mockingbird_set_wake_portPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<mockingbird_engine_t>,
+          mockingbird_post_cb,
+          int,
+        )
+      >();
+
   mockingbird_status mockingbird_speaker_embedding(
     ffi.Pointer<mockingbird_engine_t> engine,
     ffi.Pointer<ffi.Int16> samples,
@@ -1031,6 +1093,38 @@ class MockingbirdBindings {
         )
       >();
 
+  mockingbird_status mockingbird_submit_port(
+    ffi.Pointer<mockingbird_engine_t> engine,
+    mockingbird_engine_op op,
+    mockingbird_post_cb post,
+    int port,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_submit_port(engine, op.value, post, port),
+    );
+  }
+
+  late final _mockingbird_submit_portPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<mockingbird_engine_t>,
+            ffi.UnsignedInt,
+            mockingbird_post_cb,
+            ffi.Int64,
+          )
+        >
+      >('mockingbird_submit_port');
+  late final _mockingbird_submit_port = _mockingbird_submit_portPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<mockingbird_engine_t>,
+          int,
+          mockingbird_post_cb,
+          int,
+        )
+      >();
+
   mockingbird_status mockingbird_update_config(
     ffi.Pointer<mockingbird_engine_t> engine,
     ffi.Pointer<mockingbird_config_t> cfg,
@@ -1136,6 +1230,25 @@ enum mockingbird_backend {
     4 => MOCKINGBIRD_BACKEND_HOST_PCM,
     _ => throw ArgumentError('Unknown value for mockingbird_backend: $value'),
   };
+}
+
+enum mockingbird_capture_performance {
+  MOCKINGBIRD_CAPTURE_PERFORMANCE_DEFAULT(0),
+  MOCKINGBIRD_CAPTURE_PERFORMANCE_LOW_LATENCY(1),
+  MOCKINGBIRD_CAPTURE_PERFORMANCE_POWER_SAVING(2);
+
+  final int value;
+  const mockingbird_capture_performance(this.value);
+
+  static mockingbird_capture_performance fromValue(int value) =>
+      switch (value) {
+        0 => MOCKINGBIRD_CAPTURE_PERFORMANCE_DEFAULT,
+        1 => MOCKINGBIRD_CAPTURE_PERFORMANCE_LOW_LATENCY,
+        2 => MOCKINGBIRD_CAPTURE_PERFORMANCE_POWER_SAVING,
+        _ => throw ArgumentError(
+          'Unknown value for mockingbird_capture_performance: $value',
+        ),
+      };
 }
 
 enum mockingbird_codec {
@@ -1282,7 +1395,15 @@ final class mockingbird_config extends ffi.Struct {
   @ffi.Uint32()
   external int voice_processing;
 
-  @ffi.Array.multi([3])
+  @ffi.UnsignedInt()
+  external int capture_performanceAsInt;
+
+  mockingbird_capture_performance get capture_performance =>
+      mockingbird_capture_performance.fromValue(capture_performanceAsInt);
+  set capture_performance(mockingbird_capture_performance value) =>
+      capture_performanceAsInt = value.value;
+
+  @ffi.Array.multi([2])
   external ffi.Array<ffi.Uint32> _reserved;
 }
 
@@ -1600,6 +1721,12 @@ final class mockingbird_player_stats extends ffi.Struct {
 
 typedef mockingbird_player_stats_t = mockingbird_player_stats;
 typedef mockingbird_player_t = mockingbird_player;
+typedef mockingbird_post_cb =
+    ffi.Pointer<ffi.NativeFunction<mockingbird_post_cbFunction>>;
+typedef mockingbird_post_cbFunction =
+    ffi.Int8 Function(ffi.Int64 port, ffi.Pointer<ffi.Void> message);
+typedef Dartmockingbird_post_cbFunction =
+    int Function(int port, ffi.Pointer<ffi.Void> message);
 
 enum mockingbird_sample_format {
   MOCKINGBIRD_SAMPLE_S16(0);
@@ -1676,7 +1803,13 @@ final class mockingbird_stats extends ffi.Struct {
   @ffi.Uint32()
   external int capture_restarts;
 
-  @ffi.Array.multi([5])
+  @ffi.Uint32()
+  external int capture_gaps;
+
+  @ffi.Uint32()
+  external int capture_gap_ms;
+
+  @ffi.Array.multi([3])
   external ffi.Array<ffi.Uint32> _reserved;
 }
 

@@ -60,9 +60,9 @@ extension MockingbirdEngineLifecycle on MockingbirdEngine {
   }
 
   void _stopped(int status) {
+    _platform.setWakeListener(_handle, null);
     MockingbirdException.check(status, 'mockingbird_stop');
     _poll();
-    _platform.setWakeListener(_handle, null);
   }
 
   void _poll() => _guard(_poller.poll);

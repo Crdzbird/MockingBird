@@ -38,6 +38,10 @@ struct mockingbird_engine {
     mockingbird::SpeakerState speaker;
     std::atomic<uint32_t> voice_processing_active{0};
     std::atomic<uint32_t> capture_restarts{0};
+    std::atomic<uint32_t> capture_gaps{0};
+    std::atomic<uint32_t> capture_gap_ms{0};
+    std::atomic<uint64_t> capture_anchor_us{~uint64_t{0}};
+    std::atomic<uint64_t> capture_anchor_frames{0};
     std::unique_ptr<mockingbird::Encoder>        encoder;
 
     std::thread                    worker_thread;
@@ -62,6 +66,8 @@ struct mockingbird_engine {
     std::mutex          wake_mu;
     mockingbird_wake_cb wake_cb   = nullptr;
     void*               wake_user = nullptr;
+    mockingbird_post_cb wake_post = nullptr;
+    int64_t             wake_port = 0;
     std::atomic<bool>   wake_pending{false};
 
     std::mutex                evt_mu;

@@ -18,6 +18,7 @@ final class MockingbirdNativeOutputConfig {
     required bool enableAdaptiveDegradation,
     required int degradeBusyPpm,
     required int workerBatchFrames,
+    int capturePerformance,
   }) = MockingbirdNativeOutputConfig._;
 
   const MockingbirdNativeOutputConfig._({
@@ -36,6 +37,7 @@ final class MockingbirdNativeOutputConfig {
     required this.enableAdaptiveDegradation,
     required this.degradeBusyPpm,
     required this.workerBatchFrames,
+    this.capturePerformance = 0,
   });
 
   /// Mirrors `pre_roll_ms`.
@@ -82,4 +84,7 @@ final class MockingbirdNativeOutputConfig {
 
   /// Mirrors `worker_batch_frames`.
   final int workerBatchFrames;
+
+  /// `mockingbird_capture_performance_t` as an integer; 0 is the default.
+  final int capturePerformance;
 }

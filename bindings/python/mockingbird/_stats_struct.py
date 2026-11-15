@@ -27,5 +27,7 @@ class StatsStruct(ctypes.Structure):
         ("degradation_level", ctypes.c_uint32),
         ("voice_processing_active", ctypes.c_uint32),
         ("capture_restarts", ctypes.c_uint32),
-        ("_reserved", ctypes.c_uint32 * 5),
+        ("capture_gaps", ctypes.c_uint32),
+        ("capture_gap_ms", ctypes.c_uint32),
+        ("_reserved", ctypes.c_uint32 * 3),
     ]

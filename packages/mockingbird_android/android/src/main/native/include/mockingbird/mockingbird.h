@@ -206,6 +206,23 @@ typedef enum mockingbird_event_type {
     MOCKINGBIRD_EVT_SPEAKER             = 14
 } mockingbird_event_type_t;
 
+/* How the platform runs live capture, mockingbird_config_t.capture_performance.
+ * DEFAULT is the platform's normal capture path: on Android, Oboe's
+ * PerformanceMode::None, which reads through the regular input path with a
+ * larger buffer and keeps real time while another heavy client (a camera
+ * pipeline) shares the audio DSP. LOW_LATENCY asks for the fast path
+ * (Oboe LowLatency, AAudio MMAP where the device has it; the 0.2.2
+ * behaviour), which can stall and drop audio under that load. POWER_SAVING
+ * asks for large buffers (Oboe PowerSaving). miniaudio maps DEFAULT and
+ * LOW_LATENCY to its low-latency profile and POWER_SAVING to its
+ * conservative one. Core Audio and HOST_PCM ignore it. Not live-tunable:
+ * mockingbird_update_config refuses a change with MOCKINGBIRD_ERR_INVALID_ARG. */
+typedef enum mockingbird_capture_performance {
+    MOCKINGBIRD_CAPTURE_PERFORMANCE_DEFAULT      = 0,
+    MOCKINGBIRD_CAPTURE_PERFORMANCE_LOW_LATENCY  = 1,
+    MOCKINGBIRD_CAPTURE_PERFORMANCE_POWER_SAVING = 2
+} mockingbird_capture_performance_t;
+
 /* Bits of mockingbird_config_t.voice_processing. */
 enum {
     MOCKINGBIRD_VOICE_ECHO_CANCEL    = 1u << 0,  /* remove the device's own playback */
@@ -394,10 +411,14 @@ typedef struct mockingbird_config {
      * which bits are in effect. Ignored for HOST_PCM. Not live-tunable. */
     uint32_t  voice_processing;
 
+    /* The platform's capture mode, see mockingbird_capture_performance_t.
+     * Defaults to MOCKINGBIRD_CAPTURE_PERFORMANCE_DEFAULT (0). */
+    mockingbird_capture_performance_t capture_performance;
+
     /* Reserved for future expansion. MUST be zeroed by mockingbird_config_defaults
      * and treated as zero by the engine. Allows additive growth without ABI
      * break. */
-    uint32_t  _reserved[3];
+    uint32_t  _reserved[2];
 } mockingbird_config_t;
 
 /* ============================================================================
@@ -493,7 +514,17 @@ typedef struct mockingbird_stats {
     /* Times capture was reopened after an interruption or route change. */
     uint32_t  capture_restarts;
 
-    uint32_t  _reserved[5];                   /* additive growth; always 0 */
+    /* Audio the platform lost before it reached the engine, estimated from
+     * the capture clock: each time a capture chunk arrives more than 200 ms
+     * later than the audio delivered so far accounts for, capture_gaps
+     * grows by one and capture_gap_ms by the missing time. A stalled audio
+     * DSP, a late or dropped capture callback and an interruption all show
+     * here; frames_dropped_capture counts the separate case of the worker
+     * falling behind and the PCM ring overflowing. 0 for HOST_PCM. */
+    uint32_t  capture_gaps;
+    uint32_t  capture_gap_ms;
+
+    uint32_t  _reserved[3];                   /* additive growth; always 0 */
 } mockingbird_stats_t;
 
 /* ============================================================================
@@ -512,6 +543,17 @@ typedef void (*mockingbird_wake_cb)(void* user);
 /* Reports a call queued with mockingbird_submit or mockingbird_player_submit:
  * op is the call that ran and status its result. */
 typedef void (*mockingbird_done_cb)(void* user, uint32_t op, int32_t status);
+
+/* A host runtime's message post, for the _port variants below. The engine
+ * calls post(port, message) instead of host code, so nothing breaks when
+ * the host's runtime goes away without unregistering: a Dart isolate frees
+ * every NativeCallable when it shuts down (hot restart, a destroyed Flutter
+ * engine) and a callback still registered would then be freed code. post
+ * must outlive every port and fail harmlessly on a closed one; Dart's
+ * NativeApi.postCObject with a SendPort's nativePort does both. message
+ * points to a Dart_CObject-compatible message, read during the call only:
+ * null for a wake, and for a done the int64 op * 2^32 + (uint32_t)status. */
+typedef int8_t (*mockingbird_post_cb)(int64_t port, void* message);
 
 /* ============================================================================
  * LIFECYCLE
@@ -571,6 +613,13 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_submit(mockingbird_engine_t*   
                                                         mockingbird_done_cb     done,
                                                         void*                   user);
 
+/* mockingbird_submit reporting through post(port, message) instead of a
+ * done callback; see mockingbird_post_cb. post may be NULL. */
+MOCKINGBIRD_API mockingbird_status_t mockingbird_submit_port(mockingbird_engine_t*   engine,
+                                                             mockingbird_engine_op_t op,
+                                                             mockingbird_post_cb     post,
+                                                             int64_t                 port);
+
 /* ============================================================================
  * EVENTS  (pick push OR pull; both are wired)
  * ========================================================================== */
@@ -596,11 +645,21 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_poll_event(mockingbird_engine_t
  * must only signal (post a message, set a flag) and never call into the
  * engine. Once mockingbird_set_wake_callback(engine, NULL, NULL) returns, cb is
  * not running and will not run again, so its resources can be freed.
- * Registering resets the pending state; drain once after registering to pick
- * up anything already queued. */
+ * Registering resets the pending state and replaces any wake port; drain
+ * once after registering to pick up anything already queued. */
 MOCKINGBIRD_API mockingbird_status_t mockingbird_set_wake_callback(mockingbird_engine_t* engine,
                                                  mockingbird_wake_cb   cb,
                                                  void*                 user);
+
+/* The wake as a message: on each wake the engine calls post(port, message)
+ * with a null message instead of calling host code, so a host runtime that
+ * shuts down without unregistering leaves nothing freed behind; see
+ * mockingbird_post_cb. Registering replaces any wake callback or port, and
+ * the same rules apply: NULL post unregisters, and once the call returns the
+ * previous post is not running and will not run again. */
+MOCKINGBIRD_API mockingbird_status_t mockingbird_set_wake_port(mockingbird_engine_t* engine,
+                                                               mockingbird_post_cb   post,
+                                                               int64_t               port);
 
 /* Re-arms the wake callback. Call it before draining. */
 MOCKINGBIRD_API mockingbird_status_t mockingbird_ack_wake(mockingbird_engine_t* engine);
@@ -994,6 +1053,13 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_player_submit(mockingbird_playe
                                                                mockingbird_player_op_t op,
                                                                mockingbird_done_cb     done,
                                                                void*                   user);
+
+/* mockingbird_player_submit reporting through post(port, message) instead
+ * of a done callback; see mockingbird_post_cb. post may be NULL. */
+MOCKINGBIRD_API mockingbird_status_t mockingbird_player_submit_port(mockingbird_player_t*   player,
+                                                                    mockingbird_player_op_t op,
+                                                                    mockingbird_post_cb     post,
+                                                                    int64_t                 port);
 
 MOCKINGBIRD_API mockingbird_status_t mockingbird_player_push(mockingbird_player_t* player,
                                                              mockingbird_codec_t   codec,

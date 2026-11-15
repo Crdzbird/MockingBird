@@ -149,7 +149,7 @@ you want to change.
 | `segments` | `MockingbirdSegmentConfig` | pre-roll, post-roll, maximum length |
 | `encoder` | `MockingbirdEncoderConfig` | `pcm16`, `opus` (`MockingbirdEncoderConfig.opus()`) or `oggOpus` (`MockingbirdEncoderConfig.oggOpus()`), bitrate, VBR, complexity |
 | `queues` | `MockingbirdQueueConfig` | ring sizes and the ungated PCM tap |
-| `performance` | `MockingbirdPerformanceConfig` | silence gate, adaptive degradation, wake batching (`MockingbirdPerformanceConfig.mobile()`) |
+| `performance` | `MockingbirdPerformanceConfig` | silence gate, adaptive degradation, wake batching, capture mode (`MockingbirdPerformanceConfig.mobile()`) |
 
 ## Streams
 
@@ -165,15 +165,18 @@ you want to change.
 subtype carries a typed payload: `MockingbirdSoundClassEvent.category`,
 `MockingbirdAnomalyEvent.reasons`, `MockingbirdDegradationEvent.level`.
 
-On Android, iOS, macOS, Linux and Windows the engine wakes Dart through a
-`NativeCallable.listener` as soon as it queues an event or packet, and Dart
+On Android, iOS, macOS, Linux and Windows the engine wakes Dart by posting to
+a `RawReceivePort` as soon as it queues an event or packet, and Dart
 drains both queues right away, so a detection reaches `engine.events` within a
 frame. The wake carries no data and repeats only after Dart has drained, so a
 burst of frames costs one wake. `pollInterval` on `start` then only paces
 `engine.stats`, every 250 ms by default. On the web, where the engine runs on
 the main thread, a timer drains the queues every 50 ms. Either way every object
 on the Dart side is a copy the engine no longer owns. A native error while
-draining surfaces as a `MockingbirdException` on `engine.events`.
+draining surfaces as a `MockingbirdException` on `engine.events`. The engine
+posts messages and never calls Dart code, so an isolate that goes away
+without `dispose` (a hot restart, a destroyed Flutter engine) cannot crash the
+app from the engine's threads.
 
 ```dart
 engine.packets.listen((p) => socket.add(p.data));
@@ -211,6 +214,23 @@ use. It applies to live capture only:
 
 `stats.capture.voiceProcessing` reports what is in effect, which can be less
 than asked for.
+
+**Capture mode.** `MockingbirdPerformanceConfig.capture` chooses how the
+platform runs the microphone:
+
+| Value | Android (Oboe) | Linux, Windows (miniaudio) |
+|---|---|---|
+| `normal` (default) | `PerformanceMode::None`, the regular input path with larger buffers | low-latency profile |
+| `lowLatency` | `PerformanceMode::LowLatency`, AAudio MMAP where available; the only mode before 0.2.3 | low-latency profile |
+| `powerSaving` | `PerformanceMode::PowerSaving` | conservative profile |
+
+iOS, macOS and the web ignore it. `normal` is the default because low-latency
+input shares the audio DSP with the camera pipeline on phones such as the
+Pixel 7 Pro, where it stalled and delivered only about a quarter of the audio
+while the camera ran. It cannot change on a running engine: `updateConfig`
+throws. `stats.capture.gaps` and `stats.capture.gapTime` count audio the
+platform never delivered, and `framesDroppedCapture` counts audio the engine
+itself could not keep up with.
 
 **Choosing a device.** `MockingbirdDevices.input()` lists the microphones, and
 `engine.selectInputDevice(id)` picks one for the next `start`; `null` follows

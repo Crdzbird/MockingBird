@@ -14,6 +14,8 @@ type PerformanceConfig struct {
 	// WorkerBatchFrames wakes the worker only once this many frames are
 	// queued: the same CPU work in fewer wakeups, for a little latency.
 	WorkerBatchFrames uint32
+	// Capture is the platform's capture mode; CaptureDefault unless set.
+	Capture CapturePerformance
 }
 
 // DefaultPerformanceConfig gates at -60 dBFS with degradation off.

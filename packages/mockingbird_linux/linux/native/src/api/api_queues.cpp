@@ -23,6 +23,24 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_set_wake_callback(mockingbird_e
         std::lock_guard lk(e->wake_mu);
         e->wake_cb   = cb;
         e->wake_user = user;
+        e->wake_post = nullptr;
+        e->wake_port = 0;
+        e->wake_pending.store(false, std::memory_order_release);
+        return MOCKINGBIRD_OK;
+    } catch (...) {
+        return MOCKINGBIRD_ERR_INTERNAL;
+    }
+}
+
+MOCKINGBIRD_API mockingbird_status_t mockingbird_set_wake_port(mockingbird_engine_t* e,
+                                                               mockingbird_post_cb post, int64_t port) {
+    if (e == nullptr) return MOCKINGBIRD_ERR_INVALID_ARG;
+    try {
+        std::lock_guard lk(e->wake_mu);
+        e->wake_cb   = nullptr;
+        e->wake_user = nullptr;
+        e->wake_post = post;
+        e->wake_port = post != nullptr ? port : 0;
         e->wake_pending.store(false, std::memory_order_release);
         return MOCKINGBIRD_OK;
     } catch (...) {

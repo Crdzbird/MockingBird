@@ -93,3 +93,34 @@ class CaptureTest(unittest.TestCase):
             with self.assertRaises(mockingbird.MockingbirdError):
                 e.select_input_device("x")
             self.assertEqual(e.stats().capture.restarts, 0)
+
+    def test_capture_performance(self) -> None:
+        perf = mockingbird.PerformanceConfig()
+        self.assertIs(perf.capture, mockingbird.CapturePerformance.DEFAULT)
+        self.assertEqual(mockingbird.QueueConfig().pcm_ring_frames, 1 << 15)
+        for mode in mockingbird.CapturePerformance:
+            cfg = mockingbird.Config(
+                backend=mockingbird.Backend.HOST_PCM,
+                performance=mockingbird.PerformanceConfig(capture=mode),
+            )
+            with mockingbird.Engine(cfg) as e:
+                health = e.stats().capture
+                self.assertEqual((health.gaps, health.gap_ms), (0, 0))
+        bad = mockingbird.Config(
+            backend=mockingbird.Backend.HOST_PCM,
+            performance=mockingbird.PerformanceConfig(capture=3),
+        )
+        with self.assertRaises(mockingbird.MockingbirdError):
+            mockingbird.Engine(bad)
+        base = mockingbird.Config(backend=mockingbird.Backend.HOST_PCM)
+        with mockingbird.Engine(base) as e:
+            e.start()
+            retune = mockingbird.Config(
+                backend=mockingbird.Backend.HOST_PCM,
+                performance=mockingbird.PerformanceConfig(
+                    capture=mockingbird.CapturePerformance.LOW_LATENCY
+                ),
+            )
+            with self.assertRaises(mockingbird.MockingbirdError):
+                e.update_config(retune)
+            e.stop()

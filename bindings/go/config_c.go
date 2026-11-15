@@ -51,6 +51,7 @@ func (cfg Config) toC() (C.mockingbird_config_t, func()) {
 	c.enable_adaptive_degradation = boolToC(cfg.Performance.AdaptiveDegradation)
 	c.degrade_busy_ppm = C.uint32_t(cfg.Performance.DegradeBusyPpm)
 	c.worker_batch_frames = C.uint32_t(cfg.Performance.WorkerBatchFrames)
+	c.capture_performance = C.mockingbird_capture_performance_t(cfg.Performance.Capture)
 
 	var owned []unsafe.Pointer
 	cString := func(s string) *C.char {

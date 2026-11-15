@@ -62,7 +62,7 @@ Everything else is grouped by concern:
 | `Segments` | `SegmentConfig`: pre-roll, post-roll, max length |
 | `Encoder` | `EncoderConfig`: `OpusEncoder()` for Opus, `OggOpusEncoder()` for Ogg Opus |
 | `Queues` | `QueueConfig`: ring sizes and the ungated PCM tap |
-| `Performance` | `PerformanceConfig`: silence gate, degradation, wake batching; `MobilePerformance()` |
+| `Performance` | `PerformanceConfig`: silence gate, degradation, wake batching, capture mode; `MobilePerformance()` |
 
 ### One sensitivity dial
 
@@ -115,7 +115,11 @@ arrives either way.
 
 `Config.VoiceProcessing` (`VoiceAll`, or `VoiceEchoCancel`, `VoiceGainControl`
 and `VoiceNoiseSuppress`) asks the platform for its voice processing;
-`Stats.Capture` reports what applied and how often capture restarted.
+`Stats.Capture` reports what applied, how often capture restarted, and the
+gaps (`Gaps`, `GapMs`) where the platform delivered no audio.
+`Performance.Capture` picks the platform's capture mode: `CaptureDefault`
+(Oboe's normal mode on Android, which keeps real time while a camera runs),
+`CaptureLowLatency` or `CapturePowerSaving`; it is fixed for the engine's life.
 `InputDevices(backend)` lists microphones and `Engine.SelectInputDevice`
 chooses one before `Start`. Interruptions and route changes arrive as
 `EventCaptureInterrupted`, `EventCaptureResumed` and `EventRouteChanged`.

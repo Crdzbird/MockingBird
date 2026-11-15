@@ -16,8 +16,19 @@ class CaptureHealth:
     """What the platform applied, which can be less than asked for."""
     restarts: int = 0
     """Returns after an interruption or a route change."""
+    gaps: int = 0
+    """Times the platform delivered no audio for more than 200 ms beyond what
+    it had delivered: a stalled DSP, a late callback, an interruption. Zero
+    for host PCM."""
+    gap_ms: int = 0
+    """Total length of those gaps."""
 
     @classmethod
     def from_struct(cls, s: StatsStruct) -> CaptureHealth:
         """Read the capture fields of a native ``mockingbird_stats_t``."""
-        return cls(VoiceProcessing(s.voice_processing_active), s.capture_restarts)
+        return cls(
+            VoiceProcessing(s.voice_processing_active),
+            s.capture_restarts,
+            s.capture_gaps,
+            s.capture_gap_ms,
+        )

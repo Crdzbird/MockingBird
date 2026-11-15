@@ -180,7 +180,38 @@ mockingbird_player_push(player, MOCKINGBIRD_CODEC_OPUS, pkt.data, pkt.size,
 Instead of draining on a timer, a host can register a wake callback with
 `mockingbird_set_wake_callback`. It fires on an engine thread when an event or
 packet is queued and stays quiet until the host calls `mockingbird_ack_wake`,
-so the host acks, drains both queues, and waits for the next wake.
+so the host acks, drains both queues, and waits for the next wake. Once
+`mockingbird_set_wake_callback(engine, NULL, NULL)` returns the callback is not
+running and never runs again, so its resources can be freed.
+
+A runtime whose callbacks can die with it uses the `_port` variants instead:
+`mockingbird_set_wake_port`, `mockingbird_submit_port` and
+`mockingbird_player_submit_port` take a `mockingbird_post_cb` and a port, and
+the engine posts a message rather than calling host code. A Dart isolate frees
+its `NativeCallable`s when it shuts down (hot restart, a destroyed Flutter
+engine) even if nothing unregistered them, and an engine still running then
+called freed code; with `NativeApi.postCObject` and a `SendPort`'s
+`nativePort` a dead isolate leaves only a closed port, which the post ignores.
+A wake is a null message and a done is the int64 `op << 32 | (uint32)status`.
+
+```c
+mockingbird_set_wake_port(engine, (mockingbird_post_cb)post_cobject, port);
+```
+
+**Capture mode.** `capture_performance` chooses how the platform runs live
+capture. `MOCKINGBIRD_CAPTURE_PERFORMANCE_DEFAULT` (0, the default) is the
+platform's normal path: on Android, Oboe's `PerformanceMode::None`.
+`LOW_LATENCY` asks for Oboe `LowLatency` (AAudio MMAP where the device has it),
+which 0.2.2 always used: on a Pixel 7 Pro running the camera at the same time
+it stalled the audio DSP (`VERY LATE! Force window jump` in logcat) and only
+about a quarter of the audio reached the engine. `POWER_SAVING` asks for large
+buffers. miniaudio maps DEFAULT and LOW_LATENCY to its low-latency profile and
+POWER_SAVING to its conservative one; Core Audio and `HOST_PCM` ignore the
+field. It is fixed for the engine's life, and `mockingbird_update_config`
+refuses a change. `capture_gaps` and `capture_gap_ms` in the stats count audio
+the platform never delivered (more than 200 ms behind the capture clock), and
+`frames_dropped_capture` counts the separate case of a worker falling behind
+the PCM ring, which now holds 32768 samples (two seconds at 16 kHz) by default.
 
 Rules the ABI enforces: one `mockingbird_destroy` per `mockingbird_create`;
 packet data is borrowed until the matching `mockingbird_release`; no C++

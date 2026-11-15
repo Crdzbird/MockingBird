@@ -29,6 +29,8 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_get_stats(mockingbird_engine_t*
         out->degradation_level              = e->degradation_level.load(relaxed);
         out->voice_processing_active        = e->voice_processing_active.load(relaxed);
         out->capture_restarts               = e->capture_restarts.load(relaxed);
+        out->capture_gaps                   = e->capture_gaps.load(relaxed);
+        out->capture_gap_ms                 = e->capture_gap_ms.load(relaxed);
         std::memset(out->_reserved, 0, sizeof(out->_reserved));
         return MOCKINGBIRD_OK;
     } catch (...) {
