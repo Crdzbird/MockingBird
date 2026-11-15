@@ -17,6 +17,7 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_start(mockingbird_engine_t* e) 
         e->stop_requested.store(false, std::memory_order_release);
         e->last_capture_ts_us.store(mockingbird::monotonic_now_us(), std::memory_order_release);
         e->first_capture_ts_us.store(~uint64_t{0}, std::memory_order_release);
+        e->capture_anchor_us.store(~uint64_t{0}, std::memory_order_relaxed);
         if (e->capture_backend && e->capture_backend_used) {
             e->capture_backend = mockingbird::make_backend(e->cfg.backend);
             if (!e->capture_backend) return MOCKINGBIRD_ERR_UNSUPPORTED;

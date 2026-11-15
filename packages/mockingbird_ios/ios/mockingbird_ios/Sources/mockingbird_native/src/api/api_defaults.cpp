@@ -29,7 +29,7 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_config_defaults(mockingbird_con
     out_cfg->opus_bitrate_bps            = 32000;
     out_cfg->opus_vbr                    = 1;
     out_cfg->opus_complexity             = 5;
-    out_cfg->pcm_ring_frames             = 1u << 14;
+    out_cfg->pcm_ring_frames             = 1u << 15;
     out_cfg->packet_queue_capacity       = 256;
     out_cfg->enable_wait_handle          = 0;
     out_cfg->neural_vad_model_path       = nullptr;
@@ -43,6 +43,7 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_config_defaults(mockingbird_con
     out_cfg->enable_adaptive_degradation = 0;
     out_cfg->degrade_busy_ppm            = 700000;
     out_cfg->worker_batch_frames         = 0;
+    out_cfg->capture_performance         = MOCKINGBIRD_CAPTURE_PERFORMANCE_DEFAULT;
     return MOCKINGBIRD_OK;
 }
 

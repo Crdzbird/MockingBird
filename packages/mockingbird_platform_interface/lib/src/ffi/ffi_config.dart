@@ -54,7 +54,8 @@ final class FfiConfig {
       ..silence_gate_dbfs = o.silenceGateDbfs
       ..enable_adaptive_degradation = _flag(o.enableAdaptiveDegradation)
       ..degrade_busy_ppm = o.degradeBusyPpm
-      ..worker_batch_frames = o.workerBatchFrames;
+      ..worker_batch_frames = o.workerBatchFrames
+      ..capture_performanceAsInt = o.capturePerformance;
     return FfiConfig._(p, neural, sound);
   }
 

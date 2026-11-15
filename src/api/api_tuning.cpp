@@ -11,6 +11,7 @@ bool same_structure(const mockingbird_config_t& a, const mockingbird_config_t& b
            enum_as_int(a.sample_format) == enum_as_int(b.sample_format) &&
            enum_as_int(a.vad_tier) == enum_as_int(b.vad_tier) &&
            enum_as_int(a.codec) == enum_as_int(b.codec) &&
+           enum_as_int(a.capture_performance) == enum_as_int(b.capture_performance) &&
            a.sample_rate_hz == b.sample_rate_hz && a.channels == b.channels &&
            a.frame_ms == b.frame_ms && a.enable_rnnoise == b.enable_rnnoise &&
            a.pre_roll_ms == b.pre_roll_ms && a.post_roll_ms == b.post_roll_ms &&

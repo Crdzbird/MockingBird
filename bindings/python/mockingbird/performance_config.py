@@ -4,10 +4,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from mockingbird.capture_performance import CapturePerformance
+
 
 @dataclass(slots=True)
 class PerformanceConfig:
-    """Every field is live-tunable through :meth:`Engine.update_config`."""
+    """Every field but :attr:`capture` is live-tunable through
+    :meth:`Engine.update_config`."""
 
     silence_gate_dbfs: float = -60.0
     """Frames below this level skip RNNoise, and YAMNet skips an inference
@@ -20,6 +23,8 @@ class PerformanceConfig:
     worker_batch_frames: int = 0
     """Wake the worker only once this many frames are queued: the same CPU
     work in fewer wakeups, for a little latency."""
+    capture: CapturePerformance = CapturePerformance.DEFAULT
+    """The platform's capture mode; fixed for the engine's life."""
 
     @classmethod
     def mobile(cls) -> PerformanceConfig:

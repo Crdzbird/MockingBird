@@ -44,5 +44,6 @@ class ConfigStruct(ctypes.Structure):
         ("degrade_busy_ppm", ctypes.c_uint32),
         ("worker_batch_frames", ctypes.c_uint32),
         ("voice_processing", ctypes.c_uint32),
-        ("_reserved", ctypes.c_uint32 * 3),
+        ("capture_performance", ctypes.c_int),
+        ("_reserved", ctypes.c_uint32 * 2),
     ]

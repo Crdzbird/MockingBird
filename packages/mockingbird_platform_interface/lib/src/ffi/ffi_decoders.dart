@@ -57,5 +57,7 @@ abstract final class FfiDecoders {
         ),
         voiceProcessingActive: s.voice_processing_active,
         captureRestarts: s.capture_restarts,
+        captureGaps: s.capture_gaps,
+        captureGapMs: s.capture_gap_ms,
       );
 }

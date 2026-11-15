@@ -9,6 +9,12 @@
 struct mockingbird_engine;
 
 namespace mockingbird {
+inline constexpr uint64_t kCaptureGapUs = 200'000;
+
+void track_capture_gap(mockingbird_engine* e,
+                       uint64_t            capture_ts_us,
+                       uint32_t            frame_count) noexcept;
+
 void ingest_pcm(mockingbird_engine*  e,
                 const int16_t* samples,
                 uint32_t       frame_count,

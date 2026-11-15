@@ -1,3 +1,5 @@
+import 'package:mockingbird/src/config/mockingbird_capture_performance.dart';
+
 /// Knobs that trade latency for CPU and battery on constrained devices.
 final class MockingbirdPerformanceConfig {
   /// Creates a performance configuration.
@@ -6,6 +8,7 @@ final class MockingbirdPerformanceConfig {
     bool adaptiveDegradation,
     int degradeBusyPpm,
     int workerBatchFrames,
+    MockingbirdCapturePerformance capture,
   }) = MockingbirdPerformanceConfig._;
 
   const MockingbirdPerformanceConfig._({
@@ -13,6 +16,7 @@ final class MockingbirdPerformanceConfig {
     this.adaptiveDegradation = false,
     this.degradeBusyPpm = 700000,
     this.workerBatchFrames = 0,
+    this.capture = .normal,
   });
 
   /// Tuned for a live microphone on a phone: shed YAMNet work under load
@@ -41,4 +45,8 @@ final class MockingbirdPerformanceConfig {
   /// Wake the native worker only once this many frames are queued: the same
   /// CPU work in N times fewer wakeups, for up to N-1 frames of latency.
   final int workerBatchFrames;
+
+  /// The platform's capture mode; [MockingbirdCapturePerformance.normal]
+  /// keeps real time on Android while the camera runs. Not live-tunable.
+  final MockingbirdCapturePerformance capture;
 }

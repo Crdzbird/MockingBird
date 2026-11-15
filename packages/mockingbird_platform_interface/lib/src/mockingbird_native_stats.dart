@@ -18,6 +18,8 @@ final class MockingbirdNativeStats {
     required MockingbirdNativeWorkerStats worker,
     required int voiceProcessingActive,
     required int captureRestarts,
+    int captureGaps,
+    int captureGapMs,
   }) = MockingbirdNativeStats._;
 
   const MockingbirdNativeStats._({
@@ -35,6 +37,8 @@ final class MockingbirdNativeStats {
     required this.worker,
     required this.voiceProcessingActive,
     required this.captureRestarts,
+    this.captureGaps = 0,
+    this.captureGapMs = 0,
   });
 
   /// Mirrors `mockingbird_stats_t.frames_captured`.
@@ -78,4 +82,10 @@ final class MockingbirdNativeStats {
 
   /// Mirrors `mockingbird_stats_t.capture_restarts`.
   final int captureRestarts;
+
+  /// Mirrors `mockingbird_stats_t.capture_gaps`.
+  final int captureGaps;
+
+  /// Mirrors `mockingbird_stats_t.capture_gap_ms`.
+  final int captureGapMs;
 }

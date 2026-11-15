@@ -25,6 +25,7 @@ from mockingbird.anomaly_config import AnomalyConfig
 from mockingbird.anomaly_reason import AnomalyReason
 from mockingbird.backend import Backend
 from mockingbird.capture_health import CaptureHealth
+from mockingbird.capture_performance import CapturePerformance
 from mockingbird.codec import Codec
 from mockingbird.config import Config, sensitive
 from mockingbird.decoder import Decoder
@@ -60,6 +61,7 @@ __all__ = [
     "MockingbirdError",
     "Backend",
     "CaptureHealth",
+    "CapturePerformance",
     "Codec",
     "Config",
     "Decoder",

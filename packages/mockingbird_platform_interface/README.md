@@ -36,8 +36,11 @@ abstract class MockingbirdPlatform extends PlatformInterface {
 ```
 
 `setWakeListener` returns false by default, which tells the caller to poll on a
-timer; the FFI implementation registers a `NativeCallable.listener` with
-`mockingbird_set_wake_callback` and returns true.
+timer; the FFI implementation registers a `RawReceivePort` with
+`mockingbird_set_wake_port` and `NativeApi.postCObject` and returns true. Start,
+stop and close report through `mockingbird_submit_port` the same way, so the
+engine never calls Dart code and an isolate that dies without unregistering
+leaves only a closed port behind.
 
 `MockingbirdNativeConfig`, `MockingbirdNativeEvent`, `MockingbirdNativePacket`
 and `MockingbirdNativeStats` mirror the C structs field for field, with no

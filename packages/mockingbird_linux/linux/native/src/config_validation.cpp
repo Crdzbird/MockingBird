@@ -29,6 +29,12 @@ bool valid_backend(int b) {
 
 bool valid_vad_tier(int t) { return t == MOCKINGBIRD_VAD_FAST || t == MOCKINGBIRD_VAD_NEURAL; }
 
+bool valid_capture_performance(int p) {
+    return p == MOCKINGBIRD_CAPTURE_PERFORMANCE_DEFAULT ||
+           p == MOCKINGBIRD_CAPTURE_PERFORMANCE_LOW_LATENCY ||
+           p == MOCKINGBIRD_CAPTURE_PERFORMANCE_POWER_SAVING;
+}
+
 bool valid_queues(const mockingbird_config_t& c) {
     return c.pcm_ring_frames != 0 && c.pcm_ring_frames <= kMaxPcmRingFrames &&
            c.packet_queue_capacity != 0 &&
@@ -64,6 +70,9 @@ mockingbird_status_t validate_config(const mockingbird_config_t& c) {
     if (!valid_frame_ms(c.frame_ms))          return MOCKINGBIRD_ERR_INVALID_ARG;
     if (!valid_codec(codec))                  return MOCKINGBIRD_ERR_INVALID_ARG;
     if (!valid_vad_tier(vad_tier))            return MOCKINGBIRD_ERR_INVALID_ARG;
+    if (!valid_capture_performance(enum_as_int(c.capture_performance))) {
+        return MOCKINGBIRD_ERR_INVALID_ARG;
+    }
     if (!valid_queues(c))                     return MOCKINGBIRD_ERR_INVALID_ARG;
     if (!valid_performance(c))                return MOCKINGBIRD_ERR_INVALID_ARG;
     if (!valid_durations(c))                  return MOCKINGBIRD_ERR_INVALID_ARG;

@@ -9,13 +9,14 @@ final class MockingbirdQueueConfig {
   }) = MockingbirdQueueConfig._;
 
   const MockingbirdQueueConfig._({
-    this.pcmRingFrames = 16384,
+    this.pcmRingFrames = 32768,
     this.packetQueueCapacity = 256,
     this.pcmTap = false,
     this.pcmTapFrames = 0,
   });
 
-  /// Capacity of the capture-to-worker PCM ring, in samples.
+  /// Capacity of the capture-to-worker PCM ring, in samples; the default
+  /// holds two seconds at 16 kHz.
   final int pcmRingFrames;
 
   /// Capacity of the worker-to-host packet queue; drop-oldest when full.

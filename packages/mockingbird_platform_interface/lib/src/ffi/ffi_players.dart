@@ -52,8 +52,8 @@ final class FfiPlayers {
   /// Queues [op] on the player's lifecycle thread; completes with its status.
   Future<int> run(FfiPlayerHandle h, mockingbird_player_op op) =>
       h.lifecycle.run(
-        (done) => _bindings
-            .mockingbird_player_submit(h.pointer, op, done, ffi.nullptr)
+        (post, port) => _bindings
+            .mockingbird_player_submit_port(h.pointer, op, post, port)
             .value,
       );
 

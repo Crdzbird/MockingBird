@@ -603,7 +603,9 @@ if(MOCKINGBIRD_ENABLE_TESTS AND TARGET mockingbird_static)
             tests/test_player_device.cpp
             tests/test_ogg_opus.cpp
             tests/test_wake.cpp
+            tests/test_wake_release.cpp
             tests/test_capture_notices.cpp
+            tests/test_capture_performance.cpp
             tests/test_detectors_golden.cpp
             tests/test_anomaly_reason.cpp
             tests/test_real_voice.cpp

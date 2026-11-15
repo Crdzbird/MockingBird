@@ -7,8 +7,8 @@ from dataclasses import dataclass
 class QueueConfig:
     """Ring sizes and the ungated PCM tap."""
 
-    pcm_ring_frames: int = 1 << 14
-    """Capture ring capacity in samples."""
+    pcm_ring_frames: int = 1 << 15
+    """Capture ring capacity in samples, two seconds at 16 kHz."""
     packet_queue_capacity: int = 256
     """Host packet queue depth; the oldest packet drops first."""
     pcm_tap: bool = False

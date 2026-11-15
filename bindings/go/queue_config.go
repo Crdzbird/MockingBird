@@ -12,7 +12,7 @@ type QueueConfig struct {
 	PCMTapFrames uint32
 }
 
-// DefaultQueueConfig holds about a second of PCM and 256 packets.
+// DefaultQueueConfig holds about two seconds of 16 kHz PCM and 256 packets.
 func DefaultQueueConfig() QueueConfig {
-	return QueueConfig{PCMRingFrames: 1 << 14, PacketQueueCapacity: 256}
+	return QueueConfig{PCMRingFrames: 1 << 15, PacketQueueCapacity: 256}
 }

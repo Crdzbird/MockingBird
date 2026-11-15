@@ -26,5 +26,6 @@ final class NativeOutputMapper {
         enableAdaptiveDegradation: c.performance.adaptiveDegradation,
         degradeBusyPpm: c.performance.degradeBusyPpm,
         workerBatchFrames: c.performance.workerBatchFrames,
+        capturePerformance: c.performance.capture.nativeValue,
       );
 }

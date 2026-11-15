@@ -48,9 +48,8 @@ final class FfiEngines {
   /// Queues [op] on the engine's lifecycle thread; completes with its status.
   Future<int> run(FfiEngineHandle h, mockingbird_engine_op op) =>
       h.lifecycle.run(
-        (done) => _bindings
-            .mockingbird_submit(h.pointer, op, done, ffi.nullptr)
-            .value,
+        (post, port) =>
+            _bindings.mockingbird_submit_port(h.pointer, op, post, port).value,
       );
 
   /// Retunes the running engine.

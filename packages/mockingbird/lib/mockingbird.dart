@@ -4,6 +4,7 @@
 library;
 
 export 'package:mockingbird/src/config/mockingbird_anomaly_config.dart';
+export 'package:mockingbird/src/config/mockingbird_capture_performance.dart';
 export 'package:mockingbird/src/config/mockingbird_config.dart';
 export 'package:mockingbird/src/config/mockingbird_encoder_config.dart';
 export 'package:mockingbird/src/config/mockingbird_performance_config.dart';

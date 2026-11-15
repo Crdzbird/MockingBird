@@ -3,7 +3,11 @@
 // Oboe's error callback, which is where Oboe allows it. Voice processing
 // switches to the VOICE_COMMUNICATION input preset, which applies the
 // device's echo canceller, gain control and noise suppressor where it has
-// them; a selected device is an AudioDeviceInfo id. Each stream holds the
+// them; a selected device is an AudioDeviceInfo id. The performance mode
+// follows capture_performance: by default PerformanceMode::None, because
+// LowLatency input shares the MMAP path with the camera pipeline on phones
+// like the Pixel 7 Pro, where the audio DSP then stalls ("VERY LATE! Force
+// window jump") and most of the audio never arrives. Each stream holds the
 // callbacks by shared_ptr, so Oboe's error thread, which keeps its stream
 // alive, can never reach a freed Impl; `running` is cleared under the mutex
 // before teardown, so that thread never calls into an engine being destroyed.
@@ -22,6 +26,20 @@
 #include <mutex>
 
 namespace mockingbird {
+namespace {
+oboe::PerformanceMode performance_mode(mockingbird_capture_performance_t p) {
+    switch (p) {
+        case MOCKINGBIRD_CAPTURE_PERFORMANCE_LOW_LATENCY:
+            return oboe::PerformanceMode::LowLatency;
+        case MOCKINGBIRD_CAPTURE_PERFORMANCE_POWER_SAVING:
+            return oboe::PerformanceMode::PowerSaving;
+        default:
+            return oboe::PerformanceMode::None;
+    }
+}
+
+}
+
 struct OboeBackend::Impl : public oboe::AudioStreamDataCallback,
                            public oboe::AudioStreamErrorCallback,
                            public std::enable_shared_from_this<OboeBackend::Impl> {
@@ -42,7 +60,7 @@ struct OboeBackend::Impl : public oboe::AudioStreamDataCallback,
     oboe::Result open() {
         oboe::AudioStreamBuilder b;
         b.setDirection(oboe::Direction::Input);
-        b.setPerformanceMode(oboe::PerformanceMode::LowLatency);
+        b.setPerformanceMode(performance_mode(cfg.capture_performance));
         b.setSharingMode(oboe::SharingMode::Shared);
         b.setFormat(oboe::AudioFormat::I16);
         b.setChannelCount(static_cast<int>(cfg.channels));

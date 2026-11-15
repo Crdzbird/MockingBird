@@ -49,7 +49,7 @@ Everything else is grouped by concern:
 | `segments` | `SegmentConfig`: pre-roll, post-roll, max length |
 | `encoder` | `EncoderConfig`: `EncoderConfig.opus()` for Opus, `EncoderConfig.ogg_opus()` for Ogg Opus |
 | `queues` | `QueueConfig`: ring sizes and the ungated PCM tap |
-| `performance` | `PerformanceConfig`: silence gate, degradation, wake batching; `.mobile()` |
+| `performance` | `PerformanceConfig`: silence gate, degradation, wake batching, capture mode; `.mobile()` |
 
 ### One sensitivity dial
 
@@ -108,7 +108,11 @@ A segment cut short by `stop` ends with an `is_last` packet only under Ogg Opus;
 
 `Config.voice_processing` (a `VoiceProcessing` flag) asks the platform for its
 echo cancellation, gain control and noise suppression; `Stats.capture` reports
-what applied. `mockingbird.input_devices(backend)` lists microphones and
+what applied and the gaps (`gaps`, `gap_ms`) where the platform delivered no
+audio. `PerformanceConfig.capture` picks the platform's capture mode:
+`CapturePerformance.DEFAULT` (Oboe's normal mode on Android, which keeps real
+time while a camera runs), `LOW_LATENCY` or `POWER_SAVING`; it is fixed for
+the engine's life. `mockingbird.input_devices(backend)` lists microphones and
 `Engine.select_input_device` picks one before `start`. Interruptions and route
 changes arrive as `CAPTURE_INTERRUPTED`, `CAPTURE_RESUMED` and `ROUTE_CHANGED`.
 
