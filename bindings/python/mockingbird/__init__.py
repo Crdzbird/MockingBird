@@ -95,4 +95,4 @@ __all__ = [
     "wav_from_pcm16",
 ]
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.24)
 project(mockingbird
-        VERSION 0.2.1
+        VERSION 0.2.2
         DESCRIPTION "Audio capture + VAD + anomaly detection with a C ABI"
         LANGUAGES C CXX)
 

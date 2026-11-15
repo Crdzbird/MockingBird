@@ -1,3 +1,10 @@
+## 0.2.2
+
+- `MockingbirdPlayer.start`, `pause`, `resume` and `stop` no longer block the calling isolate while the output opens or closes. The native work runs on the player's own thread and the returned Future completes when it is done; the signatures are unchanged. On an iOS 27.2 simulator the first `start` in a process used to hold the isolate for 127 to 245 ms and now holds it for 5 to 6 ms; on an Android 36 emulator, 36 to 109 ms before and 8 to 36 ms now.
+- The player runs its lifecycle calls in the order they are made. A `stop` made while `start` is still opening the output now runs once it is open; before, it returned at once and the start then left the player running. A `pause` or `resume` made during `start` runs after it, two overlapping `start` calls open the output once, and `dispose` waits for whatever is pending. Packets pushed before `start` completes are queued and play once the output runs.
+- `MockingbirdEngine.startAsync` and `stopAsync` open and close the microphone on the engine's own thread and complete once capture runs, or has stopped and its last events are drained. On an iOS 27.2 simulator `start` holds the isolate for about 190 ms and `stop` for 34 to 176 ms; `startAsync` and `stopAsync` hold it for 6 ms at most. `start` and `stop` are unchanged and still block.
+- `dispose` on a running engine stops it off the isolate.
+
 ## 0.2.1
 
 - `MockingbirdEngine.create` throws a `MockingbirdException` with `unsupported` for Opus or Ogg Opus with `frameMs: 30`. Opus has no 30 ms frame, so such an engine used to start and emit no packets. Opus takes 10 or 20 ms frames; PCM keeps 30.

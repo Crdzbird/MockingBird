@@ -1,3 +1,8 @@
+## 0.2.2
+
+- `MockingbirdPlatform.startAsync` and `stopAsync`, which default to `start` and `stop`.
+- The `dart:ffi` implementation runs `playerStart`, `playerPause`, `playerResume`, `playerStop`, `startAsync` and `stopAsync` on the native lifecycle thread through `mockingbird_player_submit` and `mockingbird_submit`, and completes each Future from a `NativeCallable.listener`, so none of them blocks the calling isolate any more. Bindings regenerated for the new entry points.
+
 ## 0.2.1
 
 - Version 0.2.1, with the engine that refuses Opus with 30 ms frames; no API change.

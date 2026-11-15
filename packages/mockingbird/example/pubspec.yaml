@@ -1,6 +1,6 @@
 name: mockingbird_example
 description: Demonstrates how to use the mockingbird plugin.
-version: 0.2.1+1
+version: 0.2.2+1
 publish_to: none
 
 environment:
@@ -12,7 +12,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_bloc: ^9.1.1
-  mockingbird: ^0.2.1
+  mockingbird: ^0.2.2
   permission_handler: ^13.0.2
 
 dev_dependencies:
