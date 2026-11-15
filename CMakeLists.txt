@@ -91,6 +91,7 @@ set(MOCKINGBIRD_SOURCES
         src/api/api_player_control.cpp
         src/api/api_player_feed.cpp
         src/api/api_player_run.cpp
+        src/api/api_submit.cpp
         src/api/api_speaker.cpp
         src/api/api_defaults.cpp
         src/api/api_push.cpp
@@ -103,6 +104,7 @@ set(MOCKINGBIRD_SOURCES
         src/engine_events.cpp
         src/engine_ingest.cpp
         src/engine_lifetime.cpp
+        src/lifecycle_thread.cpp
         src/packet_pool.cpp
         src/status.cpp
         src/worker/detector_bank.cpp
@@ -231,6 +233,7 @@ set(MOCKINGBIRD_INTERNAL_HEADERS
         src/engine_events.hpp
         src/engine_ingest.hpp
         src/frame_clock.hpp
+        src/lifecycle_thread.hpp
         src/packet_pool.hpp
         src/platform/apple_audio_session.hpp
         src/play/coreaudio_output.hpp
@@ -583,6 +586,7 @@ if(MOCKINGBIRD_ENABLE_TESTS AND TARGET mockingbird_static)
             tests/test_preroll_ring.cpp
             tests/test_abi_validation.cpp
             tests/test_lifecycle.cpp
+            tests/test_submit.cpp
             tests/test_update_config.cpp
             tests/test_signal_tap.cpp
             tests/test_degrade_policy.cpp

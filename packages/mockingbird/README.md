@@ -226,6 +226,16 @@ unplugging a headset, or a new default input on macOS, sends
 `stats.capture.restarts` counts the recoveries. An engine can be stopped and
 started again any number of times.
 
+**Starting without blocking.** Opening and closing the microphone takes a
+moment: on an iOS 27.2 simulator `start` held the calling isolate for about
+190 ms and `stop` for 35 to 165 ms, so a UI drops frames meanwhile. `await engine.startAsync()` and
+`await engine.stopAsync()` open and close the microphone on the engine's own
+thread instead and complete once capture runs, or has stopped and its last
+events are drained. They run in the order you call them, so a `stopAsync` made
+while `startAsync` is still opening the microphone runs once it is open; do not
+mix them with `start` and `stop` while one is pending. `dispose` stops a
+running engine off the isolate too.
+
 **In the background.** Capture keeps running while the app is in the
 background only if the platform allows it: on iOS, add `audio` to
 `UIBackgroundModes` in `Info.plist`; on Android 14 and later, run a foreground
@@ -305,6 +315,16 @@ permanent loss or unplugged headphones pause it until you call `resume`. On
 iOS an interruption pauses it until iOS says to resume, and the route going
 away pauses it until `resume`. On the web it plays through Web Audio; call
 `start` from a user gesture, as browsers allow sound only after one.
+
+`start`, `pause`, `resume` and `stop` open and close the output on the
+player's own thread, so they never block the calling isolate; each returns a
+Future that completes once the call has taken effect. They run in the order you
+make them: a `stop` made while `start` is still opening the output runs once
+it is open, a second `start` meanwhile does nothing, and `dispose` waits for
+whatever is pending. Packets pushed before `start` completes are queued, not
+lost, and play as soon as the output runs; they count toward the delay like
+any backlog, so call `flush()` when `start` completes if a live stream should
+begin at its newest packet instead.
 
 `MockingbirdBackend.hostPcm` opens no device: `read(frames)` renders the
 output for an app that plays audio itself. `MockingbirdDecoder` is the bare

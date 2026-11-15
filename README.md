@@ -155,6 +155,25 @@ mockingbird_player_destroy(player);
 decoder for a host that only wants PCM, with `mockingbird_decoder_conceal`
 for a packet that never arrived.
 
+Opening or closing a microphone or an output can take a few hundred
+milliseconds, and `mockingbird_start`, `mockingbird_player_start` and the
+other lifecycle calls do it on the calling thread. A host that must not wait,
+a UI thread for example, queues them instead with `mockingbird_submit` (start
+and stop of an engine) or `mockingbird_player_submit` (start, pause, resume and
+stop of a player). The call returns at once; the engine's or player's own
+lifecycle thread runs queued calls in the order submitted and reports each
+result through a `mockingbird_done_cb`. Packets pushed while a start is queued
+wait in the player's queue and play once the output runs, and destroy runs
+whatever is still queued before it frees.
+
+```c
+static void on_done(void* user, uint32_t op, int32_t status) { /* op ran, with status */ }
+
+mockingbird_player_submit(player, MOCKINGBIRD_PLAYER_OP_START, on_done, NULL);
+mockingbird_player_push(player, MOCKINGBIRD_CODEC_OPUS, pkt.data, pkt.size,
+                        pkt.capture_ts_us, pkt.flags);   /* fine before on_done */
+```
+
 Instead of draining on a timer, a host can register a wake callback with
 `mockingbird_set_wake_callback`. It fires on an engine thread when an event or
 packet is queued and stays quiet until the host calls `mockingbird_ack_wake`,

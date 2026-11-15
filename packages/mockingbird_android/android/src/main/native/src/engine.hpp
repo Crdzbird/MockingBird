@@ -7,6 +7,7 @@
 #include "detect/keyword_set.hpp"
 #include "detect/speaker_state.hpp"
 #include "encode/encoder.hpp"
+#include "lifecycle_thread.hpp"
 #include "packet_pool.hpp"
 #include "spsc_ring.hpp"
 
@@ -45,6 +46,7 @@ struct mockingbird_engine {
     std::atomic<bool> stop_requested{false};
     std::atomic<bool> worker_fatal{false};
     std::mutex        lifecycle_mu;
+    mockingbird::LifecycleThread lifecycle;
 
     std::mutex            tune_mu;
     mockingbird_config_t        live_cfg{};

@@ -21,24 +21,23 @@ abstract class MockingbirdFfiPlaybackBase extends MockingbirdFfiDecodingBase {
       _players.destroy(_p(handle));
 
   @override
-  Future<int> playerStart(MockingbirdPlayerHandle handle) async =>
-      _players.lifecycle(_p(handle), 'start');
+  Future<int> playerStart(MockingbirdPlayerHandle handle) =>
+      _players.run(_p(handle), .MOCKINGBIRD_PLAYER_OP_START);
 
   @override
-  Future<int> playerPause(MockingbirdPlayerHandle handle) async =>
-      _players.lifecycle(_p(handle), 'pause');
+  Future<int> playerPause(MockingbirdPlayerHandle handle) =>
+      _players.run(_p(handle), .MOCKINGBIRD_PLAYER_OP_PAUSE);
 
   @override
-  Future<int> playerResume(MockingbirdPlayerHandle handle) async =>
-      _players.lifecycle(_p(handle), 'resume');
+  Future<int> playerResume(MockingbirdPlayerHandle handle) =>
+      _players.run(_p(handle), .MOCKINGBIRD_PLAYER_OP_RESUME);
 
   @override
-  Future<int> playerStop(MockingbirdPlayerHandle handle) async =>
-      _players.lifecycle(_p(handle), 'stop');
+  Future<int> playerStop(MockingbirdPlayerHandle handle) =>
+      _players.run(_p(handle), .MOCKINGBIRD_PLAYER_OP_STOP);
 
   @override
-  int playerFlush(MockingbirdPlayerHandle handle) =>
-      _players.lifecycle(_p(handle), 'flush');
+  int playerFlush(MockingbirdPlayerHandle handle) => _players.flush(_p(handle));
 
   @override
   int playerPush(

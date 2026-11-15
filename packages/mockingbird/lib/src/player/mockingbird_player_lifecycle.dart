@@ -1,14 +1,60 @@
 part of 'mockingbird_player.dart';
 
-/// Starting, pausing and stopping a [MockingbirdPlayer].
+/// Starting, pausing and stopping a [MockingbirdPlayer]. The output opens
+/// and closes on the player's own thread, so these calls never block this
+/// isolate, and they run in the order they were made: a [stop] made while
+/// [start] is still opening the output runs once it is open.
 extension MockingbirdPlayerLifecycle on MockingbirdPlayer {
   /// Takes audio focus where the platform has it, opens the output and
-  /// starts playout; [stats] ticks every [statsInterval]. On the web, call
-  /// it from a user gesture so the browser lets the page play.
+  /// starts playout; completes once the output plays. Packets pushed before
+  /// then wait in the player's queue and play once it does. [stats] ticks
+  /// every [statsInterval]. On the web, call it from a user gesture so the
+  /// browser lets the page play.
   Future<void> start({
     Duration statsInterval = const Duration(milliseconds: 250),
   }) async {
     _ensureLive();
+    await _queue.add(() => _start(statsInterval));
+  }
+
+  /// Stops the output and keeps what is buffered.
+  Future<void> pause() async {
+    _ensureLive();
+    _focus.userPaused();
+    await _queue.add(
+      () async => MockingbirdException.check(
+        await _platform.playerPause(_handle),
+        'mockingbird_player_pause',
+      ),
+    );
+  }
+
+  /// Starts the output again after [pause], audio focus or a lost route.
+  Future<void> resume() async {
+    _ensureLive();
+    _focus.userResumed();
+    _focusPaused = false;
+    await _queue.add(() async {
+      MockingbirdException.check(
+        await _platform.playerResume(_handle),
+        'mockingbird_player_resume',
+      );
+      _platform.playerSetVolume(_handle, _volume);
+    });
+  }
+
+  /// Closes the output, drops what is buffered and gives focus back.
+  Future<void> stop() async {
+    _ensureLive();
+    await _queue.add(() async {
+      if (!isRunning) return;
+      final s = await _halt();
+      _tick();
+      MockingbirdException.check(s, 'mockingbird_player_stop');
+    });
+  }
+
+  Future<void> _start(Duration statsInterval) async {
     if (isRunning) return;
     _focusPaused = false;
     _focus.follow(_platform.playbackFocusChanges);
@@ -23,51 +69,8 @@ extension MockingbirdPlayerLifecycle on MockingbirdPlayer {
     if (_focusPaused) await _platform.playerPause(_handle);
   }
 
-  /// Stops the output and keeps what is buffered.
-  Future<void> pause() async {
-    _ensureLive();
-    _focus.userPaused();
-    MockingbirdException.check(
-      await _platform.playerPause(_handle),
-      'mockingbird_player_pause',
-    );
-  }
-
-  /// Starts the output again after [pause], audio focus or a lost route.
-  Future<void> resume() async {
-    _ensureLive();
-    _focus.userResumed();
-    _focusPaused = false;
-    MockingbirdException.check(
-      await _platform.playerResume(_handle),
-      'mockingbird_player_resume',
-    );
-    _platform.playerSetVolume(_handle, _volume);
-  }
-
-  /// Closes the output, drops what is buffered and gives focus back.
-  Future<void> stop() async {
-    _ensureLive();
-    if (!isRunning) return;
-    final s = await _halt();
-    _tick();
-    MockingbirdException.check(s, 'mockingbird_player_stop');
-  }
-
   Future<int> _halt() async {
-    final pending = _halting;
-    if (pending != null) return await pending;
     if (!isRunning) return MockingbirdStatusCode.ok;
-    final halting = _haltOnce();
-    _halting = halting;
-    try {
-      return await halting;
-    } finally {
-      _halting = null;
-    }
-  }
-
-  Future<int> _haltOnce() async {
     _timer?.cancel();
     _timer = null;
     _focusPaused = false;

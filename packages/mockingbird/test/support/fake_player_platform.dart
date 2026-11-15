@@ -18,6 +18,12 @@ final class FakePlayerPlatform extends MockingbirdPlatform {
   /// The status the next push returns.
   int pushStatus = MockingbirdStatusCode.ok;
 
+  /// The status start returns.
+  int startStatus = MockingbirdStatusCode.ok;
+
+  /// When set, start waits for it, as a slow output does while it opens.
+  Completer<void>? opening;
+
   /// The pts and flags of the last push.
   ({int ptsUs, int flags, int codec})? lastPush;
 
@@ -36,8 +42,11 @@ final class FakePlayerPlatform extends MockingbirdPlatform {
       calls.add('destroy');
 
   @override
-  Future<int> playerStart(MockingbirdPlayerHandle handle) async =>
-      _call('start');
+  Future<int> playerStart(MockingbirdPlayerHandle handle) async {
+    calls.add('start');
+    await opening?.future;
+    return startStatus;
+  }
 
   @override
   Future<int> playerPause(MockingbirdPlayerHandle handle) async =>
@@ -62,6 +71,7 @@ final class FakePlayerPlatform extends MockingbirdPlatform {
     required int ptsUs,
     required int flags,
   }) {
+    calls.add('push');
     lastPush = (ptsUs: ptsUs, flags: flags, codec: codec);
     return pushStatus;
   }

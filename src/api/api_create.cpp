@@ -81,6 +81,7 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_create(const mockingbird_config
 MOCKINGBIRD_API void mockingbird_destroy(mockingbird_engine_t* engine) {
     if (engine == nullptr) return;
     try {
+        engine->lifecycle.close();
         std::lock_guard lk(engine->lifecycle_mu);
         if (engine->running.load(std::memory_order_acquire)) join_worker(engine);
     } catch (...) {

@@ -34,6 +34,7 @@ set(MOCKINGBIRD_SOURCES
         ${MOCKINGBIRD_ROOT}/src/api/api_player_control.cpp
         ${MOCKINGBIRD_ROOT}/src/api/api_player_feed.cpp
         ${MOCKINGBIRD_ROOT}/src/api/api_player_run.cpp
+        ${MOCKINGBIRD_ROOT}/src/api/api_submit.cpp
         ${MOCKINGBIRD_ROOT}/src/api/api_speaker.cpp
         ${MOCKINGBIRD_ROOT}/src/api/api_stats.cpp
         ${MOCKINGBIRD_ROOT}/src/api/api_tuning.cpp
@@ -42,6 +43,7 @@ set(MOCKINGBIRD_SOURCES
         ${MOCKINGBIRD_ROOT}/src/engine_events.cpp
         ${MOCKINGBIRD_ROOT}/src/engine_ingest.cpp
         ${MOCKINGBIRD_ROOT}/src/engine_lifetime.cpp
+        ${MOCKINGBIRD_ROOT}/src/lifecycle_thread.cpp
         ${MOCKINGBIRD_ROOT}/src/packet_pool.cpp
         ${MOCKINGBIRD_ROOT}/src/status.cpp
         ${MOCKINGBIRD_ROOT}/src/worker/detector_bank.cpp

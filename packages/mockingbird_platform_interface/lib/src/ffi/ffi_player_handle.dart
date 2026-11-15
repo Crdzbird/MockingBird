@@ -2,6 +2,7 @@ import 'dart:ffi' as ffi;
 
 import 'package:ffi/ffi.dart';
 import 'package:mockingbird_platform_interface/src/bindings.dart';
+import 'package:mockingbird_platform_interface/src/ffi/ffi_lifecycle.dart';
 import 'package:mockingbird_platform_interface/src/mockingbird_player_handle.dart';
 
 /// A native player pointer plus the scratch memory pushes and reads reuse,
@@ -31,6 +32,9 @@ final class FfiPlayerHandle extends MockingbirdPlayerHandle {
 
   /// Scratch stats record.
   final ffi.Pointer<mockingbird_player_stats_t> stats;
+
+  /// Reports lifecycle calls queued on the player's own thread.
+  final FfiLifecycle lifecycle = FfiLifecycle();
 
   ffi.Pointer<ffi.Int16> _pcm = ffi.nullptr;
   int _pcmLength = 0;

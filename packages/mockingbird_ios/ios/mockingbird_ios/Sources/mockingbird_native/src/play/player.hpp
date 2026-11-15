@@ -3,6 +3,7 @@
 #pragma once
 
 #include "mockingbird/mockingbird.h"
+#include "lifecycle_thread.hpp"
 #include "play/output_backend.hpp"
 #include "play/packet_queue.hpp"
 #include "play/player_renderer.hpp"
@@ -21,6 +22,7 @@ struct mockingbird_player {
     mockingbird::PlayerRenderer                   renderer;
     std::unique_ptr<mockingbird::OutputBackend>   output;
     std::mutex                                    lifecycle_mu;
+    mockingbird::LifecycleThread                  lifecycle;
 };
 
 namespace mockingbird {

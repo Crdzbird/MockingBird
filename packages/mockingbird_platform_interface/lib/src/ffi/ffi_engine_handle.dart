@@ -2,6 +2,7 @@ import 'dart:ffi' as ffi;
 
 import 'package:ffi/ffi.dart';
 import 'package:mockingbird_platform_interface/src/bindings.dart';
+import 'package:mockingbird_platform_interface/src/ffi/ffi_lifecycle.dart';
 import 'package:mockingbird_platform_interface/src/mockingbird_engine_handle.dart';
 
 /// A native engine pointer plus the scratch records polling reuses.
@@ -26,6 +27,9 @@ final class FfiEngineHandle extends MockingbirdEngineHandle {
 
   /// Scratch stats record.
   final ffi.Pointer<mockingbird_stats_t> stats;
+
+  /// Reports start and stop calls queued on the engine's own thread.
+  final FfiLifecycle lifecycle = FfiLifecycle();
 
   /// The registered wake listener, if any.
   ffi.NativeCallable<mockingbird_wake_cbFunction>? wake;

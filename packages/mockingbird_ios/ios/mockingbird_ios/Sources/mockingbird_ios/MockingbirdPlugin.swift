@@ -32,6 +32,7 @@ enum MockingbirdSymbolAnchor {
     _ = mockingbird_config_defaults(&cfg)
     _ = mockingbird_create(&cfg, &engine)
     _ = mockingbird_start(engine)
+    _ = mockingbird_submit(engine, MOCKINGBIRD_ENGINE_OP_START, nil, nil)
     _ = mockingbird_set_event_callback(engine, nil, nil)
     _ = mockingbird_set_wake_callback(engine, nil, nil)
     _ = mockingbird_ack_wake(engine)
@@ -90,6 +91,7 @@ enum MockingbirdSymbolAnchor {
     _ = mockingbird_player_set_muted(player, 0)
     _ = mockingbird_player_get_stats(player, &stats)
     _ = mockingbird_player_stop(player)
+    _ = mockingbird_player_submit(player, MOCKINGBIRD_PLAYER_OP_STOP, nil, nil)
     mockingbird_player_destroy(player)
   }
 }

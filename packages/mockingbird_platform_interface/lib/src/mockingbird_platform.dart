@@ -55,6 +55,13 @@ abstract class MockingbirdPlatform extends MockingbirdPlatformExtras {
   /// Stops the engine after processing every pushed frame.
   int stop(MockingbirdEngineHandle handle);
 
+  /// [start] off the calling thread where the platform has one; completes
+  /// with its status. Calls run in the order they were made.
+  Future<int> startAsync(MockingbirdEngineHandle handle) async => start(handle);
+
+  /// [stop] off the calling thread where the platform has one.
+  Future<int> stopAsync(MockingbirdEngineHandle handle) async => stop(handle);
+
   /// Pushes mono int16 samples for a host-PCM engine.
   int pushPcm(
     MockingbirdEngineHandle handle,

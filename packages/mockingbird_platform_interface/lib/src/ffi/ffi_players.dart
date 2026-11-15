@@ -41,20 +41,25 @@ final class FfiPlayers {
     }
   }
 
-  /// Destroys the player and frees its scratch memory.
+  /// Destroys the player, which first runs what its thread has queued,
+  /// then frees its callback and scratch memory.
   void destroy(FfiPlayerHandle h) {
     _bindings.mockingbird_player_destroy(h.pointer);
+    h.lifecycle.close();
     h.free();
   }
 
-  /// Runs one lifecycle call by name: start, pause, resume, stop or flush.
-  int lifecycle(FfiPlayerHandle h, String call) => switch (call) {
-    'start' => _bindings.mockingbird_player_start(h.pointer).value,
-    'pause' => _bindings.mockingbird_player_pause(h.pointer).value,
-    'resume' => _bindings.mockingbird_player_resume(h.pointer).value,
-    'flush' => _bindings.mockingbird_player_flush(h.pointer).value,
-    _ => _bindings.mockingbird_player_stop(h.pointer).value,
-  };
+  /// Queues [op] on the player's lifecycle thread; completes with its status.
+  Future<int> run(FfiPlayerHandle h, mockingbird_player_op op) =>
+      h.lifecycle.run(
+        (done) => _bindings
+            .mockingbird_player_submit(h.pointer, op, done, ffi.nullptr)
+            .value,
+      );
+
+  /// Drops everything pushed so far.
+  int flush(FfiPlayerHandle h) =>
+      _bindings.mockingbird_player_flush(h.pointer).value;
 
   /// Sets the gain.
   int volume(FfiPlayerHandle h, double v) =>

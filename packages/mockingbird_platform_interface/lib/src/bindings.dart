@@ -599,6 +599,38 @@ class MockingbirdBindings {
   late final _mockingbird_player_stop = _mockingbird_player_stopPtr
       .asFunction<int Function(ffi.Pointer<mockingbird_player_t>)>();
 
+  mockingbird_status mockingbird_player_submit(
+    ffi.Pointer<mockingbird_player_t> player,
+    mockingbird_player_op op,
+    mockingbird_done_cb done,
+    ffi.Pointer<ffi.Void> user,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_player_submit(player, op.value, done, user),
+    );
+  }
+
+  late final _mockingbird_player_submitPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<mockingbird_player_t>,
+            ffi.UnsignedInt,
+            mockingbird_done_cb,
+            ffi.Pointer<ffi.Void>,
+          )
+        >
+      >('mockingbird_player_submit');
+  late final _mockingbird_player_submit = _mockingbird_player_submitPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<mockingbird_player_t>,
+          int,
+          mockingbird_done_cb,
+          ffi.Pointer<ffi.Void>,
+        )
+      >();
+
   mockingbird_status mockingbird_poll_event(
     ffi.Pointer<mockingbird_engine_t> engine,
     ffi.Pointer<mockingbird_event_t> out_evt,
@@ -967,6 +999,38 @@ class MockingbirdBindings {
   late final _mockingbird_stop = _mockingbird_stopPtr
       .asFunction<int Function(ffi.Pointer<mockingbird_engine_t>)>();
 
+  mockingbird_status mockingbird_submit(
+    ffi.Pointer<mockingbird_engine_t> engine,
+    mockingbird_engine_op op,
+    mockingbird_done_cb done,
+    ffi.Pointer<ffi.Void> user,
+  ) {
+    return mockingbird_status.fromValue(
+      _mockingbird_submit(engine, op.value, done, user),
+    );
+  }
+
+  late final _mockingbird_submitPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<mockingbird_engine_t>,
+            ffi.UnsignedInt,
+            mockingbird_done_cb,
+            ffi.Pointer<ffi.Void>,
+          )
+        >
+      >('mockingbird_submit');
+  late final _mockingbird_submit = _mockingbird_submitPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<mockingbird_engine_t>,
+          int,
+          mockingbird_done_cb,
+          ffi.Pointer<ffi.Void>,
+        )
+      >();
+
   mockingbird_status mockingbird_update_config(
     ffi.Pointer<mockingbird_engine_t> engine,
     ffi.Pointer<mockingbird_config_t> cfg,
@@ -1243,8 +1307,32 @@ final class mockingbird_device extends ffi.Struct {
 }
 
 typedef mockingbird_device_t = mockingbird_device;
+typedef mockingbird_done_cb =
+    ffi.Pointer<ffi.NativeFunction<mockingbird_done_cbFunction>>;
+typedef mockingbird_done_cbFunction =
+    ffi.Void Function(
+      ffi.Pointer<ffi.Void> user,
+      ffi.Uint32 op,
+      ffi.Int32 status,
+    );
+typedef Dartmockingbird_done_cbFunction =
+    void Function(ffi.Pointer<ffi.Void> user, int op, int status);
 
 final class mockingbird_engine extends ffi.Opaque {}
+
+enum mockingbird_engine_op {
+  MOCKINGBIRD_ENGINE_OP_START(0),
+  MOCKINGBIRD_ENGINE_OP_STOP(1);
+
+  final int value;
+  const mockingbird_engine_op(this.value);
+
+  static mockingbird_engine_op fromValue(int value) => switch (value) {
+    0 => MOCKINGBIRD_ENGINE_OP_START,
+    1 => MOCKINGBIRD_ENGINE_OP_STOP,
+    _ => throw ArgumentError('Unknown value for mockingbird_engine_op: $value'),
+  };
+}
 
 typedef mockingbird_engine_t = mockingbird_engine;
 
@@ -1425,6 +1513,24 @@ final class mockingbird_player_config extends ffi.Struct {
 }
 
 typedef mockingbird_player_config_t = mockingbird_player_config;
+
+enum mockingbird_player_op {
+  MOCKINGBIRD_PLAYER_OP_START(0),
+  MOCKINGBIRD_PLAYER_OP_PAUSE(1),
+  MOCKINGBIRD_PLAYER_OP_RESUME(2),
+  MOCKINGBIRD_PLAYER_OP_STOP(3);
+
+  final int value;
+  const mockingbird_player_op(this.value);
+
+  static mockingbird_player_op fromValue(int value) => switch (value) {
+    0 => MOCKINGBIRD_PLAYER_OP_START,
+    1 => MOCKINGBIRD_PLAYER_OP_PAUSE,
+    2 => MOCKINGBIRD_PLAYER_OP_RESUME,
+    3 => MOCKINGBIRD_PLAYER_OP_STOP,
+    _ => throw ArgumentError('Unknown value for mockingbird_player_op: $value'),
+  };
+}
 
 enum mockingbird_player_state {
   MOCKINGBIRD_PLAYER_STOPPED(0),

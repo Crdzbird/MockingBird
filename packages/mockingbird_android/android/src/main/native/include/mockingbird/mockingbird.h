@@ -509,6 +509,10 @@ typedef void (*mockingbird_event_cb)(const mockingbird_event_t* evt, void* user)
 /* A wake carries no data: it says the event or packet queue gained an entry. */
 typedef void (*mockingbird_wake_cb)(void* user);
 
+/* Reports a call queued with mockingbird_submit or mockingbird_player_submit:
+ * op is the call that ran and status its result. */
+typedef void (*mockingbird_done_cb)(void* user, uint32_t op, int32_t status);
+
 /* ============================================================================
  * LIFECYCLE
  * ========================================================================== */
@@ -542,6 +546,26 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_start(mockingbird_engine_t* eng
 /* Stop capture. Drains in-flight encoded segments before returning. After
  * stop, queued packets remain available via mockingbird_drain until released. */
 MOCKINGBIRD_API mockingbird_status_t mockingbird_stop(mockingbird_engine_t* engine);
+
+/* Start and stop without blocking the caller. Opening or closing the
+ * microphone can take hundreds of milliseconds; submit queues the call on
+ * the engine's lifecycle thread and returns at once. That thread runs queued
+ * calls one at a time in the order submitted, each exactly as
+ * mockingbird_start or mockingbird_stop, and then calls done(user, op,
+ * status) with that call's result. MOCKINGBIRD_OK means queued, and done is
+ * then called exactly once; any other status means nothing was queued. done
+ * may be NULL, runs on the lifecycle thread, and must not destroy the
+ * engine. destroy first runs everything still queued, calling done for
+ * each. The thread starts on the first submit. */
+typedef enum mockingbird_engine_op {
+    MOCKINGBIRD_ENGINE_OP_START = 0,
+    MOCKINGBIRD_ENGINE_OP_STOP  = 1
+} mockingbird_engine_op_t;
+
+MOCKINGBIRD_API mockingbird_status_t mockingbird_submit(mockingbird_engine_t*   engine,
+                                                        mockingbird_engine_op_t op,
+                                                        mockingbird_done_cb     done,
+                                                        void*                   user);
 
 /* ============================================================================
  * EVENTS  (pick push OR pull; both are wired)
@@ -879,11 +903,12 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_decoder_reset(mockingbird_decod
  * in the Flutter plugin, see the platform notes.
  *
  * Threads. Push and flush come from one host thread at a time, read from one
- * thread, and create, start, pause, resume, stop and destroy are serialised
- * by the host and must not overlap destroy. set_volume, set_muted and
- * get_stats are safe from any thread. On a device backend the output runs on
- * the OS audio thread, which never allocates, locks or blocks; the player
- * starts no thread of its own.
+ * thread, and create, start, pause, resume, stop, submit and destroy are
+ * serialised by the host and must not overlap destroy. set_volume, set_muted
+ * and get_stats are safe from any thread. On a device backend the output
+ * runs on the OS audio thread, which never allocates, locks or blocks. The
+ * player starts one thread of its own, its lifecycle thread, the first time
+ * mockingbird_player_submit is called.
  * ========================================================================== */
 typedef struct mockingbird_player mockingbird_player_t;
 
@@ -937,6 +962,30 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_player_start(mockingbird_player
 MOCKINGBIRD_API mockingbird_status_t mockingbird_player_pause(mockingbird_player_t* player);
 MOCKINGBIRD_API mockingbird_status_t mockingbird_player_resume(mockingbird_player_t* player);
 MOCKINGBIRD_API mockingbird_status_t mockingbird_player_stop(mockingbird_player_t* player);
+
+/* Start, pause, resume and stop without blocking the caller. Opening or
+ * closing a device output can take hundreds of milliseconds; submit queues
+ * the call on the player's lifecycle thread and returns at once. That thread
+ * runs queued calls one at a time in the order submitted, each exactly as
+ * the blocking call of the same name, and then calls done(user, op, status)
+ * with that call's result. MOCKINGBIRD_OK means queued, and done is then
+ * called exactly once; any other status means nothing was queued. done may
+ * be NULL, runs on the lifecycle thread, and must not destroy the player.
+ * Packets pushed while a START is queued wait in the player's queue and play
+ * once the output runs. destroy first runs everything still queued, calling
+ * done for each, and then frees. The blocking calls stay valid; mixed with
+ * submitted ones they are ordered by the lifecycle mutex, not by submission. */
+typedef enum mockingbird_player_op {
+    MOCKINGBIRD_PLAYER_OP_START  = 0,
+    MOCKINGBIRD_PLAYER_OP_PAUSE  = 1,
+    MOCKINGBIRD_PLAYER_OP_RESUME = 2,
+    MOCKINGBIRD_PLAYER_OP_STOP   = 3
+} mockingbird_player_op_t;
+
+MOCKINGBIRD_API mockingbird_status_t mockingbird_player_submit(mockingbird_player_t*   player,
+                                                               mockingbird_player_op_t op,
+                                                               mockingbird_done_cb     done,
+                                                               void*                   user);
 
 MOCKINGBIRD_API mockingbird_status_t mockingbird_player_push(mockingbird_player_t* player,
                                                              mockingbird_codec_t   codec,

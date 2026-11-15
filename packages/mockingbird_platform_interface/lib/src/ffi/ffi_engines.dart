@@ -37,11 +37,21 @@ final class FfiEngines {
     }
   }
 
-  /// Destroys the engine and frees its scratch records.
+  /// Destroys the engine, which first runs what its thread has queued,
+  /// then frees its callback and scratch records.
   void destroy(FfiEngineHandle h) {
     _bindings.mockingbird_destroy(h.pointer);
+    h.lifecycle.close();
     h.free();
   }
+
+  /// Queues [op] on the engine's lifecycle thread; completes with its status.
+  Future<int> run(FfiEngineHandle h, mockingbird_engine_op op) =>
+      h.lifecycle.run(
+        (done) => _bindings
+            .mockingbird_submit(h.pointer, op, done, ffi.nullptr)
+            .value,
+      );
 
   /// Retunes the running engine.
   int updateConfig(FfiEngineHandle h, MockingbirdNativeConfig config) {

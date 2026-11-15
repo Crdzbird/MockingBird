@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:mockingbird/src/lifecycle_queue.dart';
 import 'package:mockingbird/src/mockingbird_exception.dart';
 import 'package:mockingbird/src/mockingbird_packet.dart';
 import 'package:mockingbird/src/player/mockingbird_player_config.dart';
@@ -41,7 +42,7 @@ final class MockingbirdPlayer {
     onDuck: _duck,
   );
   Timer? _timer;
-  Future<int>? _halting;
+  final _queue = LifecycleQueue();
   double _volume = 1;
   bool _muted = false;
   bool _disposed = false;
@@ -50,7 +51,7 @@ final class MockingbirdPlayer {
   /// A counters snapshot per stats tick while the player runs.
   Stream<MockingbirdPlayerStats> get stats => _stats.stream;
 
-  /// True between start and stop.
+  /// True from the moment start completes until stop runs.
   bool get isRunning => _timer != null;
 
   /// Reads the counters now.
@@ -61,13 +62,17 @@ final class MockingbirdPlayer {
     return MockingbirdPlayerStats.fromNative(r.stats!);
   }
 
-  /// Stops if needed and destroys the native player. Idempotent.
+  /// Stops if needed, after any start, pause, resume or stop still pending,
+  /// and destroys the native player. Idempotent.
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
-    await _halt();
-    await _platform.destroyPlayer(_handle);
-    await _stats.close();
+    try {
+      await _queue.add(_halt);
+    } finally {
+      await _platform.destroyPlayer(_handle);
+      await _stats.close();
+    }
   }
 
   void _tick() {

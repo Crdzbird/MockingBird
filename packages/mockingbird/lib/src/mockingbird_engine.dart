@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:mockingbird/src/config/mockingbird_config.dart';
 import 'package:mockingbird/src/events/mockingbird_event.dart';
+import 'package:mockingbird/src/lifecycle_queue.dart';
 import 'package:mockingbird/src/mockingbird_exception.dart';
 import 'package:mockingbird/src/mockingbird_packet.dart';
 import 'package:mockingbird/src/mockingbird_segment.dart';
@@ -44,6 +45,7 @@ final class MockingbirdEngine {
   );
   MockingbirdConfig _config;
   Timer? _timer;
+  final _queue = LifecycleQueue();
   bool _disposed = false;
 
   /// Detections and lifecycle notices, in order.
@@ -65,29 +67,16 @@ final class MockingbirdEngine {
   /// True between [start] and [stop].
   bool get isRunning => _timer != null;
 
-  /// Stops if needed and destroys the native engine. Idempotent.
+  /// Stops if needed, off this isolate and after any pending [startAsync],
+  /// and destroys the native engine. Idempotent.
   Future<void> dispose() async {
     if (_disposed) return;
-    if (isRunning) stop();
     _disposed = true;
-    _platform.destroy(_handle);
-    await _out.close();
-  }
-
-  void _poll() => _guard(_poller.poll);
-
-  void _wake() {
-    if (_disposed || !isRunning) return;
-    _platform.ackWake(_handle);
-    _guard(_poller.drain);
-  }
-
-  void _guard(void Function() body) {
     try {
-      body();
-      _out.afterDrain();
-    } on MockingbirdException catch (e, st) {
-      _out.events.addError(e, st);
+      await _queue.add(_stopAsync);
+    } finally {
+      _platform.destroy(_handle);
+      await _out.close();
     }
   }
 

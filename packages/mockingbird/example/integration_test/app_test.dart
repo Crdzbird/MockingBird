@@ -4,6 +4,7 @@ import 'src/capture_tests.dart';
 import 'src/download_tests.dart';
 import 'src/engine_tests.dart';
 import 'src/keyword_tests.dart';
+import 'src/lifecycle_timing_tests.dart';
 import 'src/model_tests.dart';
 import 'src/player_tests.dart';
 import 'src/speaker_tests.dart';
@@ -17,4 +18,5 @@ void main() {
   speakerTests();
   captureTests();
   playerTests();
+  lifecycleTimingTests();
 }

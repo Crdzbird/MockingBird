@@ -40,6 +40,7 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_player_create(const mockingbird
 
 MOCKINGBIRD_API void mockingbird_player_destroy(mockingbird_player_t* player) {
     if (player == nullptr) return;
+    player->lifecycle.close();
     mockingbird_player_stop(player);
     player->output.reset();
     delete player;
