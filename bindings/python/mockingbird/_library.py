@@ -19,10 +19,10 @@ _lock = threading.Lock()
 
 def _candidate_names() -> list[str]:
     if sys.platform == "darwin":
-        return ["libmockingbird.dylib", "libmockingbird.0.2.2.dylib"]
+        return ["libmockingbird.dylib", "libmockingbird.0.2.3.dylib"]
     if sys.platform == "win32":
         return ["mockingbird.dll", "libmockingbird.dll"]
-    return ["libmockingbird.so", "libmockingbird.so.0.2.2"]
+    return ["libmockingbird.so", "libmockingbird.so.0.2.3"]
 
 
 def _candidates() -> list[Path]:

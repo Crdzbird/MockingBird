@@ -1,7 +1,7 @@
 name: mockingbird_platform_interface
 description: >-
   The platform interface of the mockingbird plugin: plain data records, the engine contract, and the shared dart:ffi implementation for native platforms.
-version: 0.2.2
+version: 0.2.3
 repository: https://github.com/Crdzbird/MockingBird/tree/main/packages/mockingbird_platform_interface
 issue_tracker: https://github.com/Crdzbird/MockingBird/issues
 topics:

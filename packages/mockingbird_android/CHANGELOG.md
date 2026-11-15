@@ -1,3 +1,9 @@
+## 0.2.3
+
+- The native engine gains `capture_performance` in `mockingbird_config_t` (`MOCKINGBIRD_CAPTURE_PERFORMANCE_DEFAULT`, `LOW_LATENCY`, `POWER_SAVING`), taking a reserved slot so the struct keeps its size. On Android `DEFAULT` now opens Oboe with `PerformanceMode::None` instead of `LowLatency`, which stalled the audio DSP and lost about three quarters of the audio while a camera pipeline ran on a Pixel 7 Pro; `LOW_LATENCY` restores it, `POWER_SAVING` uses `PerformanceMode::PowerSaving`.
+- `mockingbird_stats_t` gains `capture_gaps` and `capture_gap_ms`: audio the platform never delivered, estimated from the capture clock (more than 200 ms behind it). The default PCM ring grows to 32768 samples, two seconds at 16 kHz.
+- `mockingbird_set_wake_port`, `mockingbird_submit_port` and `mockingbird_player_submit_port` post a message through a host post function (Dart's `NativeApi.postCObject`) instead of calling host code, so a host runtime that shuts down without unregistering leaves nothing freed for the engine to call.
+
 ## 0.2.2
 
 - The native engine gains `mockingbird_submit` and `mockingbird_player_submit`, which run start, stop, pause and resume on the engine's or the player's own lifecycle thread, in the order submitted, and report each result through a callback, so opening or closing the device no longer blocks the caller. `MOCKINGBIRD_PLAYER_OP_CLOSE` and `MOCKINGBIRD_ENGINE_OP_CLOSE` stop if needed and release the device on that thread, so a destroy that follows has nothing slow left to do.

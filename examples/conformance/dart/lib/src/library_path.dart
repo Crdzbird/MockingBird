@@ -6,7 +6,7 @@ String resolveLib(List<String> args) {
   if (positional.length >= 2) return positional[1];
   final ext = Platform.isMacOS ? 'dylib' : (Platform.isWindows ? 'dll' : 'so');
   final base = Platform.script.resolve('../../../build/');
-  for (final name in ['libmockingbird.$ext', 'libmockingbird.0.2.2.$ext']) {
+  for (final name in ['libmockingbird.$ext', 'libmockingbird.0.2.3.$ext']) {
     final p = base.resolve(name).toFilePath();
     if (File(p).existsSync()) return p;
   }

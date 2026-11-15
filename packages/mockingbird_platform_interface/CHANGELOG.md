@@ -1,3 +1,8 @@
+## 0.2.3
+
+- `MockingbirdNativeOutputConfig.capturePerformance` and `MockingbirdNativeStats.captureGaps` and `captureGapMs`, optional so existing implementations keep compiling.
+- The `dart:ffi` implementation registers the wake with `mockingbird_set_wake_port` and runs start, stop and close through `mockingbird_submit_port` and `mockingbird_player_submit_port`, all posting to a `RawReceivePort` through `NativeApi.postCObject`. It no longer hands the engine a `NativeCallable`, which the VM frees when the isolate shuts down even if it was never closed, so an engine outliving its isolate can no longer call freed code. Bindings regenerated.
+
 ## 0.2.2
 
 - `MockingbirdPlatform.startAsync`, `stopAsync` and `destroyAsync`, which default to `start`, `stop` and `destroy`.

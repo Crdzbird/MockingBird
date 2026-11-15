@@ -10,7 +10,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'mockingbird_ios'
-  s.version          = '0.2.2'
+  s.version          = '0.2.3'
   s.summary          = 'iOS bridge for the Mockingbird audio engine.'
   s.description      = <<-DESC
   iOS implementation of the mockingbird plugin. Compiles libmockingbird's C ABI core

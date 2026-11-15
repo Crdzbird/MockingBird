@@ -1,7 +1,7 @@
 name: mockingbird_web
 description: >-
   The web implementation of the mockingbird plugin: the Mockingbird engine as WebAssembly with Web Audio microphone capture.
-version: 0.2.2
+version: 0.2.3
 repository: https://github.com/Crdzbird/MockingBird/tree/main/packages/mockingbird_web
 issue_tracker: https://github.com/Crdzbird/MockingBird/issues
 topics:
@@ -40,7 +40,7 @@ dependencies:
     sdk: flutter
   flutter_web_plugins:
     sdk: flutter
-  mockingbird_platform_interface: ^0.2.2
+  mockingbird_platform_interface: ^0.2.3
   web: ^1.1.0
 
 dev_dependencies:
