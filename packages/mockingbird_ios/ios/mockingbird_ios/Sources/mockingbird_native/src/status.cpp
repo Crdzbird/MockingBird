@@ -19,6 +19,6 @@ MOCKINGBIRD_API const char* mockingbird_status_str(int s) {
     return "MOCKINGBIRD_UNKNOWN";
 }
 
-MOCKINGBIRD_API const char* mockingbird_version_string(void) { return "0.2.2"; }
+MOCKINGBIRD_API const char* mockingbird_version_string(void) { return "0.2.3"; }
 
 }

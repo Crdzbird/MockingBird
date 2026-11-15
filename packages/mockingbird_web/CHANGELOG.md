@@ -1,3 +1,7 @@
+## 0.2.3
+
+- Version 0.2.3. The browser chooses its own capture path, so `MockingbirdPerformanceConfig.capture` has no effect here and the capture gap counters stay 0. The modules are rebuilt so they report 0.2.3.
+
 ## 0.2.2
 
 - Version 0.2.2. The web already opens its output asynchronously through Web Audio; `startAsync` and `stopAsync` on the engine run the same calls as `start` and `stop`. The modules are rebuilt so they report 0.2.2.
