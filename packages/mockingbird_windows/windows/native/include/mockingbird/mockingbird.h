@@ -547,7 +547,7 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_start(mockingbird_engine_t* eng
  * stop, queued packets remain available via mockingbird_drain until released. */
 MOCKINGBIRD_API mockingbird_status_t mockingbird_stop(mockingbird_engine_t* engine);
 
-/* Start and stop without blocking the caller. Opening or closing the
+/* Start, stop and close without blocking the caller. Opening or closing the
  * microphone can take hundreds of milliseconds; submit queues the call on
  * the engine's lifecycle thread and returns at once. That thread runs queued
  * calls one at a time in the order submitted, each exactly as
@@ -559,7 +559,11 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_stop(mockingbird_engine_t* engi
  * each. The thread starts on the first submit. */
 typedef enum mockingbird_engine_op {
     MOCKINGBIRD_ENGINE_OP_START = 0,
-    MOCKINGBIRD_ENGINE_OP_STOP  = 1
+    MOCKINGBIRD_ENGINE_OP_STOP  = 1,
+    MOCKINGBIRD_ENGINE_OP_CLOSE = 2   /* stop if running, then release the
+                                       * microphone so destroy has nothing
+                                       * slow left to do; a later START
+                                       * opens it again */
 } mockingbird_engine_op_t;
 
 MOCKINGBIRD_API mockingbird_status_t mockingbird_submit(mockingbird_engine_t*   engine,
@@ -963,8 +967,8 @@ MOCKINGBIRD_API mockingbird_status_t mockingbird_player_pause(mockingbird_player
 MOCKINGBIRD_API mockingbird_status_t mockingbird_player_resume(mockingbird_player_t* player);
 MOCKINGBIRD_API mockingbird_status_t mockingbird_player_stop(mockingbird_player_t* player);
 
-/* Start, pause, resume and stop without blocking the caller. Opening or
- * closing a device output can take hundreds of milliseconds; submit queues
+/* Start, pause, resume, stop and close without blocking the caller. Opening
+ * or closing a device output can take hundreds of milliseconds; submit queues
  * the call on the player's lifecycle thread and returns at once. That thread
  * runs queued calls one at a time in the order submitted, each exactly as
  * the blocking call of the same name, and then calls done(user, op, status)
@@ -979,7 +983,11 @@ typedef enum mockingbird_player_op {
     MOCKINGBIRD_PLAYER_OP_START  = 0,
     MOCKINGBIRD_PLAYER_OP_PAUSE  = 1,
     MOCKINGBIRD_PLAYER_OP_RESUME = 2,
-    MOCKINGBIRD_PLAYER_OP_STOP   = 3
+    MOCKINGBIRD_PLAYER_OP_STOP   = 3,
+    MOCKINGBIRD_PLAYER_OP_CLOSE  = 4   /* stop if running, then release the
+                                        * output device so destroy has
+                                        * nothing slow left to do; a later
+                                        * START opens it again */
 } mockingbird_player_op_t;
 
 MOCKINGBIRD_API mockingbird_status_t mockingbird_player_submit(mockingbird_player_t*   player,

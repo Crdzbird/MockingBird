@@ -67,15 +67,15 @@ final class MockingbirdEngine {
   /// True between [start] and [stop].
   bool get isRunning => _timer != null;
 
-  /// Stops if needed, off this isolate and after any pending [startAsync],
-  /// and destroys the native engine. Idempotent.
+  /// Stops if needed and releases the microphone, off this isolate and after
+  /// any pending [startAsync], then destroys the native engine. Idempotent.
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
     try {
       await _queue.add(_stopAsync);
     } finally {
-      _platform.destroy(_handle);
+      await _platform.destroyAsync(_handle);
       await _out.close();
     }
   }

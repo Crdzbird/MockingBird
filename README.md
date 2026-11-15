@@ -164,7 +164,10 @@ stop of a player). The call returns at once; the engine's or player's own
 lifecycle thread runs queued calls in the order submitted and reports each
 result through a `mockingbird_done_cb`. Packets pushed while a start is queued
 wait in the player's queue and play once the output runs, and destroy runs
-whatever is still queued before it frees.
+whatever is still queued before it frees. Closing a stream is slow too, and
+destroy would do it on the calling thread, so submit
+`MOCKINGBIRD_PLAYER_OP_CLOSE` or `MOCKINGBIRD_ENGINE_OP_CLOSE` first: it stops
+if needed and releases the device on the lifecycle thread.
 
 ```c
 static void on_done(void* user, uint32_t op, int32_t status) { /* op ran, with status */ }

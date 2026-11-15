@@ -40,13 +40,13 @@ void lifecycleTimingTests() {
         anomaly: MockingbirdAnomalyConfig(enabled: false),
       ),
     );
-    addTearDown(engine.dispose);
     final stalls = <Duration>[];
     for (var run = 0; run < 5; run++) {
       stalls.add(await _timed('engine.startAsync', engine.startAsync));
       await Future<void>.delayed(const Duration(milliseconds: 200));
       stalls.add(await _timed('engine.stopAsync', engine.stopAsync));
     }
+    stalls.add(await _timed('engine.dispose', engine.dispose));
     expect(stalls.where((s) => s > _limit), isEmpty);
   }, skip: !_liveMic || kIsWeb);
 
@@ -57,11 +57,11 @@ void lifecycleTimingTests() {
         anomaly: MockingbirdAnomalyConfig(enabled: false),
       ),
     );
-    addTearDown(engine.dispose);
     for (var run = 0; run < 5; run++) {
       await _timed('engine.start', () async => engine.start());
       await Future<void>.delayed(const Duration(milliseconds: 200));
       await _timed('engine.stop', () async => engine.stop());
     }
+    await _timed('engine.dispose', engine.dispose);
   }, skip: !_liveMic || kIsWeb);
 }

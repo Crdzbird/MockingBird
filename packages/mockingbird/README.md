@@ -234,7 +234,7 @@ thread instead and complete once capture runs, or has stopped and its last
 events are drained. They run in the order you call them, so a `stopAsync` made
 while `startAsync` is still opening the microphone runs once it is open; do not
 mix them with `start` and `stop` while one is pending. `dispose` stops a
-running engine off the isolate too.
+running engine and releases the microphone off the isolate too.
 
 **In the background.** Capture keeps running while the app is in the
 background only if the platform allows it: on iOS, add `audio` to
@@ -321,7 +321,7 @@ player's own thread, so they never block the calling isolate; each returns a
 Future that completes once the call has taken effect. They run in the order you
 make them: a `stop` made while `start` is still opening the output runs once
 it is open, a second `start` meanwhile does nothing, and `dispose` waits for
-whatever is pending. Packets pushed before `start` completes are queued, not
+whatever is pending and releases the output off the isolate as well. Packets pushed before `start` completes are queued, not
 lost, and play as soon as the output runs; they count toward the delay like
 any backlog, so call `flush()` when `start` completes if a live stream should
 begin at its newest packet instead.

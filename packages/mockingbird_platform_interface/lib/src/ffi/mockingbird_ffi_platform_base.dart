@@ -52,14 +52,6 @@ abstract class MockingbirdFfiPlatformBase extends MockingbirdPlatform {
       bindings.mockingbird_stop(_ptr(handle)).value;
 
   @override
-  Future<int> startAsync(MockingbirdEngineHandle handle) =>
-      _engines.run(handle as FfiEngineHandle, .MOCKINGBIRD_ENGINE_OP_START);
-
-  @override
-  Future<int> stopAsync(MockingbirdEngineHandle handle) =>
-      _engines.run(handle as FfiEngineHandle, .MOCKINGBIRD_ENGINE_OP_STOP);
-
-  @override
   int pushPcm(
     MockingbirdEngineHandle handle,
     Int16List samples,

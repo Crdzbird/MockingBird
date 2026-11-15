@@ -3,10 +3,10 @@ import 'dart:typed_data';
 import 'package:mockingbird_platform_interface/mockingbird_platform_interface.dart';
 import 'package:mockingbird_platform_interface/src/ffi/ffi_decoder_handle.dart';
 import 'package:mockingbird_platform_interface/src/ffi/ffi_opus_decoders.dart';
-import 'package:mockingbird_platform_interface/src/ffi/mockingbird_ffi_platform_base.dart';
+import 'package:mockingbird_platform_interface/src/ffi/mockingbird_ffi_lifecycle_base.dart';
 
 /// The standalone Opus decoder operations over `dart:ffi`.
-abstract class MockingbirdFfiDecodingBase extends MockingbirdFfiPlatformBase {
+abstract class MockingbirdFfiDecodingBase extends MockingbirdFfiLifecycleBase {
   late final FfiOpusDecoders _decoders = FfiOpusDecoders(bindings);
 
   @override

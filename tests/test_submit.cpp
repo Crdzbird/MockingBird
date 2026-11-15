@@ -21,10 +21,20 @@
 namespace {
 using Clock = std::chrono::steady_clock;
 constexpr auto kOpen = std::chrono::milliseconds(300);
+std::atomic<int> g_outputs_alive{0};
+std::atomic<int> g_outputs_made{0};
 
 class SlowOutput final : public mockingbird::OutputBackend {
 public:
-    ~SlowOutput() override { stop(); }
+    SlowOutput() {
+        g_outputs_alive.fetch_add(1);
+        g_outputs_made.fetch_add(1);
+    }
+
+    ~SlowOutput() override {
+        stop();
+        g_outputs_alive.fetch_sub(1);
+    }
 
     mockingbird_status_t init(const mockingbird::OutputFormat& fmt, mockingbird::RenderCallback cb, void* user,
                               mockingbird::OutputNoticeCallback, void*) override {
@@ -166,7 +176,7 @@ TEST_CASE("player submit: bad arguments queue nothing") {
     mockingbird_player_t* p = make_slow_player();
     CHECK(mockingbird_player_submit(nullptr, MOCKINGBIRD_PLAYER_OP_START, nullptr, nullptr) ==
           MOCKINGBIRD_ERR_INVALID_ARG);
-    CHECK(mockingbird_player_submit(p, static_cast<mockingbird_player_op_t>(4), nullptr, nullptr) ==
+    CHECK(mockingbird_player_submit(p, static_cast<mockingbird_player_op_t>(5), nullptr, nullptr) ==
           MOCKINGBIRD_ERR_INVALID_ARG);
     CHECK(mockingbird_player_submit(p, static_cast<mockingbird_player_op_t>(-1), nullptr, nullptr) ==
           MOCKINGBIRD_ERR_INVALID_ARG);
@@ -196,10 +206,51 @@ TEST_CASE("engine submit: start and stop run in order off the caller's thread") 
         {MOCKINGBIRD_ENGINE_OP_STOP, MOCKINGBIRD_OK},
         {MOCKINGBIRD_ENGINE_OP_STOP, MOCKINGBIRD_ERR_NOT_RUNNING}};
     CHECK(done.calls == want);
-    CHECK(mockingbird_submit(e, static_cast<mockingbird_engine_op_t>(2), nullptr, nullptr) ==
+    CHECK(mockingbird_submit(e, static_cast<mockingbird_engine_op_t>(3), nullptr, nullptr) ==
           MOCKINGBIRD_ERR_INVALID_ARG);
     CHECK(mockingbird_submit(nullptr, MOCKINGBIRD_ENGINE_OP_START, nullptr, nullptr) == MOCKINGBIRD_ERR_INVALID_ARG);
     REQUIRE(mockingbird_submit(e, MOCKINGBIRD_ENGINE_OP_START, &Done::record, &done) == MOCKINGBIRD_OK);
     mockingbird_destroy(e);
     CHECK(done.calls.size() == 5);
+}
+
+TEST_CASE("player submit: close releases the output, and a later start opens a new one") {
+    mockingbird_player_t* p = make_slow_player();
+    const int made = g_outputs_made.load();
+    Done done;
+    for (auto op : {MOCKINGBIRD_PLAYER_OP_START, MOCKINGBIRD_PLAYER_OP_CLOSE, MOCKINGBIRD_PLAYER_OP_CLOSE}) {
+        REQUIRE(mockingbird_player_submit(p, op, &Done::record, &done) == MOCKINGBIRD_OK);
+    }
+    done.wait_for(3);
+    CHECK(done.calls[1] == std::make_pair(uint32_t{MOCKINGBIRD_PLAYER_OP_CLOSE}, int32_t{MOCKINGBIRD_OK}));
+    CHECK(done.calls[2] == std::make_pair(uint32_t{MOCKINGBIRD_PLAYER_OP_CLOSE}, int32_t{MOCKINGBIRD_OK}));
+    CHECK(g_outputs_alive.load() == 0);
+    CHECK(stats(p).state == MOCKINGBIRD_PLAYER_STOPPED);
+    REQUIRE(mockingbird_player_submit(p, MOCKINGBIRD_PLAYER_OP_START, &Done::record, &done) == MOCKINGBIRD_OK);
+    done.wait_for(4);
+    CHECK(done.calls[3].second == MOCKINGBIRD_OK);
+    CHECK(g_outputs_made.load() == made + 2);
+    CHECK(g_outputs_alive.load() == 1);
+    mockingbird_player_destroy(p);
+    CHECK(g_outputs_alive.load() == 0);
+    mockingbird::set_output_factory_override(nullptr);
+}
+
+TEST_CASE("engine submit: close stops a running engine and it can start again") {
+    mockingbird_config_t cfg{};
+    mockingbird_config_defaults(&cfg);
+    cfg.backend        = MOCKINGBIRD_BACKEND_HOST_PCM;
+    cfg.codec          = MOCKINGBIRD_CODEC_PCM_S16LE;
+    cfg.enable_vad     = 0;
+    cfg.enable_anomaly = 0;
+    mockingbird_engine_t* e = nullptr;
+    REQUIRE(mockingbird_create(&cfg, &e) == MOCKINGBIRD_OK);
+    Done done;
+    for (auto op : {MOCKINGBIRD_ENGINE_OP_START, MOCKINGBIRD_ENGINE_OP_CLOSE, MOCKINGBIRD_ENGINE_OP_CLOSE,
+                    MOCKINGBIRD_ENGINE_OP_START, MOCKINGBIRD_ENGINE_OP_STOP}) {
+        REQUIRE(mockingbird_submit(e, op, &Done::record, &done) == MOCKINGBIRD_OK);
+    }
+    done.wait_for(5);
+    for (const auto& call : done.calls) CHECK(call.second == MOCKINGBIRD_OK);
+    mockingbird_destroy(e);
 }

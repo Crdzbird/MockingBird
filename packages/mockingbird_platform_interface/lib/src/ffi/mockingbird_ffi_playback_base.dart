@@ -17,8 +17,10 @@ abstract class MockingbirdFfiPlaybackBase extends MockingbirdFfiDecodingBase {
   ) => _players.create(config);
 
   @override
-  Future<void> destroyPlayer(MockingbirdPlayerHandle handle) async =>
-      _players.destroy(_p(handle));
+  Future<void> destroyPlayer(MockingbirdPlayerHandle handle) async {
+    await _players.run(_p(handle), .MOCKINGBIRD_PLAYER_OP_CLOSE);
+    _players.destroy(_p(handle));
+  }
 
   @override
   Future<int> playerStart(MockingbirdPlayerHandle handle) =>

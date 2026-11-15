@@ -1322,7 +1322,8 @@ final class mockingbird_engine extends ffi.Opaque {}
 
 enum mockingbird_engine_op {
   MOCKINGBIRD_ENGINE_OP_START(0),
-  MOCKINGBIRD_ENGINE_OP_STOP(1);
+  MOCKINGBIRD_ENGINE_OP_STOP(1),
+  MOCKINGBIRD_ENGINE_OP_CLOSE(2);
 
   final int value;
   const mockingbird_engine_op(this.value);
@@ -1330,6 +1331,7 @@ enum mockingbird_engine_op {
   static mockingbird_engine_op fromValue(int value) => switch (value) {
     0 => MOCKINGBIRD_ENGINE_OP_START,
     1 => MOCKINGBIRD_ENGINE_OP_STOP,
+    2 => MOCKINGBIRD_ENGINE_OP_CLOSE,
     _ => throw ArgumentError('Unknown value for mockingbird_engine_op: $value'),
   };
 }
@@ -1518,7 +1520,8 @@ enum mockingbird_player_op {
   MOCKINGBIRD_PLAYER_OP_START(0),
   MOCKINGBIRD_PLAYER_OP_PAUSE(1),
   MOCKINGBIRD_PLAYER_OP_RESUME(2),
-  MOCKINGBIRD_PLAYER_OP_STOP(3);
+  MOCKINGBIRD_PLAYER_OP_STOP(3),
+  MOCKINGBIRD_PLAYER_OP_CLOSE(4);
 
   final int value;
   const mockingbird_player_op(this.value);
@@ -1528,6 +1531,7 @@ enum mockingbird_player_op {
     1 => MOCKINGBIRD_PLAYER_OP_PAUSE,
     2 => MOCKINGBIRD_PLAYER_OP_RESUME,
     3 => MOCKINGBIRD_PLAYER_OP_STOP,
+    4 => MOCKINGBIRD_PLAYER_OP_CLOSE,
     _ => throw ArgumentError('Unknown value for mockingbird_player_op: $value'),
   };
 }

@@ -62,6 +62,11 @@ abstract class MockingbirdPlatform extends MockingbirdPlatformExtras {
   /// [stop] off the calling thread where the platform has one.
   Future<int> stopAsync(MockingbirdEngineHandle handle) async => stop(handle);
 
+  /// [destroy], with the microphone released off the calling thread first
+  /// where the platform has one.
+  Future<void> destroyAsync(MockingbirdEngineHandle handle) async =>
+      destroy(handle);
+
   /// Pushes mono int16 samples for a host-PCM engine.
   int pushPcm(
     MockingbirdEngineHandle handle,

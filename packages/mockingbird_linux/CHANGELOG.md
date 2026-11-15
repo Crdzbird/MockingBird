@@ -1,6 +1,6 @@
 ## 0.2.2
 
-- The native engine gains `mockingbird_submit` and `mockingbird_player_submit`, which run start, stop, pause and resume on the engine's or the player's own lifecycle thread, in the order submitted, and report each result through a callback, so opening or closing the device no longer blocks the caller.
+- The native engine gains `mockingbird_submit` and `mockingbird_player_submit`, which run start, stop, pause and resume on the engine's or the player's own lifecycle thread, in the order submitted, and report each result through a callback, so opening or closing the device no longer blocks the caller. `MOCKINGBIRD_PLAYER_OP_CLOSE` and `MOCKINGBIRD_ENGINE_OP_CLOSE` stop if needed and release the device on that thread, so a destroy that follows has nothing slow left to do.
 
 ## 0.2.1
 

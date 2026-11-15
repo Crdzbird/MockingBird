@@ -62,8 +62,9 @@ final class MockingbirdPlayer {
     return MockingbirdPlayerStats.fromNative(r.stats!);
   }
 
-  /// Stops if needed, after any start, pause, resume or stop still pending,
-  /// and destroys the native player. Idempotent.
+  /// Stops if needed and releases the output, off this isolate and after any
+  /// start, pause, resume or stop still pending, then destroys the native
+  /// player. Idempotent.
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
