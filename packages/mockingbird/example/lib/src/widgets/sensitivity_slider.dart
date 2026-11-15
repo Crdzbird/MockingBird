@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The single dial that tunes every detector of the active preset.
 final class SensitivitySlider extends StatelessWidget {

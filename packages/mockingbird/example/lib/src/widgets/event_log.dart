@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Newest-first console of formatted events.
 final class EventLog extends StatelessWidget {

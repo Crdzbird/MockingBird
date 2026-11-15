@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mockingbird/mockingbird.dart';
 
 /// A named detector recipe. The same engine does very different jobs

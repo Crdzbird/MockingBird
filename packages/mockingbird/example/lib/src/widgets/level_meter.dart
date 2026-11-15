@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Live input level from the engine's stats, which works whether or not a
 /// segment is open.

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// RNNoise on or off ahead of every detector.
 final class DenoiseSwitch extends StatelessWidget {

@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mockingbird_example/src/demo/demo_cubit.dart';
 import 'package:mockingbird_example/src/demo/demo_state.dart';
 import 'package:mockingbird_example/src/demo/playback_cubit.dart';

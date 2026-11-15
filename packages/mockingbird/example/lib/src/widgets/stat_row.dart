@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// One name/value line with tabular digits so columns do not jitter.
 final class StatRow extends StatelessWidget {

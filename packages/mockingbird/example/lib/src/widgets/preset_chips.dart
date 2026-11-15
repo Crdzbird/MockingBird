@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mockingbird_example/src/demo/demo_presets.dart';
 
 /// One chip per preset; tapping recreates the engine with that recipe. A

@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mockingbird_example/src/demo/playback_state.dart';
 import 'package:mockingbird_example/src/widgets/stat_row.dart';
 

@@ -4,6 +4,7 @@
 - The player runs its lifecycle calls in the order they are made. A `stop` made while `start` is still opening the output now runs once it is open; before, it returned at once and the start then left the player running. A `pause` or `resume` made during `start` runs after it, two overlapping `start` calls open the output once, and `dispose` waits for whatever is pending. Packets pushed before `start` completes are queued and play once the output runs.
 - `MockingbirdEngine.startAsync` and `stopAsync` open and close the microphone on the engine's own thread and complete once capture runs, or has stopped and its last events are drained. On an iOS 27.2 simulator `start` holds the isolate for about 190 ms and `stop` for 34 to 176 ms; `startAsync` and `stopAsync` hold it for 6 ms at most. `start` and `stop` are unchanged and still block.
 - `dispose` on a player or an engine releases the output or the microphone on the native thread before destroying, so it no longer blocks either. On a Pixel 7 Pro (Android 17) a player's `dispose` held the isolate for 106 to 108 ms and now 1 to 3 ms, and an engine's for 133 to 137 ms and now 4 to 14 ms. There, `start` on a capture engine holds it for 165 to 209 ms and `startAsync` for 1 to 7 ms.
+- The example app imports `package:material_ui`, which Flutter 3.50 replaces `package:flutter/material.dart` with, and builds with Android Gradle Plugin 9.3.1 and its built-in Kotlin, so it needs Flutter 3.47 or later. The packages themselves still support Flutter 3.44.
 
 ## 0.2.1
 

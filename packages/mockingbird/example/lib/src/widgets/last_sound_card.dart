@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mockingbird/mockingbird.dart';
 import 'package:mockingbird_example/src/demo/detection_summary.dart';
 
